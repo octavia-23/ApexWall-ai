@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "SimSetup AI — Professional Telemetry & Chassis Engineering",
-  description: "MoTeC-grade telemetry analysis, driver coaching diagnostics, and adaptive chassis setup engineering.",
+  title: "PitWall AI — Autonomous Sim Racing Telemetry & Chassis Engineering",
+  description: "MoTeC-grade telemetry analysis, authentic GPS track mapping, driver coaching diagnostics, and adaptive chassis setup engineering.",
 };
 
 export default function RootLayout({
@@ -22,7 +23,9 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased text-slate-200 bg-[#0B0E14]">
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

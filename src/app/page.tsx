@@ -7,6 +7,7 @@ import { SetupGenerator } from "@/components/setup/SetupGenerator";
 import { TelemetryAnalyzer } from "@/components/telemetry/TelemetryAnalyzer";
 import { StrategyTools } from "@/components/tools/StrategyTools";
 import { SetupVaultModal } from "@/components/vault/SetupVaultModal";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { Footer } from "@/components/Footer";
 import { SavedSetupRecord, getSavedSetups } from "@/lib/setup-vault";
 
@@ -14,6 +15,7 @@ export default function Home() {
   const [mode, setMode] = useState<WorkspaceMode>("telemetry");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isVaultOpen, setIsVaultOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [savedSetupsCount, setSavedSetupsCount] = useState<number>(0);
 
   const [setupInitialValues, setSetupInitialValues] = useState<{
@@ -107,7 +109,10 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col justify-between bg-[#0B0E14]">
       <div>
-        <Header isLoading={isLoading} />
+        <Header
+          isLoading={isLoading}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+        />
 
         {/* Contextual Workspace Header */}
         <div className="max-w-[1440px] mx-auto px-6 pt-6 pb-2 flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -166,6 +171,12 @@ export default function Home() {
         isOpen={isVaultOpen}
         onClose={() => setIsVaultOpen(false)}
         onLoadSetup={handleLoadFromVault}
+      />
+
+      {/* Driver Authentication Modal (Google & Credentials) */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
       />
 
       <Footer />
