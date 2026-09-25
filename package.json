@@ -12,6 +12,7 @@
     "serve:legacy": "node server.js"
   },
   "dependencies": {
+    "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.117.1",
     "clsx": "^2.1.1",

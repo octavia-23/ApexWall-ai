@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { parseTelemetryCSV } from "@/lib/telemetry-parser";
+import { parseDuckDBTelemetry } from "@/lib/duckdb-parser";
 import { computeLapComparison } from "@/lib/telemetry-comparison";
 import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
 import { generateTrackMapData } from "@/lib/track-map-generator";
@@ -216,32 +217,51 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     return () => clearInterval(interval);
   }, [state]);
 
+  const [isParsingDuckDB, setIsParsingDuckDB] = useState(false);
+
   // File Upload Handlers
-  const handleFileUpload = (file: File) => {
+  const processParsedTelemetry = (parsed: ParsedTelemetryFile) => {
+    setParsedTelemetry(parsed);
+    setActivePreset("");
+
+    if (referenceTelemetry) {
+      try {
+        const comp = computeLapComparison(parsed, referenceTelemetry, track);
+        setLapComparison(comp);
+      } catch (errComp) {
+        console.warn("Could not compute lap comparison:", errComp);
+        setLapComparison(null);
+      }
+    }
+
+    try {
+      const gg = computeGGFrictionCircle(parsed, referenceTelemetry);
+      setFrictionCircleData(gg);
+    } catch (errGg) {
+      console.warn("Could not compute G-G friction circle:", errGg);
+    }
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (file.name.toLowerCase().endsWith(".duckdb")) {
+      setIsParsingDuckDB(true);
+      try {
+        const parsed = await parseDuckDBTelemetry(file);
+        processParsedTelemetry(parsed);
+      } catch (err: any) {
+        alert(`Could not parse DuckDB telemetry file: ${err.message}`);
+      } finally {
+        setIsParsingDuckDB(false);
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
         const text = e.target?.result as string;
         const parsed = parseTelemetryCSV(text, file.name);
-        setParsedTelemetry(parsed);
-        setActivePreset("");
-
-        if (referenceTelemetry) {
-          try {
-            const comp = computeLapComparison(parsed, referenceTelemetry, track);
-            setLapComparison(comp);
-          } catch (errComp) {
-            console.warn("Could not compute lap comparison:", errComp);
-            setLapComparison(null);
-          }
-        }
-
-        try {
-          const gg = computeGGFrictionCircle(parsed, referenceTelemetry);
-          setFrictionCircleData(gg);
-        } catch (errGg) {
-          console.warn("Could not compute G-G friction circle:", errGg);
-        }
+        processParsedTelemetry(parsed);
       } catch (err: any) {
         alert(`Could not parse telemetry file: ${err.message}`);
       }
@@ -1018,7 +1038,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             <input
               type="file"
               id="telFileInput"
-              accept=".csv,.json,.txt,.motec"
+              accept=".csv,.json,.txt,.motec,.duckdb"
               className="hidden-file-input"
               onChange={(e) => {
                 if (e.target.files?.[0]) handleFileUpload(e.target.files[0]);
@@ -1026,23 +1046,32 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             />
             <div className="dropzone-content">
               <div className="dropzone-icon">
-                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                  <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
-                </svg>
+                {isParsingDuckDB ? (
+                  <svg className="animate-spin text-amber-400" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10" strokeDasharray="30" strokeDashoffset="10" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                    <circle cx="12" cy="12" r="9" strokeDasharray="3 3" />
+                  </svg>
+                )}
               </div>
               <div className="dropzone-text">
-                <span className="dropzone-primary">Drag & drop your Telemetry file</span>
+                <span className="dropzone-primary">
+                  {isParsingDuckDB ? "Executing DuckDB-Wasm Engine..." : "Drag & drop your Telemetry file"}
+                </span>
                 <span className="dropzone-sub">
-                  Supports <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong>, <strong>iRacing</strong> & <strong>JSON</strong> logs
+                  Supports <strong>Le Mans Ultimate (.duckdb)</strong>, <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong>, <strong>iRacing</strong> & <strong>JSON</strong> logs
                 </span>
               </div>
               <button
                 type="button"
                 className="dropzone-browse-btn"
                 onClick={() => document.getElementById("telFileInput")?.click()}
+                disabled={isParsingDuckDB}
               >
-                Browse Files
+                {isParsingDuckDB ? "Reading DuckDB..." : "Browse Files"}
               </button>
             </div>
           </div>
