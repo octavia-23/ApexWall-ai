@@ -1,10 +1,10 @@
 /**
  * =========================================================================
- * PITWALL AI // LOCAL TELEMETRY UDP BRIDGE
+ * APEXWALL AI // LOCAL TELEMETRY UDP BRIDGE
  * =========================================================================
  * Connects directly to your local sim racing rig (Assetto Corsa Competizione,
  * F1 23/F1 24, iRacing) via UDP broadcast and streams 60Hz telemetry
- * frames to the PitWall AI web dashboard over WebSockets.
+ * frames to the ApexWall AI web dashboard over WebSockets.
  *
  * Usage:
  *   node scripts/telemetry-bridge.js --game f1      # F1 23/24 UDP (port 20777)
@@ -25,7 +25,7 @@ const WS_PORT = 9001;
 const UDP_PORT = gameArg === "acc" ? 9000 : 20777;
 
 console.log("=====================================================");
-console.log("  🏁 PITWALL AI // LOCAL TELEMETRY UDP BRIDGE");
+console.log("  🏁 APEXWALL AI // LOCAL TELEMETRY UDP BRIDGE");
 console.log("=====================================================");
 console.log(`• Sim Target: ${gameArg.toUpperCase()} (Listening UDP Port: ${UDP_PORT})`);
 console.log(`• WebSocket Broadcast Server: ws://localhost:${WS_PORT}`);
@@ -39,7 +39,7 @@ let activeClients = [];
 
 wss.on("connection", (ws) => {
   activeClients.push(ws);
-  console.log(`[WS] PitWall Web Dashboard connected (${activeClients.length} active client(s))`);
+  console.log(`[WS] ApexWall Web Dashboard connected (${activeClients.length} active client(s))`);
 
   ws.on("close", () => {
     activeClients = activeClients.filter((c) => c !== ws);

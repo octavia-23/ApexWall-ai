@@ -84,7 +84,7 @@ export default function SharedSetupPage() {
           onClick={() => router.push("/")}
           className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-mono text-xs uppercase tracking-wider transition-colors"
         >
-          Return to PitWall AI
+          Return to ApexWall AI
         </button>
       </div>
     );
@@ -106,7 +106,7 @@ export default function SharedSetupPage() {
               </svg>
             </div>
             <div>
-              <span className="font-bold text-sm text-slate-100">PitWall AI</span>
+              <span className="font-bold text-sm text-slate-100">ApexWall AI</span>
               <span className="text-[11px] font-mono text-slate-500 ml-1.5 hidden sm:inline">/ Shared Setup Sheet</span>
             </div>
           </button>

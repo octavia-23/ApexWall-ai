@@ -90,7 +90,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-2 py-0.5 rounded font-semibold">
                 Telemetry Credentials
               </span>
-              <span className="text-[11px] font-mono text-slate-500">PitWall Auth</span>
+              <span className="text-[11px] font-mono text-slate-500">ApexWall Auth</span>
             </div>
             <h2 className="text-lg font-bold text-slate-100 flex items-center gap-2">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#38BDF8" strokeWidth="2">
@@ -261,7 +261,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               {loading && (
                 <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
               )}
-              <span>{mode === "signin" ? "Sign In to Pit Wall" : "Complete Registration"}</span>
+              <span>{mode === "signin" ? "Sign In to ApexWall" : "Complete Registration"}</span>
             </button>
           </form>
         </div>

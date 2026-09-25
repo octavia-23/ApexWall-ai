@@ -1,7 +1,7 @@
 {
-  "name": "sim-setup-ai",
-  "version": "1.0.0",
-  "description": "AI-generated car setups for sim racing games",
+  "name": "apexwall",
+  "version": "2.0.0",
+  "description": "ApexWall — Autonomous Sim Racing Telemetry Analytics, Chassis Engineering & Tactical Pit Strategy",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

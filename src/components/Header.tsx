@@ -39,7 +39,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading, onOpenAuth }) => {
             </svg>
           </div>
           <div className="nav-brand-title">
-            <span className="nav-brand-name">PitWall AI</span>
+            <span className="nav-brand-name">ApexWall AI</span>
             <span className="nav-brand-subtitle">/ Race Engineering & Telemetry</span>
           </div>
         </div>

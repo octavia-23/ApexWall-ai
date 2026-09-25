@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
-  title: "PitWall AI — Autonomous Sim Racing Telemetry & Chassis Engineering",
+  title: "ApexWall AI — Autonomous Sim Racing Telemetry & Chassis Engineering",
   description: "MoTeC-grade telemetry analysis, authentic GPS track mapping, driver coaching diagnostics, and adaptive chassis setup engineering.",
 };
 

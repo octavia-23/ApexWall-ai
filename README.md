@@ -1,13 +1,14 @@
-# PitWall AI 🏁
+# ApexWall AI 🏁
 ### Autonomous Sim Racing Telemetry Analytics, Chassis Engineering & Tactical Pit Strategy
 
 [![Live Deployment](https://img.shields.io/badge/Production%20URL-pitwall--ai--one.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://pitwall-ai-one.vercel.app/)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Database](https://img.shields.io/badge/Supabase-Auth%20%26%20Postgres-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![Inference Engine](https://img.shields.io/badge/AI%20Inference-Groq%20LLaMA%203.3%2070B-F55036?style=for-the-badge)](https://groq.com/)
 
-**PitWall AI** is a professional-grade race engineering platform and MoTeC telemetry workbench designed for competitive sim racers. It combines high-precision vehicle dynamics calculations, authentic GPS track mapping, friction circle physics, and real-time AI reasoning to provide turn-by-turn driver coaching, tailored chassis setups, atmospheric tire compensations, and optimal pit stop strategies.
+**ApexWall AI** is a universal, open race engineering platform and MoTeC telemetry workbench designed for competitive sim racers. Unlike single-sim subscription tools, ApexWall provides universal vehicle dynamics calculations, authentic GPS track mapping, friction circle physics, and real-time AI reasoning across **Assetto Corsa Competizione**, **iRacing**, **F1 23/24**, **Le Mans Ultimate**, and **Automobilista 2**.
 
 ---
 
@@ -59,44 +60,51 @@ Experience the platform live in your browser:
 
 ---
 
-### 4. Setup Vault & Side-by-Side Version Diff Engine
-* **Persistent Library**: Save, label, and manage setups directly in local storage.
-* **Side-by-Side Parameter Diff Engine**: Compare any two setup versions (`Setup A` vs `Setup B`) across all components with automatic delta calculation and directional status badges (`+1 Click`, `-0.50° Camber`, `Stiffened`, `Softened`).
-* **"Differences Only" Filter**: Filter out unchanged parameters to instantly review what changed between session iterations.
-* **1-Click Save**: Integrated "SAVE TO VAULT" actions across both generated setups and telemetry-calibrated sheets.
+### 4. Live Cockpit HUD & 60Hz UDP Telemetry Streamer
+* **15-LED Shift Light Cluster**: 5 Green $\rightarrow$ 5 Red $\rightarrow$ 5 Blue LEDs with shift point flash.
+* **Digital Cockpit Cluster**: Speedometer (KM/H & MPH), dynamic RPM gauge, delta split, and large gear indicator.
+* **Live G-G Vector Dot**: Real-time crosshair dot plotting instantaneous grip utilization during cornering and heavy braking.
+* **Live 2D Track Map Position**: Real-time car marker moving along official GPS circuits.
+* **Local Sim Bridge**: Standalone Node.js script connecting to ACC (port 9000) or F1 23/24 (port 20777).
+
+---
+
+### 5. Setup Vault, Cloud Database & Team Sharing
+* **Supabase Cloud Sync**: Log in with Google or Email to persist setups across all devices.
+* **Side-by-Side Parameter Diff Engine**: Compare any two setup versions (`Setup A` vs `Setup B`) across all components with automatic delta calculation and directional status badges.
+* **Public Setup Sharing**: 1-click generation of public shareable links (`/setup/[id]`) for teammates to clone or export directly into their sim.
 
 ---
 
 ## 🛠️ Architecture & Tech Stack
 
 ```
-pitwall-ai/
+apexwall/
 ├── src/
 │   ├── app/                      # Next.js 14 App Router
 │   │   ├── api/
 │   │   │   ├── analyze-telemetry # Telemetry ML analysis & coaching endpoint
 │   │   │   └── generate-setup    # Vehicle dynamics setup synthesis endpoint
-│   │   ├── globals.css           # Pit wall liquid-glass dark theme
+│   │   ├── auth/callback         # Supabase OAuth redirect handler
+│   │   ├── setup/[id]            # Public shared setup view page
+│   │   ├── globals.css           # ApexWall dark liquid-glass theme
 │   │   └── page.tsx              # Reactive unified workspace controller
 │   ├── components/
+│   │   ├── auth/                 # Google & Email AuthModal
 │   │   ├── setup/                # Setup Generator & Export Modals
-│   │   ├── telemetry/            # MoTeC Canvas HUD, TrackMap2D & Friction Circle
+│   │   ├── telemetry/            # MoTeC Canvas HUD, TrackMap2D & Live Cockpit
 │   │   ├── tools/                # Tyre Compensator & Fuel Strategy Calculators
 │   │   ├── vault/                # Setup Vault & Side-by-Side Diff Modal
-│   │   └── ModeNavigation.tsx    # Workspace tab switcher & Vault counter
+│   │   └── ModeNavigation.tsx    # 4-Mode Workspace switcher
 │   ├── lib/
 │   │   ├── circuit-geometries.ts # Official 135-point FIA GPS track coordinates
+│   │   ├── cloud-vault.ts        # Unified Supabase + LocalStorage sync
 │   │   ├── fuel-calculator.ts    # Stint range, pit windows & lift-and-coast math
 │   │   ├── tyre-calculator.ts    # Thermodynamic atmospheric pressure compensator
 │   │   ├── setup-vault.ts        # Version storage & parameter diff engine
-│   │   ├── setup-exporter.ts     # ACC .json / iRacing .sto / rF2 .svm serializers
 │   │   └── telemetry-parser.ts   # MoTeC i2 / Popometer CSV parser
 │   └── types/telemetry.ts        # Strongly-typed chassis & telemetry schemas
 ```
-
-* **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS, Lucide Icons, High-DPI HTML5 Canvas.
-* **Physics & Telemetry Engine**: Zero-dependency client-side numerical math for friction circles, dead-reckoning coordinate transformation, and aerodynamic balance equations.
-* **AI Engine**: Groq Cloud running `llama-3.3-70b-versatile` with structured JSON schema outputs and low-latency inference.
 
 ---
 
@@ -118,9 +126,11 @@ Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Add your free Groq API key (available from [console.groq.com](https://console.groq.com/keys)):
+Add your Groq and Supabase keys:
 ```env
 GROQ_API_KEY=gsk_your_groq_api_key_here
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 PORT=3000
 ```
 
