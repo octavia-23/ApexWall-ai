@@ -67,3 +67,11 @@ export const REAL_CIRCUITS: Record<string, RealCircuitDefinition> = {
     ],
   },
 };
+
+export function getAuthenticTrackGeometry(trackName: string): RealCircuitDefinition | null {
+  const lower = (trackName || "").toLowerCase();
+  if (lower.includes("silverstone")) return REAL_CIRCUITS.silverstone;
+  if (lower.includes("monza")) return REAL_CIRCUITS.monza;
+  if (lower.includes("spa")) return REAL_CIRCUITS.spa;
+  return null;
+}

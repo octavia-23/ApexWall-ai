@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from "react";
 import {
   SavedSetupRecord,
-  getSavedSetups,
-  saveSetupToVault,
-  deleteSetupFromVault,
   compareSetupRecords,
   SetupDiffResult,
 } from "@/lib/setup-vault";
+import {
+  getUnifiedSetups,
+  saveUnifiedSetup,
+  deleteUnifiedSetup,
+} from "@/lib/cloud-vault";
 import { SetupExportModal } from "../setup/SetupExportModal";
 import { SetupSection } from "@/types/telemetry";
 
@@ -49,28 +51,30 @@ export const SetupVaultModal: React.FC<SetupVaultModalProps> = ({
   // New setup name input when saving current
   const [customName, setCustomName] = useState<string>("");
   const [savedFeedback, setSavedFeedback] = useState<boolean>(false);
+  const [copiedShareId, setCopiedShareId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      const all = getSavedSetups();
-      setSetups(all);
-      if (all.length >= 2) {
-        setSelectedIdA(all[0].id);
-        setSelectedIdB(all[1].id);
-      } else if (all.length === 1) {
-        setSelectedIdA(all[0].id);
-      }
-      if (currentSetupToSave) {
-        setCustomName(`${currentSetupToSave.track} — ${currentSetupToSave.car} (v${all.length + 1})`);
-      }
+      getUnifiedSetups().then((all) => {
+        setSetups(all);
+        if (all.length >= 2) {
+          setSelectedIdA(all[0].id);
+          setSelectedIdB(all[1].id);
+        } else if (all.length === 1) {
+          setSelectedIdA(all[0].id);
+        }
+        if (currentSetupToSave) {
+          setCustomName(`${currentSetupToSave.track} — ${currentSetupToSave.car} (v${all.length + 1})`);
+        }
+      });
     }
   }, [isOpen, currentSetupToSave]);
 
   if (!isOpen) return null;
 
-  const handleSaveCurrent = () => {
+  const handleSaveCurrent = async () => {
     if (!currentSetupToSave) return;
-    const record = saveSetupToVault({
+    await saveUnifiedSetup({
       name: customName || `${currentSetupToSave.track} Setup`,
       game: currentSetupToSave.game,
       car: currentSetupToSave.car,
@@ -79,22 +83,36 @@ export const SetupVaultModal: React.FC<SetupVaultModalProps> = ({
       weather: currentSetupToSave.weather,
       trackTemp: currentSetupToSave.trackTemp,
       airTemp: currentSetupToSave.airTemp,
+      tyreCompound: currentSetupToSave.tyreCompound,
+      fuelLoad: currentSetupToSave.fuelLoad,
       lapTime: currentSetupToSave.lapTime,
       driverStyle: currentSetupToSave.driverStyle,
       summary: currentSetupToSave.summary,
       engineerNotes: currentSetupToSave.engineerNotes,
       sections: currentSetupToSave.sections,
     });
-    setSetups(getSavedSetups());
+    const refreshed = await getUnifiedSetups();
+    setSetups(refreshed);
     setSavedFeedback(true);
     setTimeout(() => setSavedFeedback(false), 2500);
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this setup from your vault?")) {
-      const updated = deleteSetupFromVault(id);
-      setSetups(updated);
+      await deleteUnifiedSetup(id);
+      const refreshed = await getUnifiedSetups();
+      setSetups(refreshed);
+    }
+  };
+
+  const handleCopyShareLink = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (typeof window !== "undefined") {
+      const shareUrl = `${window.location.origin}/setup/${id}`;
+      navigator.clipboard.writeText(shareUrl);
+      setCopiedShareId(id);
+      setTimeout(() => setCopiedShareId(null), 2500);
     }
   };
 
@@ -189,7 +207,12 @@ export const SetupVaultModal: React.FC<SetupVaultModalProps> = ({
                   <div key={s.id} className="vault-setup-card">
                     <div className="setup-card-top">
                       <div className="setup-name-group">
-                        <h4 className="setup-card-title">{s.name}</h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="setup-card-title">{s.name}</h4>
+                          <span className={`text-[9.5px] font-mono px-1.5 py-0.5 rounded font-semibold ${s.userId ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 bg-slate-800 border border-slate-700/50"}`}>
+                            {s.userId ? "☁ CLOUD" : "💾 LOCAL"}
+                          </span>
+                        </div>
                         <div className="setup-card-meta">
                           <span>{s.car}</span>
                           <span>·</span>
@@ -235,6 +258,15 @@ export const SetupVaultModal: React.FC<SetupVaultModalProps> = ({
                             Load Setup →
                           </button>
                         )}
+                        <button
+                          type="button"
+                          className="card-load-btn"
+                          style={copiedShareId === s.id ? { background: "rgba(16, 185, 129, 0.2)", color: "#34d399", borderColor: "rgba(16, 185, 129, 0.4)" } : undefined}
+                          onClick={(e) => handleCopyShareLink(s.id, e)}
+                          title="Copy public web link to share with teammates"
+                        >
+                          {copiedShareId === s.id ? "Link Copied ✓" : "Share Link"}
+                        </button>
                         <SetupExportModal
                           buttonLabel="Export"
                           context={{

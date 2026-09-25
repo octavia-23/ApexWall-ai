@@ -2,7 +2,7 @@
 
 import React from "react";
 
-export type WorkspaceMode = "setup" | "telemetry" | "strategy";
+export type WorkspaceMode = "setup" | "telemetry" | "strategy" | "live";
 
 interface ModeNavigationProps {
   mode: WorkspaceMode;
@@ -53,6 +53,16 @@ export const ModeNavigation: React.FC<ModeNavigationProps> = ({
             <path d="M12 6v6l4 2" />
           </svg>
           <span>Race Strategy & Tools</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mode-toggle-btn ${mode === "live" ? "active" : ""}`}
+          onClick={() => onChangeMode("live")}
+        >
+          <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+          <span>Live Cockpit HUD</span>
+          <span className="mode-badge" style={{ background: "rgba(244, 63, 94, 0.15)", color: "#fb7185", borderColor: "rgba(244, 63, 94, 0.3)" }}>60Hz UDP</span>
         </button>
       </div>
 

@@ -5,6 +5,7 @@ import { Header } from "@/components/Header";
 import { ModeNavigation, WorkspaceMode } from "@/components/ModeNavigation";
 import { SetupGenerator } from "@/components/setup/SetupGenerator";
 import { TelemetryAnalyzer } from "@/components/telemetry/TelemetryAnalyzer";
+import { LiveTelemetryHUD } from "@/components/telemetry/LiveTelemetryHUD";
 import { StrategyTools } from "@/components/tools/StrategyTools";
 import { SetupVaultModal } from "@/components/vault/SetupVaultModal";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -162,6 +163,10 @@ export default function Home() {
               onApplyPressuresToSetup={handleApplyPressures}
               onApplyFuelToSetup={handleApplyFuel}
             />
+          </div>
+
+          <div style={{ display: mode === "live" ? "block" : "none" }}>
+            <LiveTelemetryHUD />
           </div>
         </main>
       </div>

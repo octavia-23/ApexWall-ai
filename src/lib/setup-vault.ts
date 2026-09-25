@@ -18,6 +18,9 @@ export interface SavedSetupRecord {
   summary?: string;
   engineerNotes?: string;
   sections: SetupSection[];
+  userId?: string;
+  isPublic?: boolean;
+  shareSlug?: string;
 }
 
 export interface SetupParameterDiff {
