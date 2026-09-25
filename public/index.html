@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sim Setup AI — Professional Race Engineer & Telemetry Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Ambient dynamic glow spheres for Liquid Glass refraction -->
+  <div class="ambient-glow ambient-glow-red" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-cyan" aria-hidden="true"></div>
+  <div class="ambient-glow ambient-glow-top" aria-hidden="true"></div>
+  
+  <!-- Subtle motorsport telemetry grid & vignette -->
+  <div class="grid-overlay" aria-hidden="true"></div>
+
+  <!-- Precision Engineering Top Bar -->
+  <header class="top-nav">
+    <div class="nav-inner">
+      <div class="nav-brand">
+        <div class="nav-logo-mark">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polygon points="12 2 2 7 12 12 22 7 12 2" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="2 17 12 22 22 17" stroke-linecap="round" stroke-linejoin="round"/>
+            <polyline points="2 12 12 17 22 12" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="nav-team">SIM SETUP <span class="nav-highlight">ENGINEERING</span></span>
+        <span class="nav-sep">/</span>
+        <span class="nav-system">CHASSIS & TELEMETRY SUITE</span>
+      </div>
+
+      <!-- Compact Precision Gantry Integrated in Header Bar -->
+      <div class="gantry-compact" title="FIA Start Gantry Telemetry">
+        <span class="gantry-compact-label">START GANTRY</span>
+        <div class="lights" id="startLights" aria-label="FIA Start Lights Gantry">
+          <div class="light-pod"><span class="light"></span></div>
+          <div class="light-pod"><span class="light"></span></div>
+          <div class="light-pod"><span class="light"></span></div>
+          <div class="light-pod"><span class="light"></span></div>
+          <div class="light-pod"><span class="light"></span></div>
+        </div>
+      </div>
+
+      <div class="nav-metrics">
+        <div class="metric-item">
+          <span class="metric-label">DATA BUS</span>
+          <span class="metric-val status-live"><span class="pulse-dot"></span>MOTEC COMPLIANT</span>
+        </div>
+        <div class="metric-divider"></div>
+        <div class="metric-item">
+          <span class="metric-label">CORE AI</span>
+          <span class="metric-val status-ready">ONLINE · READY</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Executive Hero / Console Title -->
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="eyebrow-container">
+        <span class="tech-tag">RACE ENGINEERING SUITE</span>
+        <span class="eyebrow">CHASSIS & TELEMETRY OPTIMIZER</span>
+        <span class="version-tag">v2.5 PRO</span>
+      </div>
+      
+      <h1>SIM SETUP <span class="accent">AI</span></h1>
+      <p class="hero-sub">Calibrated baseline race setups & AI-powered MoTeC telemetry analytics for premier motorsport titles. Enter circuit conditions, upload your telemetry traces, and receive instant engineering-grade coaching and setup sheets.</p>
+    </div>
+  </div>
+
+  <!-- Primary Console Mode Switcher -->
+  <nav class="console-mode-container" aria-label="Console Workspace Selection">
+    <div class="mode-switcher-bar">
+      <button type="button" class="mode-toggle-btn active" id="btnModeSetup" data-mode="setup">
+        <span class="mode-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+        </span>
+        <div class="mode-text-group">
+          <span class="mode-title">01 // SETUP GENERATOR</span>
+          <span class="mode-sub">CHASSIS TUNING & GEOMETRY</span>
+        </div>
+      </button>
+
+      <button type="button" class="mode-toggle-btn" id="btnModeTelemetry" data-mode="telemetry">
+        <span class="mode-icon">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </span>
+        <div class="mode-text-group">
+          <span class="mode-title">02 // TELEMETRY ANALYZER</span>
+          <span class="mode-sub">MOTEC INGEST & DRIVER COACH</span>
+        </div>
+        <span class="mode-badge-pulse">FLAGSHIP AI</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- =========================================================================
+       WORKSPACE 1: SETUP GENERATOR VIEW
+       ========================================================================= -->
+  <div id="setupView" class="console-view active">
+    <main class="layout">
+
+      <!-- FORM PANEL (INPUT BRIEF) -->
+      <section class="panel form-panel glass-card">
+        <div class="panel-header">
+          <div class="panel-tag-group">
+            <span class="panel-num">01</span>
+            <div class="panel-label-group">
+              <span class="panel-label">SESSION BRIEF</span>
+              <span class="panel-sublabel">CHASSIS SPEC & CIRCUIT ENVIRONMENT</span>
+            </div>
+          </div>
+          <div class="panel-telemetry-badge">
+            <span class="badge-dot"></span> BASELINE BUILDER
+          </div>
+        </div>
+
+        <form id="setupForm" autocomplete="off">
+
+          <!-- Section 1: Vehicle & Circuit -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 17h14M4 14l2-6h12l2 6M6 17a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            01 // PLATFORM & VEHICLE SPEC
+          </div>
+
+          <div class="field">
+            <label for="game">
+              <span>Sim title</span>
+              <span class="field-hint">Physics simulation platform</span>
+            </label>
+            <div class="select-wrapper">
+              <select id="game" required>
+                <option value="" disabled selected>Select simulator title</option>
+                <option>iRacing</option>
+                <option>Assetto Corsa Competizione</option>
+                <option>Assetto Corsa</option>
+                <option>rFactor 2</option>
+                <option>Automobilista 2</option>
+                <option>Le Mans Ultimate</option>
+                <option>F1 24</option>
+                <option>F1 25</option>
+                <option>Gran Turismo 7</option>
+                <option>RaceRoom Racing Experience</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="car">
+                <span>Car / Class</span>
+                <span class="field-hint">Vehicle model</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="car" type="text" placeholder="e.g. Ferrari 296 GT3" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="track">
+                <span>Track / Layout</span>
+                <span class="field-hint">Circuit configuration</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="track" type="text" placeholder="e.g. Spa-Francorchamps GP" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Session & Track Conditions -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+            02 // METEOROLOGY & TRACK STATE
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Session profile</span>
+              <span class="field-hint">Fuel / run target</span>
+            </label>
+            <div class="segmented" data-target="sessionType">
+              <button type="button" class="seg-btn active" data-value="Practice">
+                <span class="seg-indicator"></span>Practice
+              </button>
+              <button type="button" class="seg-btn" data-value="Qualifying">
+                <span class="seg-indicator"></span>Qualifying
+              </button>
+              <button type="button" class="seg-btn" data-value="Race">
+                <span class="seg-indicator"></span>Race
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Track condition</span>
+              <span class="field-hint">Surface grip level</span>
+            </label>
+            <div class="segmented" data-target="weather">
+              <button type="button" class="seg-btn active" data-value="Dry">
+                <span class="weather-indicator dry"></span>Dry
+              </button>
+              <button type="button" class="seg-btn" data-value="Damp">
+                <span class="weather-indicator damp"></span>Damp
+              </button>
+              <button type="button" class="seg-btn" data-value="Wet">
+                <span class="weather-indicator wet"></span>Wet
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="trackTemp">
+                <span>Track temp</span>
+                <span class="field-hint">Asphalt surface</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="trackTemp" type="text" placeholder="e.g. 32°C" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="airTemp">
+                <span>Air temp</span>
+                <span class="field-hint">Ambient temperature</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="airTemp" type="text" placeholder="e.g. 24°C" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="fuelLoad">
+                <span>Fuel load</span>
+                <span class="field-hint">Initial volume / stint</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="fuelLoad" type="text" placeholder="e.g. 45 L, 35 laps" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="tyreCompound">
+                <span>Tyre compound</span>
+                <span class="field-hint">Selected rubber</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="tyreCompound" type="text" placeholder="e.g. Medium Slick" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Driver & Handling Feedback -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" stroke-linecap="round"/>
+            </svg>
+            03 // CHASSIS BALANCE & DRIVER FEEDBACK
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Driver confidence margin</span>
+              <span class="field-hint">Setup balance forgiveness</span>
+            </label>
+            <div class="segmented" data-target="skillLevel">
+              <button type="button" class="seg-btn" data-value="Beginner">Stable / Safe</button>
+              <button type="button" class="seg-btn active" data-value="Intermediate">Neutral Balance</button>
+              <button type="button" class="seg-btn" data-value="Pro / iRating high">Aggressive / Loose</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="driverStyle">
+              <span>Driving style preference</span>
+              <span class="field-hint">Braking & rotation style</span>
+            </label>
+            <div class="input-wrapper">
+              <input id="driverStyle" type="text" placeholder="e.g. Heavy trail-braker, relies on throttle-steering, likes stable rear" />
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="handlingIssue">
+              <span>Handling issue to diagnose & correct</span>
+              <span class="field-hint">Specific chassis complaint</span>
+            </label>
+            <div class="textarea-wrapper">
+              <textarea id="handlingIssue" rows="3" placeholder="e.g. Snap oversteer on corner exit under power, mid-corner understeer in slow chicanes, high rear tyre wear over stint"></textarea>
+            </div>
+          </div>
+
+          <!-- Primary Action Button -->
+          <button type="submit" class="generate-btn" id="generateBtn">
+            <span class="btn-sheen" aria-hidden="true"></span>
+            <div class="btn-content">
+              <span class="btn-spinner-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="9" stroke-opacity="0.25"/>
+                  <path d="M12 3a9 9 0 019 9" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="btn-label">Generate Setup Sheet</span>
+              <span class="btn-flag" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" stroke-linecap="round" stroke-linejoin="round"/>
+                  <line x1="4" y1="22" x2="4" y2="15"/>
+                </svg>
+              </span>
+            </div>
+            <span class="btn-badge">AI CALIBRATED</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- OUTPUT PANEL (SETUP SHEET) -->
+      <section class="panel output-panel glass-card">
+        <div class="panel-header">
+          <div class="panel-tag-group">
+            <span class="panel-num">02</span>
+            <div class="panel-label-group">
+              <span class="panel-label">SETUP SHEET</span>
+              <span class="panel-sublabel">CALIBRATED CHASSIS TELEMETRY SPEC</span>
+            </div>
+          </div>
+          <div class="sheet-actions" id="sheetActions">
+            <button type="button" class="action-btn" id="copyBtn" title="Copy setup to clipboard">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              <span>COPY SPEC</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- State: Empty State (Executive CAD Chassis Schematic) -->
+        <div id="emptyState" class="empty-state">
+          <div class="chassis-schematic">
+            <svg class="cad-svg" viewBox="0 0 280 200" fill="none" stroke="currentColor">
+              <line x1="140" y1="10" x2="140" y2="190" stroke="rgba(255,255,255,0.12)" stroke-dasharray="3 3"/>
+              <line x1="20" y1="100" x2="260" y2="100" stroke="rgba(255,255,255,0.12)" stroke-dasharray="3 3"/>
+              
+              <line x1="60" y1="50" x2="140" y2="65" stroke="rgba(0,229,190,0.3)" stroke-width="1.5"/>
+              <line x1="220" y1="50" x2="140" y2="65" stroke="rgba(0,229,190,0.3)" stroke-width="1.5"/>
+              <line x1="60" y1="150" x2="140" y2="140" stroke="rgba(0,229,190,0.3)" stroke-width="1.5"/>
+              <line x1="220" y1="150" x2="140" y2="140" stroke="rgba(0,229,190,0.3)" stroke-width="1.5"/>
+              
+              <path d="M120 30 L160 30 L180 50 L195 100 L185 170 L95 170 L85 100 L100 50 Z" stroke="rgba(255,255,255,0.3)" stroke-width="1.2" fill="rgba(255,255,255,0.015)"/>
+              <circle cx="140" cy="100" r="14" stroke="rgba(0,229,190,0.5)" stroke-width="1"/>
+              <circle cx="140" cy="100" r="3" fill="var(--accent-telemetry)"/>
+              
+              <rect x="42" y="32" width="16" height="36" rx="3" stroke="var(--accent-telemetry)" stroke-width="1.5" fill="rgba(0,229,190,0.08)"/>
+              <text x="32" y="26" fill="var(--text-tertiary)" font-family="monospace" font-size="8">FL -3.2°</text>
+              <rect x="222" y="32" width="16" height="36" rx="3" stroke="var(--accent-telemetry)" stroke-width="1.5" fill="rgba(0,229,190,0.08)"/>
+              <text x="214" y="26" fill="var(--text-tertiary)" font-family="monospace" font-size="8">FR -3.2°</text>
+              <rect x="42" y="132" width="16" height="36" rx="3" stroke="var(--accent-telemetry)" stroke-width="1.5" fill="rgba(0,229,190,0.08)"/>
+              <text x="32" y="184" fill="var(--text-tertiary)" font-family="monospace" font-size="8">RL -2.4°</text>
+              <rect x="222" y="132" width="16" height="36" rx="3" stroke="var(--accent-telemetry)" stroke-width="1.5" fill="rgba(0,229,190,0.08)"/>
+              <text x="214" y="184" fill="var(--text-tertiary)" font-family="monospace" font-size="8">RR -2.4°</text>
+              
+              <path d="M140 18 L140 26 M136 22 L140 26 L144 22" stroke="var(--accent-red)" stroke-width="1.5"/>
+              <path d="M140 174 L140 184 M135 180 L140 184 L145 180" stroke="var(--accent-red)" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <div class="empty-text-wrap">
+            <h3 class="empty-title">CHASSIS TELEMETRY STANDBY</h3>
+            <p class="empty-description">Define the platform, circuit conditions, and driver preferences on the left.<br />The AI race engineer will compute optimal damper curves, aero balance, roll centers, and gear ratios.</p>
+          </div>
+          <div class="empty-specs-strip">
+            <span class="spec-node"><span class="spec-dot"></span>IRACING & ACC PRO CALIBRATED</span>
+            <span class="spec-node"><span class="spec-dot"></span>CORNER WEIGHT & TOE MATRIX</span>
+            <span class="spec-node"><span class="spec-dot"></span>HOT PRESSURE TARGETS</span>
+          </div>
+        </div>
+
+        <!-- State: Loading State -->
+        <div id="loadingState" class="loading-state hidden">
+          <div class="loading-visual">
+            <div class="telemetry-scanner">
+              <div class="scanner-disc"></div>
+              <div class="scanner-orbit-1"></div>
+              <div class="scanner-orbit-2"></div>
+              <div class="scanner-center-cad">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="8"/>
+                  <line x1="12" y1="2" x2="12" y2="22"/>
+                  <line x1="2" y1="12" x2="22" y2="12"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="telemetry-waveform" aria-hidden="true">
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+            </div>
+
+            <div class="loading-data-wrap">
+              <div class="loading-status-badge">TELEMETRY PROCESSING</div>
+              <p class="loading-text" id="loadingText">Warming tyres…</p>
+              <div class="loading-sub">RACE ENGINEER ACQUIRING CHASSIS TELEMETRY DATA</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- State: Error State -->
+        <div id="errorState" class="error-state hidden"></div>
+
+        <!-- State: Result State -->
+        <div id="resultState" class="result-state hidden">
+          
+          <div class="result-summary-card">
+            <div class="summary-header">
+              <div class="summary-header-left">
+                <span class="summary-icon">
+                  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 16v-4M12 8h.01" stroke-linecap="round"/>
+                  </svg>
+                </span>
+                <span class="summary-title">ENGINEERING PHILOSOPHY // BASELINE OBJECTIVE</span>
+              </div>
+              <span class="summary-verified">TELEMETRY VERIFIED</span>
+            </div>
+            <div class="result-summary" id="resultSummary"></div>
+          </div>
+
+          <div class="result-sections" id="resultSections"></div>
+
+          <div class="result-notes">
+            <div class="notes-header">
+              <div class="radio-signal">
+                <span class="radio-bar"></span>
+                <span class="radio-bar"></span>
+                <span class="radio-bar"></span>
+                <span class="radio-pulse"></span>
+              </div>
+              <div class="notes-label">TEAM RADIO // RACE ENGINEER BRIEFING</div>
+              <div class="notes-channel">PIT WALL CH 1 · SECURE</div>
+            </div>
+            <div class="notes-body">
+              <p id="resultNotes"></p>
+            </div>
+          </div>
+
+          <div class="result-footer-actions">
+            <button type="button" class="reset-btn" id="resetBtn">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+              </svg>
+              <span>Build another setup</span>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+    </main>
+  </div>
+
+  <!-- =========================================================================
+       WORKSPACE 2: TELEMETRY ANALYZER VIEW (NEW FLAGSHIP FEATURE)
+       ========================================================================= -->
+  <div id="telemetryView" class="console-view hidden">
+    <main class="layout layout-telemetry">
+
+      <!-- LEFT PANEL: TELEMETRY INGEST & SESSION PROFILE -->
+      <section class="panel form-panel glass-card">
+        <div class="panel-header">
+          <div class="panel-tag-group">
+            <span class="panel-num">01</span>
+            <div class="panel-label-group">
+              <span class="panel-label">TELEMETRY INGEST</span>
+              <span class="panel-sublabel">CHANNELS, CAR SPEC & TRACK CONDITIONS</span>
+            </div>
+          </div>
+          <div class="panel-telemetry-badge">
+            <span class="badge-dot badge-dot-cyan"></span> MOTEC / CSV READY
+          </div>
+        </div>
+
+        <form id="telemetryForm" autocomplete="off">
+
+          <!-- Section 1: Vehicle & Circuit Environment -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 17h14M4 14l2-6h12l2 6M6 17a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4z" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            01 // VEHICLE & CIRCUIT SPECIFICATION
+          </div>
+
+          <div class="field">
+            <label for="telGame">
+              <span>Sim title</span>
+              <span class="field-hint">Physics simulation platform</span>
+            </label>
+            <div class="select-wrapper">
+              <select id="telGame" required>
+                <option value="" disabled selected>Select simulator title</option>
+                <option selected>Assetto Corsa Competizione</option>
+                <option>iRacing</option>
+                <option>Assetto Corsa</option>
+                <option>rFactor 2</option>
+                <option>Automobilista 2</option>
+                <option>Le Mans Ultimate</option>
+                <option>F1 24</option>
+                <option>F1 25</option>
+                <option>Gran Turismo 7</option>
+                <option>RaceRoom Racing Experience</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="telCar">
+                <span>Car / Class</span>
+                <span class="field-hint">Chassis specification</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telCar" type="text" value="Ferrari 296 GT3" placeholder="e.g. Ferrari 296 GT3" required />
+              </div>
+            </div>
+            <div class="field">
+              <label for="telTrack">
+                <span>Track / Layout</span>
+                <span class="field-hint">Circuit configuration</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telTrack" type="text" value="Spa-Francorchamps GP" placeholder="e.g. Spa-Francorchamps GP" required />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: Session Profile & Ambient Conditions -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="4"/>
+            </svg>
+            02 // SESSION & AMBIENT CONDITIONS
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Session profile</span>
+              <span class="field-hint">Target run context</span>
+            </label>
+            <div class="segmented" data-target="telSessionType">
+              <button type="button" class="seg-btn active" data-value="Practice / Hotlap">
+                <span class="seg-indicator"></span>Hotlap
+              </button>
+              <button type="button" class="seg-btn" data-value="Qualifying">
+                <span class="seg-indicator"></span>Qualifying
+              </button>
+              <button type="button" class="seg-btn" data-value="Race Stint">
+                <span class="seg-indicator"></span>Race Stint
+              </button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Track condition</span>
+              <span class="field-hint">Asphalt grip state</span>
+            </label>
+            <div class="segmented" data-target="telWeather">
+              <button type="button" class="seg-btn active" data-value="Dry">
+                <span class="weather-indicator dry"></span>Dry
+              </button>
+              <button type="button" class="seg-btn" data-value="Damp">
+                <span class="weather-indicator damp"></span>Damp
+              </button>
+              <button type="button" class="seg-btn" data-value="Wet">
+                <span class="weather-indicator wet"></span>Wet
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="telTrackTemp">
+                <span>Track temp</span>
+                <span class="field-hint">Surface reading</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telTrackTemp" type="text" value="30°C" placeholder="e.g. 30°C" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="telAirTemp">
+                <span>Air temp</span>
+                <span class="field-hint">Ambient temperature</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telAirTemp" type="text" value="22°C" placeholder="e.g. 22°C" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="telTyreCompound">
+                <span>Tyre compound</span>
+                <span class="field-hint">Rubber spec</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telTyreCompound" type="text" value="DHE Slick" placeholder="e.g. Medium Slick" />
+              </div>
+            </div>
+            <div class="field">
+              <label for="telFuelLoad">
+                <span>Fuel load</span>
+                <span class="field-hint">Stint fuel</span>
+              </label>
+              <div class="input-wrapper">
+                <input id="telFuelLoad" type="text" value="35 L" placeholder="e.g. 35 L" />
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 3: Telemetry Data Upload & Sample Presets -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            03 // TELEMETRY DATA INGEST
+          </div>
+
+          <!-- High-Tech Drag & Drop Upload Zone -->
+          <div class="telemetry-dropzone" id="telemetryDropzone">
+            <input type="file" id="telemetryFileInput" accept=".csv,.json,.txt,.motec" class="hidden-file-input" />
+            <div class="dropzone-content">
+              <div class="dropzone-icon">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.8">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  <circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/>
+                </svg>
+              </div>
+              <div class="dropzone-text">
+                <span class="dropzone-primary">Drag & drop your Telemetry file</span>
+                <span class="dropzone-sub">Supports <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong>, <strong>iRacing</strong> & <strong>JSON</strong> logs</span>
+              </div>
+              <button type="button" class="dropzone-browse-btn" id="browseFileBtn">Browse Files</button>
+            </div>
+          </div>
+
+          <!-- Loaded Telemetry File Badge / Status Box -->
+          <div class="telemetry-file-card hidden" id="loadedFileCard">
+            <div class="file-card-header">
+              <div class="file-card-info">
+                <span class="file-icon">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10 9 9 9 8 9"/>
+                  </svg>
+                </span>
+                <div>
+                  <div class="file-name" id="loadedFileName">spa-gt3-motec.csv</div>
+                  <div class="file-meta" id="loadedFileMeta">1,840 telemetry points · Lap Time: 2:17.482</div>
+                </div>
+              </div>
+              <button type="button" class="file-clear-btn" id="clearFileBtn" title="Remove telemetry file">✕</button>
+            </div>
+            <div class="detected-channels" id="detectedChannelsList">
+              <span class="channel-pill">Speed</span>
+              <span class="channel-pill">Throttle</span>
+              <span class="channel-pill">Brake</span>
+              <span class="channel-pill">Steering</span>
+              <span class="channel-pill">Gear</span>
+              <span class="channel-pill">Tyre Temps</span>
+              <span class="channel-pill">G-Force</span>
+            </div>
+          </div>
+
+          <!-- Quick Load Realistic Demo Telemetry -->
+          <div class="demo-telemetry-box">
+            <div class="demo-box-label">
+              <span class="demo-dot"></span> QUICK LOAD REALISTIC MOTORSPORT SAMPLES:
+            </div>
+            <div class="demo-presets-row">
+              <button type="button" class="demo-btn active" data-preset="spa">
+                <span class="demo-btn-title">Spa-Francorchamps</span>
+                <span class="demo-btn-sub">Ferrari 296 GT3 · 2:17.482</span>
+              </button>
+              <button type="button" class="demo-btn" data-preset="monza">
+                <span class="demo-btn-title">Monza GP</span>
+                <span class="demo-btn-sub">Porsche 992 GT3 R · 1:47.310</span>
+              </button>
+              <button type="button" class="demo-btn" data-preset="silverstone">
+                <span class="demo-btn-title">Silverstone GP</span>
+                <span class="demo-btn-sub">Red Bull F1 · 1:28.150</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Section 4: Driver Style & Setup Preferences -->
+          <div class="form-section-title">
+            <svg class="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            04 // DRIVER STYLE & CHASSIS PREFERENCES
+          </div>
+
+          <div class="field">
+            <label>
+              <span>Natural driving style profile</span>
+              <span class="field-hint">Your braking & rotation DNA</span>
+            </label>
+            <div class="segmented segmented-wrap" data-target="telDriverStyle">
+              <button type="button" class="seg-btn active" data-value="Heavy Trail-Braker">
+                <span class="seg-indicator"></span>Heavy Trail-Braker
+              </button>
+              <button type="button" class="seg-btn" data-value="Momentum / Smooth Roller">
+                <span class="seg-indicator"></span>Momentum Roller
+              </button>
+              <button type="button" class="seg-btn" data-value="Throttle-Steerer / Power Rotator">
+                <span class="seg-indicator"></span>Throttle-Steerer
+              </button>
+              <button type="button" class="seg-btn" data-value="Point & Squirt">
+                <span class="seg-indicator"></span>Point & Squirt
+              </button>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>
+                <span>Chassis balance preference</span>
+                <span class="field-hint">Rear axle rotation margin</span>
+              </label>
+              <div class="segmented" data-target="telBalancePreference">
+                <button type="button" class="seg-btn" data-value="Planted / Safe Rear">Planted / Safe</button>
+                <button type="button" class="seg-btn active" data-value="Neutral Balance">Neutral</button>
+                <button type="button" class="seg-btn" data-value="Pointy / Loose Rotation">Loose / Pointy</button>
+              </div>
+            </div>
+            <div class="field">
+              <label>
+                <span>Tuning objective</span>
+                <span class="field-hint">Pace vs endurance</span>
+              </label>
+              <div class="segmented" data-target="telSetupTarget">
+                <button type="button" class="seg-btn active" data-value="Qualifying Hotlap (Peak Grip)">Quali Hotlap</button>
+                <button type="button" class="seg-btn" data-value="Race Stint (Tire Life & Consistency)">Race Stint</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="telDriverComplaint">
+              <span>Driver feedback / Target goal</span>
+              <span class="field-hint">Specific complaint or time target</span>
+            </label>
+            <div class="textarea-wrapper">
+              <textarea id="telDriverComplaint" rows="2" placeholder="e.g. Understeer at apex in slow corners, snap oversteer on curb exit, want to find 0.7s to reach 2:16s"></textarea>
+            </div>
+          </div>
+
+          <!-- Primary Action Button -->
+          <button type="submit" class="generate-btn generate-btn-telemetry" id="analyzeTelemetryBtn">
+            <span class="btn-sheen" aria-hidden="true"></span>
+            <div class="btn-content">
+              <span class="btn-spinner-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <circle cx="12" cy="12" r="9" stroke-opacity="0.25"/>
+                  <path d="M12 3a9 9 0 019 9" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <span class="btn-label">Analyze Telemetry & Synthesize Setup</span>
+              <span class="btn-flag" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </span>
+            </div>
+            <span class="btn-badge btn-badge-cyan">ADAPTIVE CHASSIS SYNTHESIS</span>
+          </button>
+        </form>
+      </section>
+
+      <!-- RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & AI RACE ENGINEER -->
+      <section class="panel output-panel glass-card">
+        <div class="panel-header">
+          <div class="panel-tag-group">
+            <span class="panel-num">02</span>
+            <div class="panel-label-group">
+              <span class="panel-label">TELEMETRY DIAGNOSTIC SUITE</span>
+              <span class="panel-sublabel">CHIEF PERFORMANCE & RACE ENGINEER GUIDANCE</span>
+            </div>
+          </div>
+          <div class="sheet-actions">
+            <button type="button" class="action-btn" id="copyTelemetryBtn" title="Copy telemetry diagnosis report">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              <span>COPY REPORT</span>
+            </button>
+            <button type="button" class="action-btn action-btn-accent" id="applySetupBtn" title="Transfer diagnosed setup adjustments into Setup Generator">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+              <span>APPLY TO SETUP</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Telemetry Standby / Empty State -->
+        <div id="telEmptyState" class="empty-state">
+          <div class="telemetry-standby-schematic">
+            <div class="standby-chart-mock">
+              <svg viewBox="0 0 360 140" fill="none" class="mock-telemetry-svg">
+                <!-- Grid lines -->
+                <line x1="20" y1="20" x2="340" y2="20" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 3"/>
+                <line x1="20" y1="50" x2="340" y2="50" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 3"/>
+                <line x1="20" y1="80" x2="340" y2="80" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 3"/>
+                <line x1="20" y1="110" x2="340" y2="110" stroke="rgba(255,255,255,0.06)" stroke-dasharray="2 3"/>
+                <!-- Speed trace (Cyan) -->
+                <path d="M 20 40 Q 60 25 100 85 T 160 30 T 220 95 T 280 25 T 340 70" stroke="var(--accent-telemetry)" stroke-width="2" fill="none" opacity="0.85"/>
+                <!-- Throttle trace (Green) -->
+                <path d="M 20 120 L 70 120 L 80 135 L 120 135 L 135 120 L 200 120 L 210 135 L 240 135 L 255 120 L 340 120" stroke="var(--accent-green)" stroke-width="1.8" fill="none" opacity="0.75"/>
+                <!-- Brake trace (Red) -->
+                <path d="M 75 135 L 85 95 L 115 135 M 205 135 L 215 90 L 235 135" stroke="var(--accent-red)" stroke-width="1.8" fill="none" opacity="0.85"/>
+              </svg>
+            </div>
+          </div>
+          <div class="empty-text-wrap">
+            <h3 class="empty-title">MOTEC TELEMETRY ENGINE STANDBY</h3>
+            <p class="empty-description">
+              Upload your telemetry file (CSV, JSON, MoTeC export) or pick a calibrated demo stint on the left.<br />
+              The AI race engineer will plot your speed and pedal traces, calculate trail-braking linearity, diagnose chassis balance, and prescribe exact click-by-click setup remedies.
+            </p>
+          </div>
+          <div class="empty-specs-strip">
+            <span class="spec-node"><span class="spec-dot spec-dot-cyan"></span>MULTI-CHANNEL MOTEC OVERLAY</span>
+            <span class="spec-node"><span class="spec-dot spec-dot-cyan"></span>TRAIL-BRAKING LINEARITY</span>
+            <span class="spec-node"><span class="spec-dot spec-dot-cyan"></span>4-CORNER TYRE THERMALS</span>
+          </div>
+        </div>
+
+        <!-- Telemetry Loading Diagnostic State -->
+        <div id="telLoadingState" class="loading-state hidden">
+          <div class="loading-visual">
+            <div class="telemetry-scanner">
+              <div class="scanner-disc"></div>
+              <div class="scanner-orbit-1"></div>
+              <div class="scanner-orbit-2"></div>
+              <div class="scanner-center-cad">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="telemetry-waveform" aria-hidden="true">
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+              <span class="wave-bar"></span>
+            </div>
+
+            <div class="loading-data-wrap">
+              <div class="loading-status-badge">AI TELEMETRY COMPUTATION</div>
+              <p class="loading-text" id="telLoadingText">Ingesting MoTeC telemetry channels…</p>
+              <div class="loading-sub">CHIEF PERFORMANCE ENGINEER ANALYZING STEERING SCRUB & TRAIL BRAKING</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Telemetry Error State -->
+        <div id="telErrorState" class="error-state hidden"></div>
+
+        <!-- Telemetry Result State (Interactive MoTeC Suite + AI Engineer Report) -->
+        <div id="telResultState" class="result-state hidden">
+
+          <!-- 1. Executive Performance Score & Pace Delta Banner -->
+          <div class="telemetry-score-card">
+            <div class="score-card-main">
+              <div class="score-dial-wrap">
+                <div class="score-dial">
+                  <span class="score-number" id="telScoreNum">84</span>
+                  <span class="score-max">/100</span>
+                </div>
+                <span class="score-label">TELEMETRY SCORE</span>
+              </div>
+              <div class="score-details">
+                <div class="score-tags-row">
+                  <span class="tag-laptime" id="telLapTimeTag">LAP: 2:17.482</span>
+                  <span class="tag-delta" id="telDeltaTag">-0.85s TIME ON TABLE</span>
+                  <span class="tag-limiter" id="telLimiterTag">APEX UNDERSTEER & BRAKE DUMP</span>
+                </div>
+                <h3 class="score-verdict-title" id="telVerdictTitle">Aggressive Trail-Braking Truncation with Mid-Corner Wash</h3>
+                <p class="score-summary" id="telExecutiveSummary">
+                  Telemetry indicates strong straight-line pace, but significant time is bled in the slow-to-medium transitions. The front axle is unloaded prematurely due to abrupt brake release, resulting in steering scrub and delayed throttle commitment.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Interactive MoTeC Telemetry Chart -->
+          <div class="telemetry-chart-module glass-card-nested">
+            <div class="chart-header">
+              <div class="chart-title-group">
+                <span class="chart-title">MOTEC MULTI-CHANNEL TELEMETRY HUD</span>
+                <span class="chart-sub">SYNCHRONIZED DISTANCE TRACE WITH LIVE HOVER SCRUBBER</span>
+              </div>
+              <div class="chart-channel-toggles">
+                <button type="button" class="channel-toggle-btn active" data-channel="pedals">
+                  <span class="toggle-dot dot-speed"></span>Speed & Pedals
+                </button>
+                <button type="button" class="channel-toggle-btn" data-channel="steering">
+                  <span class="toggle-dot dot-steer"></span>Steering & Lat G
+                </button>
+                <button type="button" class="channel-toggle-btn" data-channel="gear">
+                  <span class="toggle-dot dot-gear"></span>Gear & RPM
+                </button>
+              </div>
+            </div>
+
+            <!-- Canvas Container -->
+            <div class="canvas-wrapper" id="canvasWrapper">
+              <canvas id="telemetryCanvas" width="800" height="240"></canvas>
+              <!-- Interactive Live Scrubbing HUD -->
+              <div class="telemetry-hover-hud hidden" id="chartHoverHud">
+                <div class="hud-dist" id="hudDist">Dist: 1,420m</div>
+                <div class="hud-val hud-speed" id="hudSpeed">Speed: 215 km/h</div>
+                <div class="hud-val hud-throttle" id="hudThrottle">Thr: 100%</div>
+                <div class="hud-val hud-brake" id="hudBrake">Brk: 0%</div>
+                <div class="hud-val hud-steer" id="hudSteer">Steer: 12°</div>
+                <div class="hud-val hud-gear" id="hudGear">Gear: 4</div>
+              </div>
+            </div>
+
+            <div class="chart-footer-legend">
+              <span class="legend-item"><span class="legend-line line-speed"></span> Speed (km/h)</span>
+              <span class="legend-item"><span class="legend-line line-throttle"></span> Throttle (0-100%)</span>
+              <span class="legend-item"><span class="legend-line line-brake"></span> Brake (0-100%)</span>
+              <span class="legend-item"><span class="legend-line line-steer"></span> Steering Angle</span>
+              <span class="legend-item"><span class="legend-line line-latg"></span> Lateral G</span>
+            </div>
+          </div>
+
+          <!-- 3. 4-Corner Tyre Thermal & Hot Pressure Quad HUD -->
+          <div class="telemetry-tyres-module glass-card-nested">
+            <div class="module-header">
+              <span class="module-title">4-CORNER TYRE DYNAMICS & THERMAL SPREAD</span>
+              <span class="module-badge">HOT PRESSURES & CAMBER SPREAD</span>
+            </div>
+
+            <div class="tyres-hud-grid">
+              <!-- Front Left -->
+              <div class="tyre-pod tyre-fl" id="podFL">
+                <div class="tyre-header">
+                  <span class="tyre-pos">FRONT LEFT</span>
+                  <span class="tyre-status-badge badge-optimal">OPTIMAL</span>
+                </div>
+                <div class="tyre-temp-val" id="tempValFL">84.2°C</div>
+                <div class="tyre-imo" id="imoFL">IMO: 86° / 84° / 81°</div>
+                <div class="tyre-press" id="pressFL">27.2 psi <span>(+0.2)</span></div>
+              </div>
+
+              <!-- Front Right -->
+              <div class="tyre-pod tyre-fr" id="podFR">
+                <div class="tyre-header">
+                  <span class="tyre-pos">FRONT RIGHT</span>
+                  <span class="tyre-status-badge badge-warm">LOAD AXIS</span>
+                </div>
+                <div class="tyre-temp-val" id="tempValFR">86.8°C</div>
+                <div class="tyre-imo" id="imoFR">IMO: 89° / 86° / 83°</div>
+                <div class="tyre-press" id="pressFR">27.5 psi <span>(+0.5)</span></div>
+              </div>
+
+              <!-- Rear Left -->
+              <div class="tyre-pod tyre-rl" id="podRL">
+                <div class="tyre-header">
+                  <span class="tyre-pos">REAR LEFT</span>
+                  <span class="tyre-status-badge badge-optimal">OPTIMAL</span>
+                </div>
+                <div class="tyre-temp-val" id="tempValRL">81.5°C</div>
+                <div class="tyre-imo" id="imoRL">IMO: 83° / 81° / 79°</div>
+                <div class="tyre-press" id="pressRL">26.8 psi <span>(0.0)</span></div>
+              </div>
+
+              <!-- Rear Right -->
+              <div class="tyre-pod tyre-rr" id="podRR">
+                <div class="tyre-header">
+                  <span class="tyre-pos">REAR RIGHT</span>
+                  <span class="tyre-status-badge badge-optimal">OPTIMAL</span>
+                </div>
+                <div class="tyre-temp-val" id="tempValRR">83.4°C</div>
+                <div class="tyre-imo" id="imoRR">IMO: 85° / 83° / 81°</div>
+                <div class="tyre-press" id="pressRR">27.0 psi <span>(+0.2)</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. Key Telemetry Metrics Diagnostic Grid -->
+          <div class="telemetry-kpis-grid" id="telKpisGrid">
+            <!-- Populated dynamically: Trail braking, Throttle Traction, Steering Efficiency, Tyre Management, Chassis Balance -->
+          </div>
+
+          <!-- 5. Turn-by-Turn Telemetry Anomaly Breakdown -->
+          <div class="telemetry-corners-module">
+            <div class="module-header">
+              <span class="module-title">TURN-BY-TURN TELEMETRY ANOMALIES & DELTA ANALYSIS</span>
+              <span class="module-badge">SECTOR BREAKDOWNS</span>
+            </div>
+            <div class="corners-list" id="telCornersList">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- 6. Driver Technique & Input Coaching -->
+          <div class="driver-coaching-module glass-card-nested">
+            <div class="module-header">
+              <span class="module-title">DRIVER TECHNIQUE & INPUT COACHING</span>
+              <span class="module-badge">PEDAL & WHEEL REFINEMENT</span>
+            </div>
+            <div class="coaching-grid" id="telCoachingGrid">
+              <!-- Populated dynamically: Braking & Entry, Apex & Rotation, Exit & Power -->
+            </div>
+          </div>
+
+          <!-- 7. Targeted Setup Adjustments Matrix -->
+          <div class="setup-adjustments-module glass-card-nested">
+            <div class="module-header">
+              <span class="module-title">CLICK-BY-CLICK SETUP ADJUSTMENTS</span>
+              <span class="module-badge">DIRECTIONAL MECHANICAL & AERO FIXES</span>
+            </div>
+            <div class="adjustments-grid" id="telAdjustmentsGrid">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- 8. Telemetry-Calibrated Adaptive Setup Sheet (Full Car Setup) -->
+          <div class="adaptive-setup-module glass-card-nested" id="adaptiveSetupModule">
+            <div class="module-header">
+              <div class="module-title-group">
+                <span class="module-title">TELEMETRY-CALIBRATED ADAPTIVE SETUP SHEET</span>
+                <span class="module-sub">CHASSIS TUNED TO COMPLEMENT YOUR NATURAL DRIVING STYLE</span>
+              </div>
+              <div class="adaptive-actions">
+                <button type="button" class="action-btn action-btn-accent" id="copyAdaptiveSetupBtn" title="Copy complete adaptive setup sheet">
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                  </svg>
+                  <span>COPY ADAPTIVE SPEC</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Engineer Adaptive Philosophy Banner -->
+            <div class="adaptive-philosophy-card">
+              <div class="philosophy-header">
+                <span class="philosophy-tag">CHIEF ENGINEER ADAPTIVE VERDICT</span>
+                <span class="philosophy-status">STYLE MATCHED</span>
+              </div>
+              <p class="philosophy-text" id="adaptivePhilosophyText">
+                Analyzing your driving style and telemetry tendencies to deliver a tailor-made setup...
+              </p>
+            </div>
+
+            <!-- Sections Container (Tyres, Suspension, Aero, Dampers, Diff, Electronics) -->
+            <div class="adaptive-setup-sections" id="adaptiveSetupSections">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+
+          <!-- 8. Pit Wall Team Radio Transmission -->
+          <div class="result-notes result-notes-telemetry">
+            <div class="notes-header">
+              <div class="radio-signal">
+                <span class="radio-bar"></span>
+                <span class="radio-bar"></span>
+                <span class="radio-bar"></span>
+                <span class="radio-pulse"></span>
+              </div>
+              <div class="notes-label">PIT WALL TEAM RADIO // CHIEF ENGINEER DEBRIEF</div>
+              <div class="notes-channel">DATA BUS CH 1 · SECURE</div>
+            </div>
+            <div class="notes-body">
+              <p id="telPitRadio"></p>
+            </div>
+          </div>
+
+          <!-- 9. Telemetry Footer Controls -->
+          <div class="result-footer-actions">
+            <button type="button" class="reset-btn" id="telResetBtn">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 4v6h6M23 20v-6h-6"/>
+                <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"/>
+              </svg>
+              <span>Analyze another telemetry stint</span>
+            </button>
+          </div>
+
+        </div>
+
+      </section>
+
+    </main>
+  </div>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <div class="footer-branding">
+        <span class="footer-dot"></span>
+        <span>SIM SETUP AI · PROFESSIONAL MOTORSPORT TELEMETRY & CHASSIS ENGINEERING</span>
+      </div>
+      <div class="footer-text">
+        Setups and telemetry insights represent calibrated baselines. Always validate tyre pressures, graining, and damper rebound during hot-lap stints.
+      </div>
+      <div class="footer-meta">
+        <span>ENGINEER PROTOCOL v2.5</span>
+        <span class="sep">/</span>
+        <span>FIA & MOTEC COMPLIANT</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
