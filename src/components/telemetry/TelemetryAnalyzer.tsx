@@ -720,7 +720,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
   const handleCopyAdaptiveSetup = () => {
     if (!result || !result.adaptiveSetup) return;
-    let text = `SIM SETUP AI // TELEMETRY-CALIBRATED ADAPTIVE SETUP SPEC\n`;
+    let text = `APEXWALL AI // TELEMETRY-CALIBRATED ADAPTIVE SETUP SPEC\n`;
     text += `${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
     text += `Tuned for: ${driverStyle} · ${balancePreference}\n`;
     text += `${"=".repeat(55)}\n\n`;

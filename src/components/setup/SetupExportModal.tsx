@@ -37,7 +37,7 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, [isOpen]);
 
-  const baseFilename = `${context.car.replace(/[^a-zA-Z0-9]/g, "_")}_${context.track.replace(/[^a-zA-Z0-9]/g, "_")}_SimSetupAI`;
+  const baseFilename = `${context.car.replace(/[^a-zA-Z0-9]/g, "_")}_${context.track.replace(/[^a-zA-Z0-9]/g, "_")}_ApexWall`;
 
   const handleExportACC = () => {
     const jsonStr = generateACCJson(context);

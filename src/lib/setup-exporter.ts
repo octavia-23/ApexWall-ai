@@ -145,7 +145,7 @@ export function generateACCJson(ctx: SetupExportContext): string {
       },
     },
     trackBsdName: trackSlug,
-    _generatedBy: "SimSetup AI — Homologated Race Engineering Engine v2.5",
+    _generatedBy: "ApexWall AI — Homologated Race Engineering Engine v2.0",
     _exportedAt: new Date().toISOString(),
     _summary: ctx.summary || "",
   };
@@ -172,7 +172,7 @@ export function generateRFactorSVM(ctx: SetupExportContext): string {
   const rWing = findItemValue(ctx.sections, ["rear wing"]) || "8";
   const fRide = findItemValue(ctx.sections, ["front ride height"]) || "52 mm";
 
-  return `// SimSetup AI Engine Setup Specification (.svm)
+  return `// ApexWall AI Engine Setup Specification (.svm)
 // Platform: rFactor 2 / Le Mans Ultimate
 // Car: ${ctx.car}
 // Track: ${ctx.track}
@@ -217,7 +217,7 @@ FrontRideHeight=${fRide}
 RearWingAngle=${rWing}
 
 [NOTES]
-// ${ctx.summary ? ctx.summary.replace(/\n/g, " ") : "Calibrated baseline by SimSetup AI."}
+// ${ctx.summary ? ctx.summary.replace(/\n/g, " ") : "Calibrated baseline by ApexWall AI."}
 `;
 }
 
@@ -226,7 +226,7 @@ RearWingAngle=${rWing}
  */
 export function generateIRacingText(ctx: SetupExportContext): string {
   let out = `================================================================================\n`;
-  out += `SIMSETUP AI // iRACING SETUP SPECIFICATION SHEET\n`;
+  out += `APEXWALL AI // iRACING SETUP SPECIFICATION SHEET\n`;
   out += `CAR:   ${ctx.car.toUpperCase()}\n`;
   out += `TRACK: ${ctx.track.toUpperCase()}\n`;
   out += `DATE:  ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`;
@@ -251,7 +251,7 @@ export function generateIRacingText(ctx: SetupExportContext): string {
     out += `[PIT WALL ENGINEER BRIEFING]\n${ctx.engineerNotes}\n\n`;
   }
 
-  out += `[SIMSETUP AI RUN NOTICE]\n`;
+  out += `[APEXWALL AI RUN NOTICE]\n`;
   out += `Setup values are calibrated baselines. Hot lap stints should verify hot pressures\n`;
   out += `reach target operating window (GT3: 26.5-27.0 psi, GTP/LMP2: 21.0-22.5 psi).\n`;
 
@@ -428,7 +428,7 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
 
       <div class="header">
         <div>
-          <div class="brand">SIMSETUP AI // CHASSIS RUN SHEET</div>
+          <div class="brand">APEXWALL AI // CHASSIS RUN SHEET</div>
           <div style="font-size: 12px; color: #4b5563; margin-top: 2px;">
             <strong>${ctx.car}</strong> @ <strong>${ctx.track}</strong>
           </div>

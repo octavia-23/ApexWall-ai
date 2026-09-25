@@ -6,7 +6,7 @@ export const Footer: React.FC = () => {
       <div className="footer-inner">
         <div className="footer-branding">
           <span className="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block"></span>
-          <span>SimSetup AI Engineering Platform</span>
+          <span>ApexWall AI Engineering Platform</span>
         </div>
         <div className="footer-text">
           Calibrated baselines for competitive simulation. Validate tyre pressures and balance during live stints.

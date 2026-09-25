@@ -120,7 +120,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, o
 
   const handleCopy = () => {
     if (!result) return;
-    let text = `SIM SETUP AI // ${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
+    let text = `APEXWALL AI // ${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
     text += `${"=".repeat(45)}\n\n`;
     if (result.summary) {
       text += `[ENGINEER PHILOSOPHY]\n${result.summary}\n\n`;

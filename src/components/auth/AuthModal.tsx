@@ -225,7 +225,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="driver@pitwall.ai"
+                placeholder="driver@apexwall.ai"
                 className="w-full px-3 py-2 bg-slate-900/90 border border-slate-700 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-400 font-sans transition-colors"
               />
             </div>
