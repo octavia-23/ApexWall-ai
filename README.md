@@ -1,81 +1,136 @@
-# Sim Setup AI & Telemetry Analyzer
+# PitWall AI 🏁
+### Autonomous Sim Racing Telemetry Analytics, Chassis Engineering & Tactical Pit Strategy
 
-A professional AI race engineering suite that generates full car setups and analyzes real sim racing telemetry logs. Built with a dark "pit wall telemetry" UI, interactive MoTeC-style multi-channel traces, and AI-powered driver coaching and chassis diagnostics.
+[![Live Deployment](https://img.shields.io/badge/Production%20URL-pitwall--ai--one.vercel.app-10b981?style=for-the-badge&logo=vercel&logoColor=white)](https://pitwall-ai-one.vercel.app/)
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Inference Engine](https://img.shields.io/badge/AI%20Inference-Groq%20LLaMA%203.3%2070B-F55036?style=for-the-badge)](https://groq.com/)
 
-## Features
+**PitWall AI** is a professional-grade race engineering platform and MoTeC telemetry workbench designed for competitive sim racers. It combines high-precision vehicle dynamics calculations, authentic GPS track mapping, friction circle physics, and real-time AI reasoning to provide turn-by-turn driver coaching, tailored chassis setups, atmospheric tire compensations, and optimal pit stop strategies.
 
-### 1. 🏎 Setup Generator (`01 // SETUP GENERATOR`)
-- Select simulator title (**iRacing, Assetto Corsa Competizione, Assetto Corsa, rFactor 2, Automobilista 2, Le Mans Ultimate, F1 24/25, GT7**, etc.).
-- Input car model, circuit layout, track condition (Dry / Damp / Wet), session type (Practice, Quali, Race), temperatures, and fuel load.
-- Define driver handling complaints (e.g. mid-corner understeer, snap exit oversteer, high tire wear).
-- Generates engineering-grade setup sheets with Tyres & Pressures, Suspension, Aero, Drivetrain, Brakes, Gearing, and Electronics, plus race engineer notes.
+---
 
-### 2. 📊 Telemetry Analyzer (`02 // TELEMETRY ANALYZER`)
-- **Telemetry Log Ingest**: Upload telemetry files (**MoTeC i2 CSV, Popometer, ACC CSV, iRacing Telemetry, JSON logs, or plain text**).
-- **1-Click Demo Motorsport Presets**:
-  - `Spa-Francorchamps GP` — Ferrari 296 GT3 (2:17.482)
-  - `Monza GP` — Porsche 992 GT3 R (1:47.310)
-  - `Silverstone GP` — Red Bull RB20 F1 (1:28.150)
-- **Interactive MoTeC-Grade Telemetry HUD**:
-  - High-precision Canvas trace showing **Speed (km/h)**, **Throttle %**, **Brake %**, **Steering Angle (deg)**, **Lateral G**, and **Gear / Engine RPM**.
-  - Interactive hover scrubber showing exact meter-by-meter telemetry values in real time.
-- **4-Corner Tyre Thermal & Pressure Quad HUD**:
-  - Visual car wireframe with FL, FR, RL, RR tires.
-  - Live core & surface temperatures, hot pressures with delta from target, and Inner-Middle-Outer (IMO) camber gradients.
-- **Computed Telemetry Metrics Engine**:
-  - Trail-Braking Linearity & Release Score (detects abrupt brake dumps).
-  - Throttle Application & Traction Score (detects wheelspin and hesitation).
-  - Steering Scrub & Understeer Index (detects excess lock vs yaw rate).
-- **AI Race Engineer Comprehensive Report & Telemetry-Calibrated Setup**:
-  - **Telemetry-Driven Adaptive Setup Synthesis**: Automatically generates a complete, tailored setup sheet (Tyres, Suspension, Aero, Dampers, Differential, Brakes/Electronics) engineered specifically around the driver's natural style (**Heavy Trail-Braker**, **Momentum Roller**, **Throttle-Steerer**, or **Point & Squirt**) and balance preference to neutralize observed telemetry flaws.
-  - **Parameter Style Notes**: Explains why each parameter was specifically tuned for that driver's telemetry tendencies.
-  - Executive lap pace verdict & achievable lap time delta (e.g. `-0.85s achievable`).
-  - Turn-by-turn anomaly breakdown (Driver Input flaw vs Chassis reaction vs Actionable fix).
-  - Phase-based driver coaching (Braking & Entry, Apex & Rotation, Exit & Traction).
-  - Click-by-click setup adjustments (ARBs, Brake Bias, Tyre Pressures, Preload).
-  - **"Copy Adaptive Spec" & "Apply to Setup" buttons**: copy or transfer calibrated setups instantly.
-  - Team radio debrief with simulated pit wall audio comms.
+## ⚡ Live Demo
+Experience the platform live in your browser:  
+👉 **[https://pitwall-ai-one.vercel.app/](https://pitwall-ai-one.vercel.app/)**
 
-## Folder Structure
+---
+
+## 🏎️ Key Engineering Modules
+
+### 1. MoTeC-Grade Telemetry Analytics & AI Coaching
+* **Synchronized Multi-Channel Canvas Scrubber**: Interactive high-DPI rendering of Speed ($km/h$), Throttle %, Brake %, Steering Angle ($^\circ$), Lateral G ($G$), and Gear / RPM across exact track distance.
+* **Authentic 2D GPS Circuit Track Maps**: Official 1:1 isometric coordinates for circuits like **Silverstone**, **Monza**, and **Spa-Francorchamps**. Features live cursor synchronization, apex navigation, and customizable heatmaps for **Speed**, **Time Delta vs Pro**, **Pedal Inputs**, and **Lateral G**.
+* **G-G Friction Circle (Kamm's Circle)**: Computes grip utilization percentage ($100 \times \frac{G_{actual}}{G_{limit}}$), trail-braking transition efficiency score ($0-100$), peak decel/lat vectors, and actionable grip deficit verdicts.
+* **Pro Driver Benchmark & Corner Attribution**: Compares user telemetry against homologated pro reference laps. Attributes time loss corner-by-corner with delta speed ($\Delta v$), delta time ($\Delta t$), braking point offset (meters), and throttle commitment markers.
+* **4-Corner Thermal & Pressure Wireframe**: Live telemetry monitoring of Front-Left, Front-Right, Rear-Left, and Rear-Right core/surface temperatures, hot pressures with target delta, and Inner-Middle-Outer (IMO) camber thermal gradients.
+* **Turn-by-Turn Anomaly Diagnostics**: Diagnoses root causes behind chassis misbehavior (e.g., front tire wash, snap exit oversteer, diff locking) into actionable driver fixes.
+* **Sim Setup Exporters**: 1-click export to native simulator file formats:
+  - **Assetto Corsa Competizione**: `.json` setup payload
+  - **iRacing**: `.sto` setup specification
+  - **rFactor 2 / Automobilista 2**: `.svm` setup script
+  - Universal CSV & Plain Text reports
+
+---
+
+### 2. Autonomous Chassis Setup Synthesizer
+* **Multi-Simulator Support**: Tailored physics knowledge bases for **Assetto Corsa Competizione**, **iRacing**, **Le Mans Ultimate**, **Automobilista 2**, **rFactor 2**, **Assetto Corsa**, and **F1 23/24**.
+* **Chassis Parameterization**: Synthesizes complete engineering setup sheets:
+  - **Aerodynamics**: Front/rear ride heights, rear wing angles, front splitter rake, brake ducts.
+  - **Suspension Geometry**: Camber angles, toe-in/toe-out, caster, anti-roll bar (ARB) stiffness.
+  - **Damper Curves**: Fast/slow bump and fast/slow rebound damping.
+  - **Drivetrain & Differential**: Power/coast ramp angles, preload torque, traction control cut profiles.
+  - **Braking**: Bias percentage, master cylinder diameter, brake pad friction coefficients.
+* **Driver-Adaptive Setup Tuning**: Optimizes chassis balance specifically around driver archetypes (**Heavy Trail-Braker**, **Momentum Roller**, **Throttle-Steerer**, or **Point & Squirt**).
+
+---
+
+### 3. Tactical Strategy & Engineering Tools
+* **Target Cold Tyre Pressure & Atmospheric Compensator**:
+  - Homologated operating window specifications (ACC GT3 DHE $26.8-27.2\,\text{psi}$, iRacing $24.0-25.4\,\text{psi}$, F1, LMU).
+  - Ambient air & track temperature thermodynamic compensation ($\sim 0.1\,\text{psi}/^\circ\text{C}$).
+  - Asymmetric circuit load compensation (clockwise vs. counter-clockwise lateral stress weighting).
+  - Empirical hot-to-cold pit offset calibration with 1-click apply to the chassis brief.
+* **Race Fuel & Pit Strategy Window Calculator**:
+  - Supports both **Timed Endurance** races (with formation lap and safety buffers) and **Lap-Count Grand Prix**.
+  - Dynamic stint range analysis and chronological pit window schedules (**Window Open**, **Optimal Pit Lap**, **Window Close**, **Fuel to Add**).
+  - **Lift-and-Coast Tactical Simulator**: Evaluates range extension and lap-time trade-offs to eliminate splash-and-dash stops.
+
+---
+
+### 4. Setup Vault & Side-by-Side Version Diff Engine
+* **Persistent Library**: Save, label, and manage setups directly in local storage.
+* **Side-by-Side Parameter Diff Engine**: Compare any two setup versions (`Setup A` vs `Setup B`) across all components with automatic delta calculation and directional status badges (`+1 Click`, `-0.50° Camber`, `Stiffened`, `Softened`).
+* **"Differences Only" Filter**: Filter out unchanged parameters to instantly review what changed between session iterations.
+* **1-Click Save**: Integrated "SAVE TO VAULT" actions across both generated setups and telemetry-calibrated sheets.
+
+---
+
+## 🛠️ Architecture & Tech Stack
 
 ```
-sim-setup-ai/
-├── server.js               ← Node/Express backend with Groq AI integration
-├── package.json
-├── .env                    ← GROQ_API_KEY and PORT
-├── sample-telemetry/       ← Sample MoTeC CSV telemetry logs (Spa, Monza, Silverstone)
-└── public/
-    ├── index.html          ← Dual-mode workspace (Setup Generator + Telemetry Analyzer)
-    ├── styles.css          ← Executive liquid-glass motorsport dark UI
-    ├── app.js              ← Telemetry parsing, Canvas plotting & API controllers
-    └── sample-telemetry/   ← Public static sample files
+pitwall-ai/
+├── src/
+│   ├── app/                      # Next.js 14 App Router
+│   │   ├── api/
+│   │   │   ├── analyze-telemetry # Telemetry ML analysis & coaching endpoint
+│   │   │   └── generate-setup    # Vehicle dynamics setup synthesis endpoint
+│   │   ├── globals.css           # Pit wall liquid-glass dark theme
+│   │   └── page.tsx              # Reactive unified workspace controller
+│   ├── components/
+│   │   ├── setup/                # Setup Generator & Export Modals
+│   │   ├── telemetry/            # MoTeC Canvas HUD, TrackMap2D & Friction Circle
+│   │   ├── tools/                # Tyre Compensator & Fuel Strategy Calculators
+│   │   ├── vault/                # Setup Vault & Side-by-Side Diff Modal
+│   │   └── ModeNavigation.tsx    # Workspace tab switcher & Vault counter
+│   ├── lib/
+│   │   ├── circuit-geometries.ts # Official 135-point FIA GPS track coordinates
+│   │   ├── fuel-calculator.ts    # Stint range, pit windows & lift-and-coast math
+│   │   ├── tyre-calculator.ts    # Thermodynamic atmospheric pressure compensator
+│   │   ├── setup-vault.ts        # Version storage & parameter diff engine
+│   │   ├── setup-exporter.ts     # ACC .json / iRacing .sto / rF2 .svm serializers
+│   │   └── telemetry-parser.ts   # MoTeC i2 / Popometer CSV parser
+│   └── types/telemetry.ts        # Strongly-typed chassis & telemetry schemas
 ```
 
-## Quick Start
+* **Frontend**: Next.js 14 (App Router), React 18, Tailwind CSS, Lucide Icons, High-DPI HTML5 Canvas.
+* **Physics & Telemetry Engine**: Zero-dependency client-side numerical math for friction circles, dead-reckoning coordinate transformation, and aerodynamic balance equations.
+* **AI Engine**: Groq Cloud running `llama-3.3-70b-versatile` with structured JSON schema outputs and low-latency inference.
 
-### 1. Install Dependencies
+---
+
+## 🚀 Quick Start (Local Development)
+
+### 1. Clone the Repository
+```bash
+git clone https://github.com/octavia-23/pitwall-ai.git
+cd pitwall-ai
+```
+
+### 2. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Configure Your API Key
-Ensure `.env` contains your key (get a free key at https://console.groq.com/keys):
+### 3. Configure Environment Variables
+Copy `.env.example` to `.env`:
 ```bash
-GROQ_API_KEY=gsk_your_key_here
+cp .env.example .env
+```
+Add your free Groq API key (available from [console.groq.com](https://console.groq.com/keys)):
+```env
+GROQ_API_KEY=gsk_your_groq_api_key_here
 PORT=3000
 ```
 
-### 3. Run the Server
+### 4. Run Development Server
 ```bash
-npm start
+npm run dev
 ```
-Open **http://localhost:3000** in your web browser.
+Navigate to `http://localhost:3000` in your browser.
 
-## Using the Telemetry Analyzer
-1. Click **`02 // TELEMETRY ANALYZER`** in the top navigation bar.
-2. Select your sim title, car, track, and atmospheric conditions.
-3. Either:
-   - Click one of the **Quick Load Realistic Motorsport Samples** (Spa, Monza, or Silverstone) to test immediately, or
-   - Drag and drop your own telemetry `.csv` or `.json` file from MoTeC i2 Pro, Popometer, or your sim.
-4. Click **Analyze Telemetry & Coach**.
-5. Explore the interactive multi-channel chart, 4-corner tyre thermal HUD, turn-by-turn breakdowns, and click **Apply to Setup** to automatically tune your car setup based on the telemetry findings!
+---
+
+## 📄 License
+This project is source-available for personal sim racing use, driver training, and technical portfolio review. All rights reserved © 2026.
