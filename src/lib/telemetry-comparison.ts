@@ -182,21 +182,44 @@ export function computeLapComparison(
 
   if (circuit) {
     const totalDriverDist = driverPts[driverPts.length - 1]?.dist || circuit.officialDistance;
-    circuit.corners.forEach((target) => {
+    circuit.corners.forEach((target, cIdx) => {
+      const prevCorner = circuit.corners[cIdx - 1];
+      const nextCorner = circuit.corners[cIdx + 1];
+      const targetDist = (target.dist / circuit.officialDistance) * totalDriverDist;
+
+      const prevDist = prevCorner ? (prevCorner.dist / circuit.officialDistance) * totalDriverDist : 0;
+      const nextDist = nextCorner ? (nextCorner.dist / circuit.officialDistance) * totalDriverDist : totalDriverDist;
+
+      // Bounded search window: cannot overlap into adjacent corners
+      const distToPrev = targetDist - prevDist;
+      const distToNext = nextDist - targetDist;
+      const maxHalfDist = Math.min(distToPrev, distToNext) * 0.48;
+      const searchRadius = Math.max(40, Math.min(160, maxHalfDist));
+
       let minSpeed = Infinity;
       let bestIdx = -1;
-      const targetDist = (target.dist / circuit.officialDistance) * totalDriverDist;
+      let closestIdx = -1;
+      let closestDiff = Infinity;
+
       for (let i = 0; i < driverPts.length; i++) {
         const pt = driverPts[i];
-        if (Math.abs(pt.dist - targetDist) <= 320) {
-          if (pt.speed < minSpeed) {
+        const diff = Math.abs(pt.dist - targetDist);
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestIdx = i;
+        }
+        if (diff <= searchRadius) {
+          const currentBestDiff = bestIdx !== -1 ? Math.abs(driverPts[bestIdx].dist - targetDist) : Infinity;
+          if (pt.speed < minSpeed || (pt.speed === minSpeed && diff < currentBestDiff)) {
             minSpeed = pt.speed;
             bestIdx = i;
           }
         }
       }
-      if (bestIdx !== -1) {
-        candidates.push({ name: target.name, shortName: target.shortName, apexIdx: bestIdx });
+
+      const finalIdx = bestIdx !== -1 ? bestIdx : closestIdx;
+      if (finalIdx !== -1) {
+        candidates.push({ name: target.name, shortName: target.shortName, apexIdx: finalIdx });
       }
     });
   } else {

@@ -377,6 +377,54 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     onSelectCorner?.(corner);
   };
 
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!containerRef.current || !data.points.length) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const width = rect.width;
+    const height = Math.min(520, Math.max(380, width * 0.58));
+    const pad = 36;
+    const viewW = width - pad * 2;
+    const viewH = height - pad * 2;
+    const size = Math.min(viewW, viewH);
+    const offsetX = pad + (viewW - size) / 2;
+    const offsetY = pad + (viewH - size) / 2;
+
+    const normMouseX = ((mouseX - offsetX) / size) * 1000;
+    const normMouseY = ((mouseY - offsetY) / size) * 1000;
+
+    let clickedCorner: TrackCorner | null = null;
+    for (const c of data.corners) {
+      const dist = Math.hypot(c.x - normMouseX, c.y - normMouseY);
+      if (dist < 32) {
+        clickedCorner = c;
+        break;
+      }
+    }
+
+    if (clickedCorner) {
+      handleCornerClick(clickedCorner);
+      return;
+    }
+
+    let closestIdx = -1;
+    let minDist = Infinity;
+    for (let i = 0; i < data.points.length; i++) {
+      const p = data.points[i];
+      const d = Math.hypot(p.x - normMouseX, p.y - normMouseY);
+      if (d < minDist) {
+        minDist = d;
+        closestIdx = i;
+      }
+    }
+
+    if (minDist < 90 && closestIdx !== -1) {
+      onHoverPoint?.(closestIdx);
+    }
+  };
+
   const currentHoverPoint: TrackMapPoint | null =
     hoverIndex >= 0 && hoverIndex < data.points.length ? data.points[hoverIndex] : null;
 
@@ -476,6 +524,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
           ref={canvasRef}
           onMouseMove={handleCanvasMouseMove}
           onMouseLeave={handleCanvasMouseLeave}
+          onClick={handleCanvasClick}
           className="trackmap-canvas"
         />
 

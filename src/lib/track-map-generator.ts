@@ -193,7 +193,7 @@ export function generateTrackMapData(
           c.shortName === rc.shortName ||
           c.corner === rc.name ||
           c.corner.toLowerCase().includes(rc.shortName.toLowerCase()) ||
-          Math.abs(c.dist - mappedDist) < 320
+          Math.abs(c.dist - mappedDist) < 140
       );
 
       const effectiveDist = cornerComp?.dist ?? mappedDist;
@@ -229,8 +229,8 @@ export function generateTrackMapData(
         name: rc.name,
         shortName: rc.shortName,
         dist: effectiveDist,
-        x: pt.x,
-        y: pt.y,
+        x: rc.x != null ? rc.x : pt.x,
+        y: rc.y != null ? rc.y : pt.y,
         driverSpeed: driverApexSpeed,
         refSpeed: cornerComp?.refMinSpeed ?? pt.refSpeed,
         speedDelta: cornerComp?.speedDelta,
