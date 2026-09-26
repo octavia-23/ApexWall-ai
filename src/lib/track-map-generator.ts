@@ -187,10 +187,21 @@ export function generateTrackMapData(
     realCircuit.corners.forEach((rc, cIdx) => {
       const mappedDist = Math.round((rc.dist / realCircuit!.officialDistance) * totalDistance);
 
+      // Match corner in lapComparison by shortName, corner full name, or distance proximity
+      const cornerComp: CornerDeltaComparison | undefined = lapComparison?.cornerComparisons?.find(
+        (c) =>
+          c.shortName === rc.shortName ||
+          c.corner === rc.name ||
+          c.corner.toLowerCase().includes(rc.shortName.toLowerCase()) ||
+          Math.abs(c.dist - mappedDist) < 320
+      );
+
+      const effectiveDist = cornerComp?.dist ?? mappedDist;
+
       let closestIdx = 0;
       let minDiff = Infinity;
       telemetry.points.forEach((p, pIdx) => {
-        const diff = Math.abs(p.dist - mappedDist);
+        const diff = Math.abs(p.dist - effectiveDist);
         if (diff < minDiff) {
           minDiff = diff;
           closestIdx = pIdx;
@@ -198,21 +209,35 @@ export function generateTrackMapData(
       });
 
       const pt = points[closestIdx] || points[0];
-      const cornerComp: CornerDeltaComparison | undefined = lapComparison?.cornerComparisons?.find(
-        (c) => Math.abs(c.dist - mappedDist) < 280
-      );
+
+      // Calculate true local minimum apex speed if cornerComp is not present
+      let driverApexSpeed = cornerComp?.driverMinSpeed;
+      if (driverApexSpeed == null) {
+        let minSpd = Infinity;
+        telemetry.points.forEach((p) => {
+          if (Math.abs(p.dist - mappedDist) <= 250) {
+            if (p.speed < minSpd) {
+              minSpd = p.speed;
+            }
+          }
+        });
+        driverApexSpeed = minSpd < Infinity ? minSpd : pt.speed;
+      }
 
       corners.push({
         id: `corner-${cIdx}`,
         name: rc.name,
         shortName: rc.shortName,
-        dist: mappedDist,
+        dist: effectiveDist,
         x: pt.x,
         y: pt.y,
-        driverSpeed: cornerComp?.driverMinSpeed ?? pt.speed,
+        driverSpeed: driverApexSpeed,
         refSpeed: cornerComp?.refMinSpeed ?? pt.refSpeed,
         speedDelta: cornerComp?.speedDelta,
         timeDelta: cornerComp?.timeDelta,
+        brakingPointDeltaMeters: cornerComp?.brakingPointDeltaMeters,
+        throttleCommitDeltaMeters: cornerComp?.throttleCommitDeltaMeters,
+        verdict: cornerComp?.verdict,
       });
     });
   } else if (lapComparison?.cornerComparisons && lapComparison.cornerComparisons.length > 0) {
@@ -231,7 +256,7 @@ export function generateTrackMapData(
       corners.push({
         id: `corner-${idx}`,
         name: c.corner,
-        shortName: `T${idx + 1}`,
+        shortName: c.shortName || `T${idx + 1}`,
         dist: c.dist,
         x: pt.x,
         y: pt.y,
@@ -239,10 +264,13 @@ export function generateTrackMapData(
         refSpeed: c.refMinSpeed,
         speedDelta: c.speedDelta,
         timeDelta: c.timeDelta,
+        brakingPointDeltaMeters: c.brakingPointDeltaMeters,
+        throttleCommitDeltaMeters: c.throttleCommitDeltaMeters,
+        verdict: c.verdict,
       });
     });
   } else {
-    telemetry.minCornerSpeeds.slice(0, 10).forEach((cs, idx) => {
+    telemetry.minCornerSpeeds.slice(0, 12).forEach((cs, idx) => {
       let closestIdx = 0;
       let minDiff = Infinity;
       telemetry.points.forEach((p, pIdx) => {

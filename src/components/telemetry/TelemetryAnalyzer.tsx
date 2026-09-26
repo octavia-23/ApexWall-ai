@@ -83,6 +83,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     "pedals" | "dualSpeed" | "timeDelta" | "steering" | "gear"
   >("pedals");
   const [hoverIndex, setHoverIndex] = useState<number>(-1);
+  const [activeCornerId, setActiveCornerId] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
@@ -601,6 +602,55 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       }
     }
 
+    // Draw Authentic Corner Apex Guides & Flags along Distance Axis
+    const chartCorners = trackMapData?.corners || [];
+    chartCorners.forEach((corner) => {
+      const cx = getX(corner.dist);
+      if (cx < paddingLeft || cx > width - paddingRight) return;
+
+      const isCornerActive =
+        activeCornerId === corner.id ||
+        activeCornerId === corner.name ||
+        activeCornerId === corner.shortName ||
+        (hoverIndex >= 0 && Math.abs(points[hoverIndex].dist - corner.dist) < 140);
+
+      // Subtle vertical dashed guide line
+      ctx.beginPath();
+      ctx.strokeStyle = isCornerActive ? "rgba(56, 189, 248, 0.85)" : "rgba(255, 255, 255, 0.1)";
+      ctx.lineWidth = isCornerActive ? 1.5 : 1;
+      ctx.setLineDash(isCornerActive ? [] : [2, 4]);
+      ctx.moveTo(cx, paddingTop);
+      ctx.lineTo(cx, height - paddingBottom);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Top corner badge tag
+      const label = corner.shortName;
+      ctx.font = `bold ${isCornerActive ? "9px" : "8px"} 'JetBrains Mono', monospace`;
+      const textMetrics = ctx.measureText(label);
+      const badgeW = Math.max(22, textMetrics.width + 8);
+      const badgeH = 14;
+      const badgeX = cx - badgeW / 2;
+      const badgeY = paddingTop - 18;
+
+      ctx.beginPath();
+      if ((ctx as any).roundRect) {
+        (ctx as any).roundRect(badgeX, badgeY, badgeW, badgeH, 3);
+      } else {
+        ctx.rect(badgeX, badgeY, badgeW, badgeH);
+      }
+      ctx.fillStyle = isCornerActive ? "#38BDF8" : "rgba(15, 23, 42, 0.85)";
+      ctx.fill();
+      ctx.strokeStyle = isCornerActive ? "#FFFFFF" : "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = isCornerActive ? 1.5 : 0.8;
+      ctx.stroke();
+
+      ctx.fillStyle = isCornerActive ? "#0B0E14" : "rgba(255, 255, 255, 0.85)";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(label, cx, badgeY + badgeH / 2);
+    });
+
     ctx.restore();
   }, [
     parsedTelemetry,
@@ -610,6 +660,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     activeChannel,
     hoverIndex,
     state,
+    trackMapData,
+    activeCornerId,
   ]);
 
   // Form Submit
@@ -1539,6 +1591,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 onHoverPoint={setHoverIndex}
                 lapComparison={lapComparison}
                 benchmarkMode={benchmarkMode}
+                activeCornerId={activeCornerId}
+                onSelectCorner={(corner) => setActiveCornerId(corner ? corner.shortName || corner.id : null)}
               />
             )}
 
@@ -1570,29 +1624,76 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                       </tr>
                     </thead>
                     <tbody>
-                      {lapComparison.cornerComparisons.map((c, idx) => (
-                        <tr key={idx}>
-                          <td className="delta-corner-cell">
-                            {c.corner}
-                            <span className="delta-dist-sub">@{c.dist}m</span>
-                          </td>
-                          <td className="delta-speed-val">{c.driverMinSpeed} km/h</td>
-                          <td className="delta-speed-val">{c.refMinSpeed} km/h</td>
-                          <td className={`delta-diff ${c.speedDelta >= 0 ? "gain" : "loss"}`}>
-                            {c.speedDelta > 0 ? `+${c.speedDelta}` : c.speedDelta} km/h
-                          </td>
-                          <td className={`delta-diff ${c.brakingPointDeltaMeters >= 0 ? "gain" : "loss"}`}>
-                            {c.brakingPointDeltaMeters > 0 ? `+${c.brakingPointDeltaMeters}m early` : c.brakingPointDeltaMeters < 0 ? `${Math.abs(c.brakingPointDeltaMeters)}m late` : "Matched"}
-                          </td>
-                          <td className={`delta-diff ${c.throttleCommitDeltaMeters >= 0 ? "gain" : "loss"}`}>
-                            {c.throttleCommitDeltaMeters > 0 ? `${c.throttleCommitDeltaMeters}m earlier` : c.throttleCommitDeltaMeters < 0 ? `${Math.abs(c.throttleCommitDeltaMeters)}m delayed` : "Matched"}
-                          </td>
-                          <td className={`delta-diff ${c.timeDelta <= 0 ? "gain" : "loss"}`}>
-                            {c.timeDelta > 0 ? `+${c.timeDelta}s` : `${c.timeDelta}s`}
-                          </td>
-                          <td className="delta-verdict-cell">{c.verdict}</td>
-                        </tr>
-                      ))}
+                      {lapComparison.cornerComparisons.map((c, idx) => {
+                        const isRowActive =
+                          activeCornerId === c.shortName ||
+                          activeCornerId === c.corner ||
+                          activeCornerId === `corner-${idx}` ||
+                          (hoverIndex >= 0 &&
+                            parsedTelemetry &&
+                            Math.abs(parsedTelemetry.points[hoverIndex]?.dist - c.dist) < 140);
+
+                        return (
+                          <tr
+                            key={idx}
+                            className={`delta-row-clickable ${isRowActive ? "row-active-corner" : ""}`}
+                            onMouseEnter={() => {
+                              setActiveCornerId(c.shortName || `corner-${idx}`);
+                              if (parsedTelemetry) {
+                                let closestIdx = 0;
+                                let minDiff = Infinity;
+                                parsedTelemetry.points.forEach((p, pIdx) => {
+                                  const diff = Math.abs(p.dist - c.dist);
+                                  if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestIdx = pIdx;
+                                  }
+                                });
+                                setHoverIndex(closestIdx);
+                              }
+                            }}
+                            onMouseLeave={() => {
+                              setActiveCornerId(null);
+                            }}
+                            onClick={() => {
+                              if (parsedTelemetry) {
+                                let closestIdx = 0;
+                                let minDiff = Infinity;
+                                parsedTelemetry.points.forEach((p, pIdx) => {
+                                  const diff = Math.abs(p.dist - c.dist);
+                                  if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestIdx = pIdx;
+                                  }
+                                });
+                                setHoverIndex(closestIdx);
+                              }
+                            }}
+                            title="Hover or click to highlight on track map and MoTeC chart"
+                          >
+                            <td className="delta-corner-cell">
+                              <span className="delta-corner-badge">{c.shortName || `T${idx + 1}`}</span>
+                              {c.corner}
+                              <span className="delta-dist-sub">@{c.dist}m</span>
+                            </td>
+                            <td className="delta-speed-val">{c.driverMinSpeed} km/h</td>
+                            <td className="delta-speed-val">{c.refMinSpeed} km/h</td>
+                            <td className={`delta-diff ${c.speedDelta >= 0 ? "gain" : "loss"}`}>
+                              {c.speedDelta > 0 ? `+${c.speedDelta}` : c.speedDelta} km/h
+                            </td>
+                            <td className={`delta-diff ${c.brakingPointDeltaMeters >= 0 ? "gain" : "loss"}`}>
+                              {c.brakingPointDeltaMeters > 0 ? `+${c.brakingPointDeltaMeters}m early` : c.brakingPointDeltaMeters < 0 ? `${Math.abs(c.brakingPointDeltaMeters)}m late` : "Matched"}
+                            </td>
+                            <td className={`delta-diff ${c.throttleCommitDeltaMeters >= 0 ? "gain" : "loss"}`}>
+                              {c.throttleCommitDeltaMeters > 0 ? `${c.throttleCommitDeltaMeters}m earlier` : c.throttleCommitDeltaMeters < 0 ? `${Math.abs(c.throttleCommitDeltaMeters)}m delayed` : "Matched"}
+                            </td>
+                            <td className={`delta-diff ${c.timeDelta <= 0 ? "gain" : "loss"}`}>
+                              {c.timeDelta > 0 ? `+${c.timeDelta}s` : `${c.timeDelta}s`}
+                            </td>
+                            <td className="delta-verdict-cell">{c.verdict}</td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>

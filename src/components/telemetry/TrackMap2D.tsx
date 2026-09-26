@@ -14,6 +14,8 @@ interface TrackMap2DProps {
   onHoverPoint?: (index: number) => void;
   lapComparison?: LapComparisonSummary | null;
   benchmarkMode?: "pro" | "off";
+  activeCornerId?: string | null;
+  onSelectCorner?: (corner: TrackCorner | null) => void;
 }
 
 type MapColorMode = "speed" | "timeDelta" | "pedals" | "latG";
@@ -24,6 +26,8 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   onHoverPoint,
   lapComparison,
   benchmarkMode = "pro",
+  activeCornerId = null,
+  onSelectCorner,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -31,6 +35,21 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   const [colorMode, setColorMode] = useState<MapColorMode>("speed");
   const [showCorners, setShowCorners] = useState(true);
   const [hoveredCorner, setHoveredCorner] = useState<TrackCorner | null>(null);
+
+  // Active corner resolved from hovered state or external activeCornerId
+  const activeCorner = useMemo(() => {
+    if (hoveredCorner) return hoveredCorner;
+    if (!activeCornerId) return null;
+    return (
+      data.corners.find(
+        (c) =>
+          c.id === activeCornerId ||
+          c.shortName === activeCornerId ||
+          c.name === activeCornerId ||
+          c.shortName.toLowerCase() === activeCornerId.toLowerCase()
+      ) || null
+    );
+  }, [hoveredCorner, activeCornerId, data.corners]);
 
   // Speed color gradient helper: 70 km/h (blue) -> 180 km/h (cyan) -> 250 km/h (yellow) -> 320 km/h (red)
   const getSpeedColor = (speed: number): string => {
@@ -223,15 +242,26 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
       data.corners.forEach((corner) => {
         const cx = toCanvasX(corner.x);
         const cy = toCanvasY(corner.y);
-        const isHovered = hoveredCorner?.id === corner.id;
+        const isHovered =
+          activeCorner?.id === corner.id ||
+          activeCorner?.shortName === corner.shortName ||
+          (hoverIndex >= 0 && Math.abs(data.points[hoverIndex]?.dist - corner.dist) < 140);
+
+        // Highlight ring on active corner
+        if (isHovered) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(56, 189, 248, 0.28)";
+          ctx.fill();
+        }
 
         // Badge pill circle
         ctx.beginPath();
-        ctx.arc(cx, cy, isHovered ? 12 : 9.5, 0, Math.PI * 2);
+        ctx.arc(cx, cy, isHovered ? 12.5 : 9.5, 0, Math.PI * 2);
         ctx.fillStyle = isHovered ? "#38BDF8" : "rgba(15, 23, 42, 0.9)";
         ctx.fill();
         ctx.strokeStyle = isHovered ? "#FFFFFF" : "rgba(255, 255, 255, 0.4)";
-        ctx.lineWidth = isHovered ? 2 : 1;
+        ctx.lineWidth = isHovered ? 2.2 : 1;
         ctx.stroke();
 
         // Corner Text
@@ -272,7 +302,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     }
 
     ctx.restore();
-  }, [data, colorMode, showCorners, hoverIndex, hoveredCorner]);
+  }, [data, colorMode, showCorners, hoverIndex, activeCorner]);
 
   // Handle user scrubbing on the track map canvas
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -293,7 +323,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     const normMouseX = ((mouseX - offsetX) / size) * 1000;
     const normMouseY = ((mouseY - offsetY) / size) * 1000;
 
-    // 1. Check if hovering near a corner badge (radius <= 24 in norm space)
+    // 1. Check if hovering near a corner badge (radius <= 32 in norm space)
     let foundCorner: TrackCorner | null = null;
     for (const c of data.corners) {
       const dist = Math.hypot(c.x - normMouseX, c.y - normMouseY);
@@ -303,6 +333,9 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
       }
     }
     setHoveredCorner(foundCorner);
+    if (foundCorner) {
+      onSelectCorner?.(foundCorner);
+    }
 
     // 2. Find nearest track point to scrub
     let closestIdx = -1;
@@ -326,10 +359,11 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   const handleCanvasMouseLeave = () => {
     setHoveredCorner(null);
     onHoverPoint?.(-1);
+    onSelectCorner?.(null);
   };
 
   const handleCornerClick = (corner: TrackCorner) => {
-    // Jump hover scrubber directly to corner
+    // Jump hover scrubber directly to corner apex
     let closestIdx = 0;
     let minDiff = Infinity;
     data.points.forEach((p, idx) => {
@@ -340,24 +374,25 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
       }
     });
     onHoverPoint?.(closestIdx);
+    onSelectCorner?.(corner);
   };
 
   const currentHoverPoint: TrackMapPoint | null =
     hoverIndex >= 0 && hoverIndex < data.points.length ? data.points[hoverIndex] : null;
 
   // Find nearest corner to current hover position
-  const nearestCornerName = useMemo(() => {
+  const nearestCorner = useMemo(() => {
     if (!currentHoverPoint) return null;
     let nearest: TrackCorner | null = null;
     let minD = Infinity;
     data.corners.forEach((c) => {
       const diff = Math.abs(c.dist - currentHoverPoint.dist);
-      if (diff < minD && diff < 350) {
+      if (diff < minD && diff < 300) {
         minD = diff;
         nearest = c;
       }
     });
-    return nearest ? nearest.name : null;
+    return nearest;
   }, [currentHoverPoint, data.corners]);
 
   return (
@@ -449,8 +484,11 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
           <div className="trackmap-hover-card">
             <div className="hover-card-header">
               <span className="hover-dot-pulse"></span>
+              {nearestCorner && (
+                <span className="corner-badge-tag">{nearestCorner.shortName}</span>
+              )}
               <span className="hover-card-title">
-                {nearestCornerName || `Sector at ${currentHoverPoint.dist}m`}
+                {nearestCorner ? nearestCorner.name : `Sector at ${currentHoverPoint.dist}m`}
               </span>
               <span className="hover-card-dist">@{currentHoverPoint.dist}m</span>
             </div>
@@ -494,34 +532,72 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
                 <span className="m-val text-slate">{currentHoverPoint.latG} G</span>
               </div>
             </div>
+
+            {nearestCorner?.verdict && Math.abs(currentHoverPoint.dist - nearestCorner.dist) < 220 && (
+              <div className="hover-card-verdict-line">
+                <span className="verdict-icon">⚡</span>
+                <span className="verdict-text">{nearestCorner.verdict}</span>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Corner Tooltip Hover */}
-        {hoveredCorner && (
+        {/* Synchronized Corner Tooltip Card */}
+        {activeCorner && (
           <div className="trackmap-corner-card">
             <div className="corner-card-top">
-              <span className="corner-badge-tag">{hoveredCorner.shortName}</span>
-              <span className="corner-name">{hoveredCorner.name}</span>
+              <span className="corner-badge-tag">{activeCorner.shortName}</span>
+              <span className="corner-name">{activeCorner.name}</span>
             </div>
             <div className="corner-card-details">
-              <span>Dist: {hoveredCorner.dist}m</span>
-              {hoveredCorner.driverSpeed != null && (
-                <span>Apex: {hoveredCorner.driverSpeed} km/h</span>
+              <span>Dist: {activeCorner.dist}m</span>
+              {activeCorner.driverSpeed != null && (
+                <span className="text-sky">Driver Apex: {activeCorner.driverSpeed} km/h</span>
               )}
-              {hoveredCorner.timeDelta != null && (
+              {benchmarkMode === "pro" && activeCorner.refSpeed != null && (
+                <span className="text-amber">Ref: {activeCorner.refSpeed} km/h</span>
+              )}
+              {benchmarkMode === "pro" && activeCorner.speedDelta != null && (
+                <span className={activeCorner.speedDelta >= 0 ? "text-emerald" : "text-rose"}>
+                  Δv: {activeCorner.speedDelta > 0 ? "+" : ""}{activeCorner.speedDelta} km/h
+                </span>
+              )}
+              {benchmarkMode === "pro" && activeCorner.timeDelta != null && (
                 <span
-                  className={hoveredCorner.timeDelta <= 0 ? "text-emerald" : "text-rose"}
+                  className={activeCorner.timeDelta <= 0 ? "text-emerald" : "text-rose"}
                 >
-                  Δt: {hoveredCorner.timeDelta > 0 ? "+" : ""}
-                  {hoveredCorner.timeDelta}s
+                  Δt: {activeCorner.timeDelta > 0 ? "+" : ""}
+                  {activeCorner.timeDelta}s
                 </span>
               )}
             </div>
+
+            {benchmarkMode === "pro" && (activeCorner.brakingPointDeltaMeters != null || activeCorner.throttleCommitDeltaMeters != null) && (
+              <div className="corner-card-deltas-row">
+                {activeCorner.brakingPointDeltaMeters != null && (
+                  <span className={`corner-delta-item ${activeCorner.brakingPointDeltaMeters >= 0 ? "text-emerald" : "text-rose"}`}>
+                    Braking: {activeCorner.brakingPointDeltaMeters > 0 ? `+${activeCorner.brakingPointDeltaMeters}m early` : activeCorner.brakingPointDeltaMeters < 0 ? `${Math.abs(activeCorner.brakingPointDeltaMeters)}m late` : "Matched"}
+                  </span>
+                )}
+                {activeCorner.throttleCommitDeltaMeters != null && (
+                  <span className={`corner-delta-item ${activeCorner.throttleCommitDeltaMeters >= 0 ? "text-emerald" : "text-rose"}`}>
+                    Throttle: {activeCorner.throttleCommitDeltaMeters > 0 ? `${activeCorner.throttleCommitDeltaMeters}m earlier` : activeCorner.throttleCommitDeltaMeters < 0 ? `${Math.abs(activeCorner.throttleCommitDeltaMeters)}m delayed` : "Matched"}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {activeCorner.verdict && (
+              <div className="corner-card-verdict">
+                <span className="verdict-icon">⚡</span>
+                <span className="verdict-text">{activeCorner.verdict}</span>
+              </div>
+            )}
+
             <button
               type="button"
               className="corner-jump-btn"
-              onClick={() => handleCornerClick(hoveredCorner)}
+              onClick={() => handleCornerClick(activeCorner)}
             >
               Jump Telemetry to Apex →
             </button>
@@ -586,14 +662,21 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
               key={c.id}
               type="button"
               className={`corner-pill-btn ${
-                hoveredCorner?.id === c.id ||
+                activeCorner?.id === c.id ||
+                activeCorner?.shortName === c.shortName ||
                 (currentHoverPoint && Math.abs(currentHoverPoint.dist - c.dist) < 180)
                   ? "active"
                   : ""
               }`}
               onClick={() => handleCornerClick(c)}
-              onMouseEnter={() => setHoveredCorner(c)}
-              onMouseLeave={() => setHoveredCorner(null)}
+              onMouseEnter={() => {
+                setHoveredCorner(c);
+                onSelectCorner?.(c);
+              }}
+              onMouseLeave={() => {
+                setHoveredCorner(null);
+                onSelectCorner?.(null);
+              }}
               title={`${c.name} (@${c.dist}m)`}
             >
               {c.shortName}

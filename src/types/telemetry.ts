@@ -123,6 +123,7 @@ export interface AdaptiveSetup {
 
 export interface CornerDeltaComparison {
   corner: string;
+  shortName?: string;
   dist: number;
   driverMinSpeed: number;
   refMinSpeed: number;
@@ -221,6 +222,9 @@ export interface TrackCorner {
   refSpeed?: number;
   speedDelta?: number;
   timeDelta?: number;
+  brakingPointDeltaMeters?: number;
+  throttleCommitDeltaMeters?: number;
+  verdict?: string;
 }
 
 export interface TrackMapPoint {

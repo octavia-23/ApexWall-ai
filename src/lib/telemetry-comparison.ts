@@ -104,54 +104,7 @@ function interpolateDeltaAtDist(deltaPoints: DeltaPoint[], targetDist: number): 
   return +(p0.timeDelta + (p1.timeDelta - p0.timeDelta) * factor).toFixed(3);
 }
 
-interface CircuitCornerTarget {
-  name: string;
-  dist: number;
-}
-
-const KNOWN_CIRCUITS: { [key: string]: { name: string; corners: CircuitCornerTarget[] } } = {
-  spa: {
-    name: "Spa-Francorchamps",
-    corners: [
-      { name: "Turn 1 (La Source Hairpin)", dist: 580 },
-      { name: "Turn 3-4 (Eau Rouge & Raidillon)", dist: 1450 },
-      { name: "Turn 5-6 (Les Combes Chicane)", dist: 2700 },
-      { name: "Turn 7 (Malmedy)", dist: 3050 },
-      { name: "Turn 8 (Bruxelles Hairpin)", dist: 3400 },
-      { name: "Turn 9 (Speaker's Corner / No Name)", dist: 3800 },
-      { name: "Turn 10-11 (Double Gauche / Pouhon)", dist: 4450 },
-      { name: "Turn 12-13 (Pif-Paf / Fagnes)", dist: 5200 },
-      { name: "Turn 14-15 (Campus & Stavelot)", dist: 5650 },
-      { name: "Turn 18-19 (Bus Stop Chicane)", dist: 6400 },
-    ],
-  },
-  monza: {
-    name: "Monza GP",
-    corners: [
-      { name: "Turn 1-2 (Variante del Rettifilo)", dist: 950 },
-      { name: "Turn 3 (Curva Biassono / Curva Grande)", dist: 1650 },
-      { name: "Turn 4-5 (Variante della Roggia)", dist: 2150 },
-      { name: "Turn 6 (Prima Curva di Lesmo)", dist: 2650 },
-      { name: "Turn 7 (Seconda Curva di Lesmo)", dist: 3100 },
-      { name: "Turn 8-10 (Variante Ascari)", dist: 4400 },
-      { name: "Turn 11 (Curva Alboreto / Parabolica)", dist: 5500 },
-    ],
-  },
-  silverstone: {
-    name: "Silverstone GP",
-    corners: [
-      { name: "Turn 1-2 (Abbey & Farm Curve)", dist: 950 },
-      { name: "Turn 3-4 (Village & The Loop)", dist: 1450 },
-      { name: "Turn 5 (Aintree Corner)", dist: 1950 },
-      { name: "Turn 6 (Brooklands)", dist: 2300 },
-      { name: "Turn 7-8 (Luffield & Woodcote)", dist: 2650 },
-      { name: "Turn 9 (Copse Corner)", dist: 3550 },
-      { name: "Turn 10-14 (Maggotts, Becketts & Chapel)", dist: 4350 },
-      { name: "Turn 15 (Stowe Corner)", dist: 4850 },
-      { name: "Turn 16-18 (Vale & Club Chicane)", dist: 5550 },
-    ],
-  },
-};
+import { REAL_CIRCUITS, RealCircuitDefinition } from "./circuit-geometries";
 
 /**
  * Identify circuit by track name, filenames, or total distance
@@ -160,16 +113,16 @@ function detectCircuit(
   driver: ParsedTelemetryFile,
   ref: ParsedTelemetryFile,
   trackHint?: string
-): { name: string; corners: CircuitCornerTarget[] } | null {
+): RealCircuitDefinition | null {
   const combined = `${trackHint || ""} ${driver.filename || ""} ${ref.filename || ""}`.toLowerCase();
-  if (combined.includes("spa")) return KNOWN_CIRCUITS.spa;
-  if (combined.includes("monza")) return KNOWN_CIRCUITS.monza;
-  if (combined.includes("silverstone")) return KNOWN_CIRCUITS.silverstone;
+  if (combined.includes("spa")) return REAL_CIRCUITS.spa;
+  if (combined.includes("monza")) return REAL_CIRCUITS.monza;
+  if (combined.includes("silverstone")) return REAL_CIRCUITS.silverstone;
 
   const maxDist = driver.points[driver.points.length - 1]?.dist || 0;
-  if (maxDist >= 6700 && maxDist <= 7300) return KNOWN_CIRCUITS.spa;
-  if (maxDist >= 5650 && maxDist <= 5850) return KNOWN_CIRCUITS.monza;
-  if (maxDist >= 5851 && maxDist <= 6000) return KNOWN_CIRCUITS.silverstone;
+  if (maxDist >= 6700 && maxDist <= 7300) return REAL_CIRCUITS.spa;
+  if (maxDist >= 5650 && maxDist <= 5850) return REAL_CIRCUITS.monza;
+  if (maxDist >= 5851 && maxDist <= 6000) return REAL_CIRCUITS.silverstone;
 
   return null;
 }
@@ -215,24 +168,27 @@ export function computeLapComparison(
   const topSpeedDeltaKmh = +(driver.topSpeed - ref.topSpeed).toFixed(1);
 
   // Identify Corner Candidates:
-  // 1. If known circuit matched, extract apexes for all authentic named corners.
+  // 1. If authentic circuit matched, extract apexes for all authentic named corners.
   // 2. Otherwise run dynamic adaptive apex detection across the full lap distance.
   const cornerComparisons: CornerDeltaComparison[] = [];
   const circuit = detectCircuit(driver, ref, trackHint);
 
   interface CornerCandidate {
     name: string;
+    shortName: string;
     apexIdx: number;
   }
   const candidates: CornerCandidate[] = [];
 
   if (circuit) {
+    const totalDriverDist = driverPts[driverPts.length - 1]?.dist || circuit.officialDistance;
     circuit.corners.forEach((target) => {
       let minSpeed = Infinity;
       let bestIdx = -1;
+      const targetDist = (target.dist / circuit.officialDistance) * totalDriverDist;
       for (let i = 0; i < driverPts.length; i++) {
         const pt = driverPts[i];
-        if (Math.abs(pt.dist - target.dist) <= 280) {
+        if (Math.abs(pt.dist - targetDist) <= 320) {
           if (pt.speed < minSpeed) {
             minSpeed = pt.speed;
             bestIdx = i;
@@ -240,7 +196,7 @@ export function computeLapComparison(
         }
       }
       if (bestIdx !== -1) {
-        candidates.push({ name: target.name, apexIdx: bestIdx });
+        candidates.push({ name: target.name, shortName: target.shortName, apexIdx: bestIdx });
       }
     });
   } else {
@@ -273,8 +229,10 @@ export function computeLapComparison(
           const prevCandidate = candidates[candidates.length - 1];
           const prevDist = prevCandidate ? driverPts[prevCandidate.apexIdx].dist : -999;
           if (apexDist - prevDist > 140) {
+            const cornerNum = candidates.length + 1;
             candidates.push({
-              name: `Turn ${candidates.length + 1}`,
+              name: `Turn ${cornerNum}`,
+              shortName: `T${cornerNum}`,
               apexIdx: minIdx,
             });
           }
@@ -373,6 +331,7 @@ export function computeLapComparison(
 
     cornerComparisons.push({
       corner: cand.name,
+      shortName: cand.shortName,
       dist: apexDist,
       driverMinSpeed: driverApexSpd,
       refMinSpeed: refApexSpd,
