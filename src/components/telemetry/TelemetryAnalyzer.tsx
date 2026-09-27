@@ -33,6 +33,8 @@ interface TelemetryAnalyzerProps {
     fuelLoad: string;
     handlingIssue: string;
   }) => void;
+  onTelemetryAnalyzed?: (result: TelemetryAnalysisResult, file: ParsedTelemetryFile | null) => void;
+  onDiscussWithEngineer?: () => void;
 }
 
 const telLoadingMessages = [
@@ -46,6 +48,8 @@ const telLoadingMessages = [
 export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   onLoadingChange,
   onApplyToSetup,
+  onTelemetryAnalyzed,
+  onDiscussWithEngineer,
 }) => {
   // Session & Vehicle Spec
   const [game, setGame] = useState("Assetto Corsa Competizione");
@@ -739,6 +743,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
       setResult(data);
       setState("result");
+      onTelemetryAnalyzed?.(data, parsedTelemetry);
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to analyze telemetry.");
       setState("error");
@@ -1360,6 +1365,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 </svg>
                 <span>APPLY TO SETUP</span>
               </button>
+              {onDiscussWithEngineer && (
+                <button
+                  type="button"
+                  className="action-btn border-cyan-500/40 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
+                  onClick={onDiscussWithEngineer}
+                  title="Discuss this telemetry debrief with your AI Chief Race Engineer"
+                >
+                  <span>🎙️ DISCUSS WITH RACE ENGINEER →</span>
+                </button>
+              )}
               {result.adaptiveSetup && (
                 <SetupExportModal
                   buttonLabel="EXPORT SETUP"

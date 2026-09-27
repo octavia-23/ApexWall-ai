@@ -20,6 +20,8 @@ interface SetupGeneratorProps {
     driverStyle?: string;
   };
   onLoadingChange: (loading: boolean) => void;
+  onSetupGenerated?: (setup: any) => void;
+  onDiscussWithEngineer?: () => void;
 }
 
 const loadingMessages = [
@@ -31,7 +33,12 @@ const loadingMessages = [
   "Printing setup sheet…",
 ];
 
-export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, onLoadingChange }) => {
+export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
+  initialValues,
+  onLoadingChange,
+  onSetupGenerated,
+  onDiscussWithEngineer,
+}) => {
   const [game, setGame] = useState("Assetto Corsa Competizione");
   const [car, setCar] = useState("Ferrari 296 GT3");
   const [track, setTrack] = useState("Spa-Francorchamps GP");
@@ -110,6 +117,21 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, o
 
       setResult(data);
       setState("result");
+      onSetupGenerated?.({
+        game,
+        car,
+        track,
+        sessionType,
+        weather,
+        trackTemp,
+        airTemp,
+        fuelLoad,
+        tyreCompound,
+        driverStyle,
+        summary: data.summary,
+        engineerNotes: data.engineerNotes,
+        sections: data.sections || [],
+      });
     } catch (err: any) {
       setErrorMessage(err.message || "Failed to generate setup.");
       setState("error");
@@ -614,7 +636,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, o
               </div>
             </div>
 
-            <div className="result-footer-actions">
+            <div className="result-footer-actions flex items-center justify-between">
               <button type="button" className="reset-btn" onClick={handleReset}>
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M1 4v6h6M23 20v-6h-6" />
@@ -622,6 +644,17 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, o
                 </svg>
                 <span>Build another setup</span>
               </button>
+
+              {onDiscussWithEngineer && (
+                <button
+                  type="button"
+                  onClick={onDiscussWithEngineer}
+                  className="action-btn flex items-center gap-1.5 border-cyan-500/40 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
+                  title="Discuss this setup with your AI Chief Race Engineer"
+                >
+                  <span>🎙️ Discuss with Race Engineer →</span>
+                </button>
+              )}
             </div>
           </div>
         )}

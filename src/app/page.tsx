@@ -11,6 +11,9 @@ import { SetupVaultModal } from "@/components/vault/SetupVaultModal";
 import { AuthModal } from "@/components/auth/AuthModal";
 import { Footer } from "@/components/Footer";
 import { SavedSetupRecord, getSavedSetups } from "@/lib/setup-vault";
+import { RaceEngineerChat } from "@/components/engineer/RaceEngineerChat";
+import { SetupExportContext } from "@/lib/setup-exporter";
+import { TelemetryAnalysisResult, ParsedTelemetryFile } from "@/types/telemetry";
 
 export default function Home() {
   const [mode, setMode] = useState<WorkspaceMode>("telemetry");
@@ -18,6 +21,10 @@ export default function Home() {
   const [isVaultOpen, setIsVaultOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [savedSetupsCount, setSavedSetupsCount] = useState<number>(0);
+
+  const [lastGeneratedSetup, setLastGeneratedSetup] = useState<SetupExportContext | null>(null);
+  const [lastTelemetryResult, setLastTelemetryResult] = useState<TelemetryAnalysisResult | null>(null);
+  const [lastTelemetryFile, setLastTelemetryFile] = useState<ParsedTelemetryFile | null>(null);
 
   const [setupInitialValues, setSetupInitialValues] = useState<{
     game?: string;
@@ -148,6 +155,8 @@ export default function Home() {
             <SetupGenerator
               initialValues={setupInitialValues}
               onLoadingChange={setIsLoading}
+              onSetupGenerated={setLastGeneratedSetup}
+              onDiscussWithEngineer={() => setMode("engineer")}
             />
           </div>
 
@@ -155,6 +164,28 @@ export default function Home() {
             <TelemetryAnalyzer
               onLoadingChange={setIsLoading}
               onApplyToSetup={handleApplyToSetup}
+              onTelemetryAnalyzed={(res, file) => {
+                setLastTelemetryResult(res);
+                setLastTelemetryFile(file);
+              }}
+              onDiscussWithEngineer={() => setMode("engineer")}
+            />
+          </div>
+
+          <div style={{ display: mode === "engineer" ? "block" : "none" }}>
+            <RaceEngineerChat
+              currentSetup={lastGeneratedSetup}
+              telemetryResult={lastTelemetryResult}
+              parsedTelemetry={lastTelemetryFile}
+              onApplyAdjustmentToSetup={(advice) => {
+                setSetupInitialValues((prev) => ({
+                  ...prev,
+                  handlingIssue: prev?.handlingIssue
+                    ? `${prev.handlingIssue}. Engineer guidance: ${advice.slice(0, 150)}`
+                    : advice.slice(0, 180),
+                }));
+              }}
+              onSwitchToSetup={() => setMode("setup")}
             />
           </div>
 

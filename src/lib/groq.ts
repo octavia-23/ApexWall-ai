@@ -79,3 +79,58 @@ export async function callGroqWithFallback(
 
   throw lastErr || new Error("Failed to get valid response from AI models.");
 }
+
+export async function callGroqChatText(
+  messages: Array<{ role: "system" | "user" | "assistant"; content: string }>,
+  maxTokens: number = 1800,
+  temperature: number = 0.6
+): Promise<string> {
+  if (!apiKey || apiKey === "dummy-key-for-init") {
+    throw new Error("GROQ_API_KEY is not configured in environment variables.");
+  }
+
+  const models = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
+  ];
+
+  let lastErr: any = null;
+
+  for (const model of models) {
+    try {
+      const completion = await groq.chat.completions.create({
+        model,
+        max_tokens: maxTokens,
+        temperature,
+        messages,
+      });
+
+      const rawText = completion.choices[0]?.message?.content?.trim() || "";
+      if (rawText) {
+        return rawText;
+      }
+    } catch (err: any) {
+      console.warn(`Chat model ${model} error: ${err.message}. Trying next fallback...`);
+      lastErr = err;
+
+      if (err?.status === 413 || err?.status === 429) {
+        try {
+          const retryCompletion = await groq.chat.completions.create({
+            model,
+            max_tokens: Math.min(maxTokens, 1000),
+            temperature,
+            messages,
+          });
+          const rawText = retryCompletion.choices[0]?.message?.content?.trim() || "";
+          if (rawText) return rawText;
+        } catch {
+          // Continue to next
+        }
+      }
+    }
+  }
+
+  throw lastErr || new Error("Failed to get response from AI chat models.");
+}

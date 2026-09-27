@@ -2,7 +2,7 @@
 
 import React from "react";
 
-export type WorkspaceMode = "setup" | "telemetry" | "strategy" | "live";
+export type WorkspaceMode = "setup" | "telemetry" | "engineer" | "strategy" | "live";
 
 interface ModeNavigationProps {
   mode: WorkspaceMode;
@@ -41,6 +41,21 @@ export const ModeNavigation: React.FC<ModeNavigationProps> = ({
           </svg>
           <span>Telemetry Analyzer</span>
           <span className="mode-badge">Adaptive AI</span>
+        </button>
+
+        <button
+          type="button"
+          className={`mode-toggle-btn ${mode === "engineer" ? "active" : ""}`}
+          onClick={() => onChangeMode("engineer")}
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+          <span>Race Engineer</span>
+          <span className="mode-badge" style={{ background: "rgba(6, 182, 212, 0.15)", color: "#22d3ee", borderColor: "rgba(6, 182, 212, 0.3)" }}>Pit Wall AI</span>
         </button>
 
         <button
