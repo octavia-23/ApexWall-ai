@@ -15,6 +15,8 @@
 
 const dgram = require("dgram");
 const http = require("http");
+const fs = require("fs");
+const path = require("path");
 const { WebSocketServer } = require("ws");
 
 const args = process.argv.slice(2);
@@ -29,10 +31,77 @@ console.log("  🏁 APEXWALL AI // LOCAL TELEMETRY UDP BRIDGE");
 console.log("=====================================================");
 console.log(`• Sim Target: ${gameArg.toUpperCase()} (Listening UDP Port: ${UDP_PORT})`);
 console.log(`• WebSocket Broadcast Server: ws://localhost:${WS_PORT}`);
+console.log(`• Setup Injection API: http://localhost:${WS_PORT}/api/inject-setup`);
 console.log("=====================================================\n");
 
-// 1. Setup WebSocket Server for the Web App
-const server = http.createServer();
+// 1. Setup HTTP & WebSocket Server for Web App & Direct Setup Injection
+const server = http.createServer((req, res) => {
+  // CORS Headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Health check endpoint
+  if (req.method === "GET" && req.url === "/api/health") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ status: "ok", version: "2.0.0", game: gameArg }));
+    return;
+  }
+
+  // 1-Click Setup Injection Endpoint
+  if (req.method === "POST" && req.url === "/api/inject-setup") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+
+    req.on("end", () => {
+      try {
+        const payload = JSON.parse(body);
+        const { sim, car, track, filename, content } = payload;
+        const userProfile = process.env.USERPROFILE || process.env.HOME || "C:\\Users\\Default";
+        let targetDir = "";
+
+        if (sim === "acc") {
+          targetDir = path.join(userProfile, "Documents", "Assetto Corsa Competizione", "Setups", car || "generic", track || "spa");
+        } else if (sim === "assetto-corsa") {
+          targetDir = path.join(userProfile, "Documents", "Assetto Corsa", "setups", car || "generic", track || "spa");
+        } else if (sim === "iracing") {
+          targetDir = path.join(userProfile, "Documents", "iRacing", "setups", car || "generic", track || "spa");
+        } else if (sim === "lmu") {
+          targetDir = path.join(userProfile, "Documents", "Le Mans Ultimate", "UserData", "player", "Settings", track || "spa");
+        } else if (sim === "f1") {
+          targetDir = path.join(userProfile, "Documents", "My Games", "F1 24", "setups", track || "spa");
+        } else {
+          targetDir = path.join(userProfile, "Documents", "ApexWall_Setups", car || "generic", track || "spa");
+        }
+
+        fs.mkdirSync(targetDir, { recursive: true });
+        const filePath = path.join(targetDir, filename);
+        fs.writeFileSync(filePath, content, "utf8");
+
+        console.log(`[INJECT] ✓ Successfully injected setup into: ${filePath}`);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, savedPath: filePath }));
+      } catch (err) {
+        console.error(`[INJECT ERROR]:`, err);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: err.message }));
+      }
+    });
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "application/json" });
+  res.end(JSON.stringify({ error: "Endpoint not found" }));
+});
+
 const wss = new WebSocketServer({ server });
 
 let activeClients = [];

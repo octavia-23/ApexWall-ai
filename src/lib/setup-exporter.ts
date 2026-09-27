@@ -476,6 +476,298 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
 }
 
 /**
+ * 5. Assetto Corsa (Original AC) Native Setup INI Format
+ */
+export function generateAssettoCorsaINI(ctx: SetupExportContext): string {
+  const flPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf"]), 25));
+  const frPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf"]), 25));
+  const rlPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr"]), 24));
+  const rrPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), 24));
+
+  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -3.2);
+  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -2.5);
+  const fToe = Math.round(parseNumber(findItemValue(ctx.sections, ["front toe"]), -5));
+  const rToe = Math.round(parseNumber(findItemValue(ctx.sections, ["rear toe"]), 12));
+
+  const fArb = Math.round(parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb"]), 4));
+  const rArb = Math.round(parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]), 2));
+
+  const fWing = Math.round(parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing"]), 0));
+  const rWing = Math.round(parseNumber(findItemValue(ctx.sections, ["rear wing"]), 7));
+
+  const bumpSlow = Math.round(parseNumber(findItemValue(ctx.sections, ["bump", "slow bump", "dampers"]), 14));
+  const reboundSlow = Math.round(parseNumber(findItemValue(ctx.sections, ["rebound", "slow rebound"]), 18));
+
+  const diffPower = Math.round(parseNumber(findItemValue(ctx.sections, ["diff power", "power lock", "differential"]), 45));
+  const diffCoast = Math.round(parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), 60));
+  const diffPreload = Math.round(parseNumber(findItemValue(ctx.sections, ["diff preload", "preload"]), 40));
+
+  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), 56));
+  const fuel = Math.round(parseNumber(ctx.fuelLoad || "30", 30));
+
+  return `[HEADER]
+VERSION=1
+CAR=${ctx.car}
+TRACK=${ctx.track}
+CREATED_BY=ApexWall AI Homologated Engineering Engine v2.0
+DATE=${new Date().toISOString()}
+
+[TYRES]
+VALUE=0
+PRESSURE_LF=${flPsi}
+PRESSURE_RF=${frPsi}
+PRESSURE_LR=${rlPsi}
+PRESSURE_RR=${rrPsi}
+
+[CAMBER_LF]
+VALUE=${fCamber}
+[CAMBER_RF]
+VALUE=${fCamber}
+[TOE_OUT_LF]
+VALUE=${fToe}
+[TOE_OUT_RF]
+VALUE=${fToe}
+
+[CAMBER_LR]
+VALUE=${rCamber}
+[CAMBER_RR]
+VALUE=${rCamber}
+[TOE_OUT_LR]
+VALUE=${rToe}
+[TOE_OUT_RR]
+VALUE=${rToe}
+
+[ARB_FRONT]
+VALUE=${fArb}
+[ARB_REAR]
+VALUE=${rArb}
+
+[SPRING_RATE_LF]
+VALUE=125
+[SPRING_RATE_RF]
+VALUE=125
+[SPRING_RATE_LR]
+VALUE=95
+[SPRING_RATE_RR]
+VALUE=95
+
+[ROD_LENGTH_LF]
+VALUE=0
+[ROD_LENGTH_RF]
+VALUE=0
+[ROD_LENGTH_LR]
+VALUE=0
+[ROD_LENGTH_RR]
+VALUE=0
+
+[DAMP_BUMP_LF]
+VALUE=${bumpSlow}
+[DAMP_BUMP_RF]
+VALUE=${bumpSlow}
+[DAMP_BUMP_LR]
+VALUE=${bumpSlow}
+[DAMP_BUMP_RR]
+VALUE=${bumpSlow}
+
+[DAMP_FAST_BUMP_LF]
+VALUE=${Math.max(1, bumpSlow - 4)}
+[DAMP_FAST_BUMP_RF]
+VALUE=${Math.max(1, bumpSlow - 4)}
+[DAMP_FAST_BUMP_LR]
+VALUE=${Math.max(1, bumpSlow - 4)}
+[DAMP_FAST_BUMP_RR]
+VALUE=${Math.max(1, bumpSlow - 4)}
+
+[DAMP_REBOUND_LF]
+VALUE=${reboundSlow}
+[DAMP_REBOUND_RF]
+VALUE=${reboundSlow}
+[DAMP_REBOUND_LR]
+VALUE=${reboundSlow}
+[DAMP_REBOUND_RR]
+VALUE=${reboundSlow}
+
+[DAMP_FAST_REBOUND_LF]
+VALUE=${Math.max(1, reboundSlow - 5)}
+[DAMP_FAST_REBOUND_RF]
+VALUE=${Math.max(1, reboundSlow - 5)}
+[DAMP_FAST_REBOUND_LR]
+VALUE=${Math.max(1, reboundSlow - 5)}
+[DAMP_FAST_REBOUND_RR]
+VALUE=${Math.max(1, reboundSlow - 5)}
+
+[WING_FRONT]
+VALUE=${fWing}
+[WING_REAR]
+VALUE=${rWing}
+
+[DIFF_POWER]
+VALUE=${diffPower}
+[DIFF_COAST]
+VALUE=${diffCoast}
+[DIFF_PRELOAD]
+VALUE=${diffPreload}
+
+[BRAKE_POWER_MULT]
+VALUE=100
+[FRONT_BIAS]
+VALUE=${brakeBias}
+
+[GENERIC]
+FUEL=${fuel}
+`;
+}
+
+/**
+ * 6. EA Sports F1 (F1 23 / 24) Native Setup JSON Specification
+ */
+export function generateF1SetupJson(ctx: SetupExportContext): string {
+  const fWing = Math.round(parseNumber(findItemValue(ctx.sections, ["front wing", "front downforce"]), 36));
+  const rWing = Math.round(parseNumber(findItemValue(ctx.sections, ["rear wing", "rear downforce"]), 30));
+
+  const onThrottle = Math.round(parseNumber(findItemValue(ctx.sections, ["on throttle", "on-throttle diff"]), 55));
+  const offThrottle = Math.round(parseNumber(findItemValue(ctx.sections, ["off throttle", "off-throttle diff"]), 52));
+  const engineBraking = Math.round(parseNumber(findItemValue(ctx.sections, ["engine braking"]), 60));
+
+  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -2.7);
+  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -1.2);
+  const fToe = parseNumber(findItemValue(ctx.sections, ["front toe"]), 0.05);
+  const rToe = parseNumber(findItemValue(ctx.sections, ["rear toe"]), 0.12);
+
+  const fSusp = Math.round(parseNumber(findItemValue(ctx.sections, ["front suspension", "front spring"]), 32));
+  const rSusp = Math.round(parseNumber(findItemValue(ctx.sections, ["rear suspension", "rear spring"]), 12));
+  const fArb = Math.round(parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb"]), 18));
+  const rArb = Math.round(parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]), 8));
+  const fRide = Math.round(parseNumber(findItemValue(ctx.sections, ["front ride height"]), 35));
+  const rRide = Math.round(parseNumber(findItemValue(ctx.sections, ["rear ride height"]), 58));
+
+  const brakePressure = Math.round(parseNumber(findItemValue(ctx.sections, ["brake pressure"]), 100));
+  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias"]), 54));
+
+  const flPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl pressure"]), 23.5);
+  const frPsi = parseNumber(findItemValue(ctx.sections, ["front right", "fr pressure"]), 23.5);
+  const rlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl pressure"]), 21.0);
+  const rrPsi = parseNumber(findItemValue(ctx.sections, ["rear right", "rr pressure"]), 21.0);
+
+  const f1Setup = {
+    game: "EA SPORTS F1 24",
+    car: ctx.car,
+    track: ctx.track,
+    sessionType: ctx.sessionType || "Qualifying / Race",
+    aerodynamics: {
+      frontWingAero: fWing,
+      rearWingAero: rWing,
+    },
+    transmission: {
+      differentialAdjustmentOnThrottle: `${onThrottle}%`,
+      differentialAdjustmentOffThrottle: `${offThrottle}%`,
+      engineBraking: `${engineBraking}%`,
+    },
+    suspensionGeometry: {
+      frontCamber: `${fCamber}°`,
+      rearCamber: `${rCamber}°`,
+      frontToeOut: `${fToe}°`,
+      rearToeIn: `${rToe}°`,
+    },
+    suspension: {
+      frontSuspension: fSusp,
+      rearSuspension: rSusp,
+      frontAntiRollBar: fArb,
+      rearAntiRollBar: rArb,
+      frontRideHeight: fRide,
+      rearRideHeight: rRide,
+    },
+    brakes: {
+      brakePressure: `${brakePressure}%`,
+      frontBrakeBias: `${brakeBias}%`,
+    },
+    tyres: {
+      frontRightPressure: `${frPsi} psi`,
+      frontLeftPressure: `${flPsi} psi`,
+      rearRightPressure: `${rrPsi} psi`,
+      rearLeftPressure: `${rlPsi} psi`,
+    },
+    engineerNotes: ctx.engineerNotes || "",
+    _generatedBy: "ApexWall AI Autonomous Sim Racing Engineering",
+    _timestamp: new Date().toISOString(),
+  };
+
+  return JSON.stringify(f1Setup, null, 2);
+}
+
+/**
+ * 7. EA Sports F1 Garage Quick-Menu Reference Sheet (.txt)
+ */
+export function generateF1SetupText(ctx: SetupExportContext): string {
+  let out = `================================================================================\n`;
+  out += `APEXWALL AI // EA SPORTS F1 23 & F1 24 GARAGE SPECIFICATION\n`;
+  out += `CAR:   ${ctx.car.toUpperCase()}\n`;
+  out += `TRACK: ${ctx.track.toUpperCase()}\n`;
+  out += `DATE:  ${new Date().toLocaleDateString()}\n`;
+  out += `================================================================================\n\n`;
+
+  (ctx.sections || []).forEach((sec) => {
+    out += `[${sec.title.toUpperCase()}]\n`;
+    sec.items.forEach((it) => {
+      out += `  • ${it.label.padEnd(30, " ")}: ${it.value}\n`;
+    });
+    out += `\n`;
+  });
+
+  if (ctx.engineerNotes) {
+    out += `[PIT WALL ENGINEER BRIEFING]\n${ctx.engineerNotes}\n`;
+  }
+
+  return out;
+}
+
+/**
+ * 8. Universal 1-Click Windows Batch Auto-Installer (.bat)
+ */
+export function generateWindowsInstallBat(
+  targetDirWindows: string,
+  filename: string,
+  setupName: string
+): string {
+  return `@echo off
+chcp 65001 >nul
+title ApexWall AI - Setup Auto-Installer
+
+echo ===============================================================================
+echo   🏁 APEXWALL AI // DIRECT SIM SETUP INJECTOR
+echo ===============================================================================
+echo Installing setup: "${setupName}"
+echo Target Directory:
+echo %USERPROFILE%\\${targetDirWindows}
+echo ===============================================================================
+echo.
+
+set "FULL_DIR=%USERPROFILE%\\${targetDirWindows}"
+if not exist "%FULL_DIR%" (
+  echo [INFO] Creating missing directory...
+  mkdir "%FULL_DIR%"
+)
+
+copy /Y "%~dp0${filename}" "%FULL_DIR%\\${filename}" >nul
+if %ERRORLEVEL% EQU 0 (
+  echo.
+  echo [SUCCESS] Setup successfully injected into:
+  echo   "%FULL_DIR%\\${filename}"
+  echo.
+  echo Open your simulator, go to Setup / Garage, and load "${setupName}".
+  echo.
+) else (
+  echo.
+  echo [ERROR] Failed to write setup file. Check directory permissions.
+  echo.
+)
+
+echo Press any key to close this installer...
+pause >nul
+`;
+}
+
+/**
  * Browser file download helper
  */
 export function downloadFile(content: string, filename: string, mimeType: string = "text/plain"): void {

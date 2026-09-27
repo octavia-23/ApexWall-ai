@@ -1,48 +1,57 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   SetupExportContext,
   generateACCJson,
+  generateAssettoCorsaINI,
   generateRFactorSVM,
   generateIRacingText,
+  generateF1SetupJson,
   openPrintableRunSheet,
   downloadFile,
 } from "@/lib/setup-exporter";
+import { DirectSetupInjector } from "./DirectSetupInjector";
+import { sanitizeSlug, normalizeTrackSlug } from "@/lib/sim-injector";
 
 interface SetupExportModalProps {
   context: SetupExportContext;
   buttonLabel?: string;
   className?: string;
+  defaultOpen?: boolean;
 }
 
 export const SetupExportModal: React.FC<SetupExportModalProps> = ({
   context,
-  buttonLabel = "EXPORT SETUP",
+  buttonLabel = "EXPORT / INJECT SETUP",
   className = "",
+  defaultOpen = false,
 }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const [copiedNotification, setCopiedNotification] = useState("");
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [downloadNotice, setDownloadNotice] = useState("");
 
   useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
         setIsOpen(false);
       }
     };
-    if (isOpen) {
-      document.addEventListener("mousedown", handleOutsideClick);
-    }
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
 
-  const baseFilename = `${context.car.replace(/[^a-zA-Z0-9]/g, "_")}_${context.track.replace(/[^a-zA-Z0-9]/g, "_")}_ApexWall`;
+  const baseFilename = `${sanitizeSlug(context.car)}_${normalizeTrackSlug(context.track, "acc")}_ApexWall`;
 
   const handleExportACC = () => {
     const jsonStr = generateACCJson(context);
     downloadFile(jsonStr, `${baseFilename}.json`, "application/json");
     notify("Exported ACC .json setup file");
+  };
+
+  const handleExportAC = () => {
+    const iniStr = generateAssettoCorsaINI(context);
+    downloadFile(iniStr, `${baseFilename}.ini`, "text/plain");
+    notify("Exported Assetto Corsa .ini setup file");
   };
 
   const handleExportRFactor = () => {
@@ -57,131 +66,167 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
     notify("Exported iRacing setup specification");
   };
 
+  const handleExportF1 = () => {
+    const f1Str = generateF1SetupJson(context);
+    downloadFile(f1Str, `${baseFilename}_f1.json`, "application/json");
+    notify("Exported EA Sports F1 setup specification");
+  };
+
   const handlePrint = () => {
     openPrintableRunSheet(context);
-    setIsOpen(false);
   };
 
   const notify = (msg: string) => {
-    setCopiedNotification(msg);
+    setDownloadNotice(msg);
     setTimeout(() => {
-      setCopiedNotification("");
-      setIsOpen(false);
-    }, 1800);
+      setDownloadNotice("");
+    }, 2500);
   };
 
   return (
-    <div className={`relative inline-block ${className}`} ref={dropdownRef}>
+    <div className={`relative inline-block ${className}`}>
+      {/* Trigger Button */}
       <button
         type="button"
         className="action-btn action-btn-accent flex items-center gap-1.5"
-        onClick={() => setIsOpen(!isOpen)}
-        title="Export native simulation setup file"
+        onClick={() => setIsOpen(true)}
+        title="Direct inject setup into sim or export native setup files"
       >
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-          <polyline points="7 10 12 15 17 10" />
-          <line x1="12" y1="15" x2="12" y2="3" />
-        </svg>
+        <span className="text-cyan-400 font-bold">⚡</span>
         <span>{buttonLabel}</span>
       </button>
 
+      {/* Modal Backdrop & Container */}
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-72 bg-[#121622] border border-white/10 rounded-lg shadow-2xl z-50 overflow-hidden text-left p-1.5 animate-in fade-in zoom-in-95 duration-100">
-          <div className="px-3 py-2 border-b border-white/5">
-            <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-300">
-              Export Sim Setup File
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+          <div
+            className="relative w-full max-w-2xl bg-[#0b0e14] border border-cyan-500/40 rounded-2xl shadow-2xl overflow-hidden text-left"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Direct Setup Injector Engine */}
+            <div className="p-1">
+              <DirectSetupInjector
+                context={context}
+                onClose={() => setIsOpen(false)}
+              />
             </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">
-              Native format ready for simulator setup folders
+
+            {/* Quick Standalone File Downloads Section */}
+            <div className="px-6 py-4 bg-black/40 border-t border-white/10">
+              <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
+                <span>Direct File Downloads (Standalone):</span>
+                {downloadNotice && (
+                  <span className="text-emerald-400 font-sans text-xs">
+                    ✓ {downloadNotice}
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {/* ACC */}
+                <button
+                  type="button"
+                  onClick={handleExportACC}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      ACC
+                    </div>
+                    <div className="text-[10px] text-slate-400">GT World Challenge</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">
+                    .JSON
+                  </span>
+                </button>
+
+                {/* Assetto Corsa */}
+                <button
+                  type="button"
+                  onClick={handleExportAC}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      Assetto Corsa
+                    </div>
+                    <div className="text-[10px] text-slate-400">Kunos / CM</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-sky-500/20 text-sky-300 px-1.5 py-0.5 rounded">
+                    .INI
+                  </span>
+                </button>
+
+                {/* iRacing */}
+                <button
+                  type="button"
+                  onClick={handleExportIRacing}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      iRacing
+                    </div>
+                    <div className="text-[10px] text-slate-400">Garage Sheet</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">
+                    .STO.TXT
+                  </span>
+                </button>
+
+                {/* LMU / rFactor 2 */}
+                <button
+                  type="button"
+                  onClick={handleExportRFactor}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      LMU / rFactor 2
+                    </div>
+                    <div className="text-[10px] text-slate-400">Le Mans Ultimate</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-purple-500/20 text-purple-300 px-1.5 py-0.5 rounded">
+                    .SVM
+                  </span>
+                </button>
+
+                {/* EA Sports F1 */}
+                <button
+                  type="button"
+                  onClick={handleExportF1}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      EA Sports F1
+                    </div>
+                    <div className="text-[10px] text-slate-400">F1 23 / 24 Spec</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-rose-500/20 text-rose-300 px-1.5 py-0.5 rounded">
+                    .JSON
+                  </span>
+                </button>
+
+                {/* Printable Run Sheet */}
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="px-3 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-colors flex items-center justify-between group"
+                >
+                  <div className="truncate">
+                    <div className="text-xs font-semibold text-slate-200 group-hover:text-cyan-300">
+                      Printable Sheet
+                    </div>
+                    <div className="text-[10px] text-slate-400">PDF / Printout</div>
+                  </div>
+                  <span className="text-[10px] font-mono bg-slate-500/20 text-slate-300 px-1.5 py-0.5 rounded">
+                    PDF
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
-
-          <div className="py-1 flex flex-col gap-0.5">
-            {/* ACC JSON */}
-            <button
-              type="button"
-              className="w-full px-3 py-2 text-left rounded-md hover:bg-white/5 transition-colors flex flex-col group"
-              onClick={handleExportACC}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400">
-                  Assetto Corsa Competizione
-                </span>
-                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded">
-                  .JSON
-                </span>
-              </div>
-              <span className="text-[10.5px] text-slate-400 mt-0.5">
-                Drop into Documents/ACC/Setups folder
-              </span>
-            </button>
-
-            {/* rFactor 2 / LMU SVM */}
-            <button
-              type="button"
-              className="w-full px-3 py-2 text-left rounded-md hover:bg-white/5 transition-colors flex flex-col group"
-              onClick={handleExportRFactor}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400">
-                  rFactor 2 & Le Mans Ultimate
-                </span>
-                <span className="text-[10px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded">
-                  .SVM
-                </span>
-              </div>
-              <span className="text-[10.5px] text-slate-400 mt-0.5">
-                Native rF2 / LMU physics setup file
-              </span>
-            </button>
-
-            {/* iRacing Text */}
-            <button
-              type="button"
-              className="w-full px-3 py-2 text-left rounded-md hover:bg-white/5 transition-colors flex flex-col group"
-              onClick={handleExportIRacing}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400">
-                  iRacing Specification
-                </span>
-                <span className="text-[10px] font-mono text-sky-400 bg-sky-500/10 border border-sky-500/20 px-1.5 py-0.5 rounded">
-                  .TXT
-                </span>
-              </div>
-              <span className="text-[10.5px] text-slate-400 mt-0.5">
-                Formatted garage parameter sheet
-              </span>
-            </button>
-
-            <div className="my-1 border-t border-white/5"></div>
-
-            {/* Printable Pit Wall Run Sheet */}
-            <button
-              type="button"
-              className="w-full px-3 py-2 text-left rounded-md hover:bg-white/5 transition-colors flex flex-col group"
-              onClick={handlePrint}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-200 group-hover:text-blue-400">
-                  Printable Run Sheet
-                </span>
-                <span className="text-[10px] font-mono text-slate-300 bg-white/10 px-1.5 py-0.5 rounded">
-                  PDF / PRINT
-                </span>
-              </div>
-              <span className="text-[10.5px] text-slate-400 mt-0.5">
-                Trackside mechanic spec sheet
-              </span>
-            </button>
-          </div>
-
-          {copiedNotification && (
-            <div className="px-3 py-1.5 bg-emerald-500/15 border-t border-emerald-500/30 text-[11px] font-mono text-emerald-300 text-center">
-              ✓ {copiedNotification}
-            </div>
-          )}
         </div>
       )}
     </div>

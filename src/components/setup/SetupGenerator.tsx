@@ -493,7 +493,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({ initialValues, o
               </button>
 
               <SetupExportModal
-                buttonLabel="EXPORT SETUP"
+                buttonLabel="INJECT / EXPORT SETUP"
                 context={{
                   game,
                   car,
