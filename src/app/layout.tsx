@@ -4,7 +4,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 
 export const metadata: Metadata = {
   title: "ApexWall AI — Autonomous Sim Racing Telemetry & Chassis Engineering",
-  description: "MoTeC-grade telemetry analysis, authentic GPS track mapping, driver coaching diagnostics, and adaptive chassis setup engineering.",
+  description: "Professional sim racing engineering platform: MoTeC-grade telemetry diagnostics, game-authentic car setups with 1-click injection, and AI race engineer debriefs for ACC, iRacing, AC, and F1.",
 };
 
 export default function RootLayout({

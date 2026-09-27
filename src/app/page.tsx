@@ -15,6 +15,41 @@ import { RaceEngineerChat } from "@/components/engineer/RaceEngineerChat";
 import { SetupExportContext } from "@/lib/setup-exporter";
 import { TelemetryAnalysisResult, ParsedTelemetryFile } from "@/types/telemetry";
 
+const MODE_HEADERS: Record<
+  WorkspaceMode,
+  {
+    badge: string;
+    title: string;
+    desc: string;
+  }
+> = {
+  telemetry: {
+    badge: "Telemetry & Diagnostics",
+    title: "MoTeC-Grade Telemetry Diagnostics",
+    desc: "Pro benchmark delta attribution, synchronized 2D GPS track mapping, friction circle dynamics, and AI driving coaching.",
+  },
+  setup: {
+    badge: "Chassis Engineering",
+    title: "Game-Authentic Setup Generator",
+    desc: "Calibrated chassis setups with simulator-native units, garage click boundaries, and 1-click direct injection into your game folder.",
+  },
+  engineer: {
+    badge: "Pit Wall Comms",
+    title: "Chief Race Engineer Debrief",
+    desc: "Live conversational debriefs, corner handling diagnosis, setup compromise discussions, and game-specific garage click recommendations.",
+  },
+  strategy: {
+    badge: "Race Strategy",
+    title: "Pit Strategy & Tyre Solvers",
+    desc: "Stint fuel consumption calculators, target cold pressure solvers, and pit window optimization for endurance and sprint racing.",
+  },
+  live: {
+    badge: "Live Telemetry",
+    title: "Real-Time UDP Telemetry HUD",
+    desc: "Ultra-low latency 60Hz live telemetry streaming directly from your simulator into an interactive virtual pit wall dashboard.",
+  },
+};
+
 export default function Home() {
   const [mode, setMode] = useState<WorkspaceMode>("telemetry");
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -123,19 +158,19 @@ export default function Home() {
         />
 
         {/* Contextual Workspace Header */}
-        <div className="max-w-[1440px] mx-auto px-6 pt-6 pb-2 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="max-w-[1440px] mx-auto px-6 pt-6 pb-2 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[10.5px] font-mono uppercase tracking-wider text-blue-400 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded font-semibold">
-                Homologated Workspace
+                {MODE_HEADERS[mode].badge}
               </span>
               <span className="text-[11px] font-mono text-slate-500">v2.6.0</span>
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-100">
-              Chassis & Telemetry Engineering Platform
+              {MODE_HEADERS[mode].title}
             </h1>
-            <p className="text-xs md:text-sm text-slate-400 mt-0.5 max-w-2xl">
-              MoTeC-grade telemetry diagnostics, real-time driver coaching, pit strategy calculators, and AI-synthesized car setups.
+            <p className="text-xs md:text-sm text-slate-400 mt-0.5 max-w-2xl leading-relaxed">
+              {MODE_HEADERS[mode].desc}
             </p>
           </div>
 
