@@ -23,6 +23,7 @@ export async function POST(req: NextRequest) {
     driverStyle,
     handlingIssue,
     skillLevel,
+    customModProfile,
   } = body;
 
   if (!game || !car || !track) {
@@ -34,6 +35,38 @@ export async function POST(req: NextRequest) {
 
   // Resolve the game-authentic profile for the chosen simulator
   const profile = getGameSetupProfile(game);
+
+  // If a custom Assetto Corsa mod physics profile is supplied, format its parameters
+  let customModBrief = "";
+  if (customModProfile && customModProfile.sliders && customModProfile.sliders.length > 0) {
+    const sliderSummary = customModProfile.sliders
+      .slice(0, 50)
+      .map(
+        (s: any) =>
+          `• [${s.category}] ${s.name} (${s.key}): Range [${s.min} to ${s.max}], Step: ${s.step}${
+            s.defaultValue !== undefined ? `, Default: ${s.defaultValue}` : ""
+          }${s.help ? ` (${s.help})` : ""}`
+      )
+      .join("\n");
+
+    customModBrief = `
+AUTHENTIC CUSTOM ASSETTO CORSA MOD PHYSICS DETECTED:
+Mod Car: ${customModProfile.name || car} (${customModProfile.brand || "Custom"} by ${customModProfile.author || "Community Modder"})
+Mass: ${customModProfile.weightKg ? `${customModProfile.weightKg} kg` : "Unknown"}, Front Weight: ${
+      customModProfile.frontWeightRatio
+        ? `${(customModProfile.frontWeightRatio * 100).toFixed(1)}% Front`
+        : "Unknown"
+    }
+Ideal Tyre Pressures: ${
+      customModProfile.idealTyrePressures
+        ? `Front ${customModProfile.idealTyrePressures.front} psi, Rear ${customModProfile.idealTyrePressures.rear} psi`
+        : "N/A"
+    }
+
+CRITICAL REQUIREMENT: You MUST formulate the setup exclusively using the mod's declared setup.ini parameters below. All values MUST strictly fall within [MIN, MAX] and increment by STEP:
+${sliderSummary}
+`.trim();
+  }
 
   const userBrief = `
 Sim racing title: ${game} (Match in-game setup garage format exactly)
@@ -48,11 +81,14 @@ Tyre compound: ${tyreCompound || "Not specified"}
 Driver style: ${driverStyle || "Not specified"}
 Known handling issue / focus: ${handlingIssue || "None stated, optimize for a balanced all-round setup"}
 Driver skill level: ${skillLevel || "Not specified"}
+
+${customModBrief}
 `.trim();
 
   const systemPrompt = `You are a professional race engineer who builds game-authentic car setups for sim racing titles.
 
 CRITICAL INSTRUCTION: You must NEVER output generic setup categories or generic numbers. You must tailor the section titles, parameter labels, units, and click ranges to match the EXACT in-game garage setup menu of "${profile.displayName}".
+${customModProfile?.sliders?.length > 0 ? "You have been provided with the user's authentic Assetto Corsa mod setup.ini parameters. Use these EXACT parameter names, units, and limits for the sections." : ""}
 
 ${profile.systemPromptGuidance}
 

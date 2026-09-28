@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { GeneratedSetupResult } from "@/types/telemetry";
 import { SetupExportModal } from "./SetupExportModal";
 import { saveSetupToVault } from "@/lib/setup-vault";
+import { ACModIngestor } from "./ACModIngestor";
+import { AssettoCorsaModData } from "@/lib/ac-mod-parser";
 
 interface SetupGeneratorProps {
   initialValues?: {
@@ -51,6 +53,18 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [skillLevel, setSkillLevel] = useState("Intermediate");
   const [driverStyle, setDriverStyle] = useState("Heavy trail-braker, relies on throttle-steering");
   const [handlingIssue, setHandlingIssue] = useState("Snap oversteer on corner exit under power, mid-corner understeer in slow chicanes");
+  const [acModData, setAcModData] = useState<AssettoCorsaModData | null>(null);
+
+  const handleModParsed = (mod: AssettoCorsaModData) => {
+    setAcModData(mod);
+    setGame("Assetto Corsa");
+    if (mod.name) setCar(mod.name);
+    if (mod.fuelTankCapacity) setFuelLoad(`${Math.round(mod.fuelTankCapacity * 0.7)} L`);
+  };
+
+  const handleClearMod = () => {
+    setAcModData(null);
+  };
 
   const [state, setState] = useState<"empty" | "loading" | "error" | "result">("empty");
   const [errorMessage, setErrorMessage] = useState("");
@@ -107,6 +121,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           driverStyle,
           handlingIssue,
           skillLevel,
+          customModProfile: acModData,
         }),
       });
 
@@ -239,6 +254,13 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
               </select>
             </div>
           </div>
+
+          {/* Assetto Corsa Custom Mod Ingestor */}
+          <ACModIngestor
+            onModParsed={handleModParsed}
+            onClearMod={handleClearMod}
+            currentMod={acModData}
+          />
 
           <div className="field-row">
             <div className="field">
