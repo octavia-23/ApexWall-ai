@@ -6,12 +6,66 @@ import {
   TrackCorner,
   CornerDeltaComparison,
 } from "@/types/telemetry";
+import {
+  REAL_CIRCUITS,
+  RealCircuitDefinition,
+  getAuthenticTrackGeometry,
+} from "./circuit-geometries";
 
 /**
- * Autonomous AI Track Reconstructor:
- * Reconstructs the true 2D circuit geometry, racing line, apexes, and braking zones
- * from physical vehicle dynamics (Speed, Lateral G, Steering, Time, Distance).
- * Works universally on ANY track given to the AI with zero hardcoded presets needed.
+ * High-Precision Interpolation along Official FIA Surveyed Track Coordinates
+ */
+function interpolateRealCircuit(
+  def: RealCircuitDefinition,
+  targetDist: number,
+  telemetryStartDist: number,
+  telemetryEndDist: number
+): { x: number; y: number } {
+  const pts = def.points;
+  if (!pts || pts.length === 0) return { x: 500, y: 500 };
+  if (pts.length === 1) return { x: pts[0].x, y: pts[0].y };
+
+  const officialMax = def.officialDistance;
+  const telemSpan = Math.max(1, telemetryEndDist - telemetryStartDist);
+
+  let mappedDist: number;
+  if (telemSpan >= officialMax * 0.85) {
+    // Full lap: stretch to exact official distance
+    mappedDist = Math.max(0, Math.min(officialMax, ((targetDist - telemetryStartDist) / telemSpan) * officialMax));
+  } else {
+    // Partial run or calibrated stint: use absolute track distance (modulo official distance)
+    mappedDist = ((targetDist % officialMax) + officialMax) % officialMax;
+  }
+
+  // Binary search along pts
+  let low = 0;
+  let high = pts.length - 1;
+  while (low <= high) {
+    const mid = Math.floor((low + high) / 2);
+    if (pts[mid].dist === mappedDist) return { x: pts[mid].x, y: pts[mid].y };
+    if (pts[mid].dist < mappedDist) low = mid + 1;
+    else high = mid - 1;
+  }
+
+  const i0 = Math.max(0, Math.min(pts.length - 1, high));
+  const i1 = Math.min(pts.length - 1, Math.max(0, low));
+  if (i0 === i1) return { x: pts[i0].x, y: pts[i0].y };
+
+  const p0 = pts[i0];
+  const p1 = pts[i1];
+  const span = p1.dist - p0.dist;
+  if (span <= 0.001) return { x: p0.x, y: p0.y };
+
+  const t = Math.max(0, Math.min(1, (mappedDist - p0.dist) / span));
+  return {
+    x: +(p0.x + (p1.x - p0.x) * t).toFixed(1),
+    y: +(p0.y + (p1.y - p0.y) * t).toFixed(1),
+  };
+}
+
+/**
+ * Universal Dead-Reckoning Trajectory for Custom / Mod circuits
+ * Uses physical curvature integration with cubic smoothing and closed-loop endpoint relaxation.
  */
 function reconstructAutonomousTrajectory(telemetry: ParsedTelemetryFile): { x: number; y: number }[] {
   const pts = telemetry.points;
@@ -23,17 +77,15 @@ function reconstructAutonomousTrajectory(telemetry: ParsedTelemetryFile): { x: n
   const rawTrajectory: { x: number; y: number; dist: number }[] = [{ x: 0, y: 0, dist: pts[0].dist }];
 
   for (let i = 1; i < pts.length; i++) {
-    const dt = Math.max(0.005, Math.min(0.5, pts[i].time - pts[i - 1].time));
-    const v = Math.max(3.0, pts[i].speed / 3.6); // speed in m/s
+    const dt = Math.max(0.005, Math.min(0.2, pts[i].time - pts[i - 1].time));
+    const v = Math.max(4.0, pts[i].speed / 3.6); // speed in m/s
     const latG = pts[i].latG || 0;
     const steer = pts[i].steer || 0;
 
     let omega = 0;
     if (Math.abs(latG) > 0.05) {
-      // Direct physical yaw rate from lateral acceleration: a_lat = v * omega => omega = a_lat / v
       omega = (latG * 9.80665) / v;
     } else if (Math.abs(steer) > 1.0) {
-      // Kinematic bicycle model fallback from steering lock
       const wheelBase = 2.75;
       const steerRatio = 14.5;
       const steerRad = (steer * Math.PI) / 180.0 / steerRatio;
@@ -46,7 +98,7 @@ function reconstructAutonomousTrajectory(telemetry: ParsedTelemetryFile): { x: n
     rawTrajectory.push({ x, y, dist: pts[i].dist });
   }
 
-  // Closed-loop drift correction: In a closed lap, start line meets finish line
+  // Closed-loop drift distribution
   const totalDist = Math.max(1, pts[pts.length - 1].dist);
   const driftX = x;
   const driftY = y;
@@ -61,38 +113,106 @@ function reconstructAutonomousTrajectory(telemetry: ParsedTelemetryFile): { x: n
 }
 
 /**
- * Generate high-definition Track Map Data synchronized with telemetry and lap comparison.
- * Works autonomously for ANY circuit provided.
+ * Generate True FIA Grade Track Map Data synchronized with telemetry.
+ * Automatically recognizes official FIA circuits or supports user overrides.
  */
 export function generateTrackMapData(
   telemetry: ParsedTelemetryFile,
   trackHint?: string,
   lapComparison?: LapComparisonSummary | null
 ): TrackMapData {
-  const totalDistance = Math.max(100, telemetry.points[telemetry.points.length - 1]?.dist || 4000);
-  const hint = `${trackHint || ""} ${telemetry.filename || ""}`.toLowerCase();
+  const telemetryPoints = telemetry.points;
+  const startDist = telemetryPoints[0]?.dist || 0;
+  const endDist = telemetryPoints[telemetryPoints.length - 1]?.dist || 4000;
+  const totalDistance = Math.max(100, endDist - startDist);
 
-  // 1. Resolve Circuit Display Name
-  let circuitName = "Autonomous Circuit Layout";
-  if (hint.includes("redbull") || hint.includes("red bull") || hint.includes("spielberg") || hint.includes("rbr")) {
-    circuitName = "Red Bull Ring (Spielberg GP)";
-  } else if (hint.includes("spa")) {
-    circuitName = "Circuit de Spa-Francorchamps";
-  } else if (hint.includes("monza")) {
-    circuitName = "Autodromo Nazionale Monza";
-  } else if (hint.includes("silverstone")) {
-    circuitName = "Silverstone Grand Prix Circuit";
-  } else if (hint.includes("nurburg") || hint.includes("nordschleife")) {
-    circuitName = "Nürburgring Nordschleife";
-  } else if (hint.includes("suzuka")) {
-    circuitName = "Suzuka International Racing Course";
-  } else if (hint.includes("bathurst") || hint.includes("mount panorama")) {
-    circuitName = "Mount Panorama Circuit (Bathurst)";
-  } else if (trackHint && trackHint.trim().length > 3) {
-    circuitName = trackHint.trim();
+  // 1. Identify Authentic FIA Circuit
+  const searchHint = `${trackHint || ""} ${telemetry.filename || ""}`;
+  const realCircuit = getAuthenticTrackGeometry(searchHint, endDist);
+
+  if (realCircuit) {
+    // 2A. Authentic FIA Grade 1 Surveyed Circuit
+    const points: TrackMapPoint[] = telemetryPoints.map((pt, idx) => {
+      const coord = interpolateRealCircuit(realCircuit, pt.dist, startDist, endDist);
+      const deltaPt = lapComparison?.deltaPoints?.[idx];
+
+      return {
+        dist: pt.dist,
+        x: coord.x,
+        y: coord.y,
+        speed: pt.speed,
+        throttle: pt.throttle,
+        brake: pt.brake,
+        latG: pt.latG,
+        timeDelta: deltaPt ? deltaPt.timeDelta : undefined,
+        refSpeed: deltaPt ? deltaPt.refSpeed : undefined,
+      };
+    });
+
+    // Match corners and calculate driver apex speeds
+    const corners: TrackCorner[] = realCircuit.corners.map((rc, cIdx) => {
+      // Find telemetry point closest to this corner's distance
+      let closestPt: TrackMapPoint | null = null;
+      let minDiff = Infinity;
+      let minSpeedInZone = Infinity;
+
+      points.forEach((p) => {
+        const diff = Math.abs(p.dist - rc.dist);
+        if (diff < minDiff) {
+          minDiff = diff;
+          closestPt = p;
+        }
+        if (diff <= 220 && p.speed < minSpeedInZone) {
+          minSpeedInZone = p.speed;
+        }
+      });
+
+      const comp: CornerDeltaComparison | undefined = lapComparison?.cornerComparisons?.find(
+        (c) =>
+          c.shortName === rc.shortName ||
+          c.corner === rc.name ||
+          c.corner.toLowerCase().includes(rc.shortName.toLowerCase()) ||
+          Math.abs(c.dist - rc.dist) < 180
+      );
+
+      const hasTelemetryInCorner = minDiff < 300;
+      const driverSpeed = hasTelemetryInCorner
+        ? comp?.driverMinSpeed ?? (minSpeedInZone < Infinity ? minSpeedInZone : closestPt?.speed)
+        : undefined;
+
+      return {
+        id: `corner-${cIdx}`,
+        name: rc.name,
+        shortName: rc.shortName,
+        dist: rc.dist,
+        x: rc.x,
+        y: rc.y,
+        driverSpeed,
+        refSpeed: comp?.refMinSpeed,
+        speedDelta: comp?.speedDelta,
+        timeDelta: comp?.timeDelta,
+        brakingPointDeltaMeters: comp?.brakingPointDeltaMeters,
+        throttleCommitDeltaMeters: comp?.throttleCommitDeltaMeters,
+        verdict: comp?.verdict || (hasTelemetryInCorner ? `Apex Speed: ${Math.round(driverSpeed || 0)} km/h` : "FIA Reference Corner"),
+      };
+    });
+
+    return {
+      circuitKey: realCircuit.id,
+      circuitName: realCircuit.name,
+      country: realCircuit.country,
+      fiaGrade: realCircuit.fiaGrade,
+      totalDistance: realCircuit.officialDistance,
+      points,
+      fullCircuitPoints: realCircuit.points.map((p) => ({ dist: p.dist, x: p.x, y: p.y })),
+      corners,
+      drsZones: realCircuit.drsZones,
+      sectors: realCircuit.sectors,
+      bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+    };
   }
 
-  // 2. Synthesize Authentic 2D Trajectory via Physics Dead-Reckoning
+  // 2B. Universal Kinematic Dead-Reckoning Fallback for Custom Tracks
   const rawPositions = reconstructAutonomousTrajectory(telemetry);
 
   let minX = Infinity;
@@ -118,7 +238,7 @@ export function generateTrackMapData(
   const offsetX = padding + (usableSize - rangeX * scale) / 2;
   const offsetY = padding + (usableSize - rangeY * scale) / 2;
 
-  const points: TrackMapPoint[] = telemetry.points.map((pt, idx) => {
+  const points: TrackMapPoint[] = telemetryPoints.map((pt, idx) => {
     const rawPos = rawPositions[idx] || { x: 500, y: 500 };
     const normX = Math.round(offsetX + (rawPos.x - minX) * scale);
     const normY = Math.round(offsetY + (rawPos.y - minY) * scale);
@@ -137,103 +257,42 @@ export function generateTrackMapData(
     };
   });
 
-  // 3. Autonomous Dynamic Corner & Apex Detection from Physics
+  // Dynamic Corner Detection
   const corners: TrackCorner[] = [];
-  const minCornerGap = Math.max(120, totalDistance / 35.0);
+  const minCornerGap = Math.max(120, totalDistance / 30.0);
 
-  // Scan for local minimum speed troughs accompanied by lateral load
-  for (let i = 2; i < telemetry.points.length - 2; i++) {
-    const prev = telemetry.points[i - 1].speed;
-    const curr = telemetry.points[i].speed;
-    const next = telemetry.points[i + 1].speed;
-    const latG = Math.abs(telemetry.points[i].latG);
-    const steer = Math.abs(telemetry.points[i].steer);
-    const dist = telemetry.points[i].dist;
+  for (let i = 2; i < telemetryPoints.length - 2; i++) {
+    const prev = telemetryPoints[i - 1].speed;
+    const curr = telemetryPoints[i].speed;
+    const next = telemetryPoints[i + 1].speed;
+    const latG = Math.abs(telemetryPoints[i].latG);
+    const steer = Math.abs(telemetryPoints[i].steer);
+    const dist = telemetryPoints[i].dist;
 
-    // Corner criteria: local speed trough + either lateral G or steering angle
     if (curr <= prev && curr <= next && (latG >= 0.45 || steer >= 10.0)) {
       if (corners.length === 0 || dist - corners[corners.length - 1].dist > minCornerGap) {
         const cNum = corners.length + 1;
         const pt = points[i];
-
-        // Search backward for braking initiation point (brake > 25%)
-        let brakeDist = dist;
-        for (let b = i - 1; b >= Math.max(0, i - 40); b--) {
-          if (telemetry.points[b].brake > 25) {
-            brakeDist = telemetry.points[b].dist;
-          } else if (brakeDist !== dist && telemetry.points[b].brake < 10) {
-            break;
-          }
-        }
-
-        // Search forward for full throttle commitment (throttle > 50%)
-        let throttleDist = dist;
-        for (let t = i + 1; t <= Math.min(telemetry.points.length - 1, i + 40); t++) {
-          if (telemetry.points[t].throttle > 50) {
-            throttleDist = telemetry.points[t].dist;
-            break;
-          }
-        }
-
-        const turnDirection = telemetry.points[i].latG > 0 || telemetry.points[i].steer > 0 ? "Right" : "Left";
-        let character = "Medium-Speed Apex";
-        if (curr < 90) character = "Heavy Braking Hairpin";
-        else if (curr > 180) character = "High-Speed Sweeper";
-        else if (curr < 130) character = "Technical Chicane";
-
-        // Check if lap comparison has attribution for this corner
-        const comp = lapComparison?.cornerComparisons?.find(
-          (c) => Math.abs(c.dist - dist) < 180 || c.shortName === `T${cNum}`
-        );
-
         corners.push({
           id: `corner-${corners.length}`,
-          name: `Turn ${cNum} (${turnDirection} - ${character})`,
+          name: `Turn ${cNum}`,
           shortName: `T${cNum}`,
           dist,
           x: pt.x,
           y: pt.y,
           driverSpeed: curr,
-          refSpeed: comp?.refMinSpeed,
-          speedDelta: comp?.speedDelta,
-          timeDelta: comp?.timeDelta,
-          brakingPointDeltaMeters: comp?.brakingPointDeltaMeters,
-          throttleCommitDeltaMeters: comp?.throttleCommitDeltaMeters,
-          verdict: comp?.verdict || `${character} at ${curr} km/h`,
+          verdict: `Minimum Apex Speed: ${Math.round(curr)} km/h`,
         });
       }
     }
   }
 
-  // Fallback: If telemetry is very short or uniform, supply apex from minCornerSpeeds
-  if (corners.length === 0 && telemetry.minCornerSpeeds?.length > 0) {
-    telemetry.minCornerSpeeds.slice(0, 8).forEach((cs, idx) => {
-      let closestIdx = 0;
-      let minDiff = Infinity;
-      telemetry.points.forEach((p, pIdx) => {
-        const diff = Math.abs(p.dist - cs.dist);
-        if (diff < minDiff) {
-          minDiff = diff;
-          closestIdx = pIdx;
-        }
-      });
-      const pt = points[closestIdx] || points[0];
-      corners.push({
-        id: `corner-${idx}`,
-        name: `Turn ${idx + 1}`,
-        shortName: `T${idx + 1}`,
-        dist: cs.dist,
-        x: pt.x,
-        y: pt.y,
-        driverSpeed: cs.speed,
-      });
-    });
-  }
-
   return {
-    circuitName,
-    totalDistance,
+    circuitName: trackHint?.trim() || "Autonomous Circuit Layout",
+    fiaGrade: "Custom Circuit",
+    totalDistance: endDist,
     points,
+    fullCircuitPoints: points.map((p) => ({ dist: p.dist, x: p.x, y: p.y })),
     corners,
     bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
   };

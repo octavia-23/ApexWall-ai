@@ -240,10 +240,28 @@ export interface TrackMapPoint {
   cornerName?: string;
 }
 
+export interface TrackDrsZone {
+  name: string;
+  start: number;
+  end: number;
+}
+
+export interface TrackSector {
+  sector: number;
+  dist: number;
+}
+
 export interface TrackMapData {
+  circuitKey?: string;
   circuitName: string;
+  country?: string;
+  fiaGrade?: string;
   totalDistance: number;
   points: TrackMapPoint[];
+  fullCircuitPoints?: { dist: number; x: number; y: number }[];
   corners: TrackCorner[];
+  drsZones?: TrackDrsZone[];
+  sectors?: TrackSector[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
+

@@ -249,7 +249,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     const lowerName = parsed.filename.toLowerCase();
     let detectedTrack = track;
 
-    if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr")) {
+    if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr") || lowerName.includes("austria")) {
       detectedTrack = "Red Bull Ring (Spielberg GP)";
       setTrack("Red Bull Ring (Spielberg GP)");
     } else if (lowerName.includes("silverstone")) {
@@ -258,9 +258,24 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     } else if (lowerName.includes("monza")) {
       detectedTrack = "Autodromo Nazionale Monza";
       setTrack("Autodromo Nazionale Monza");
-    } else if (lowerName.includes("spa")) {
-      detectedTrack = "Spa-Francorchamps GP";
-      setTrack("Spa-Francorchamps GP");
+    } else if (lowerName.includes("spa") || lowerName.includes("francorchamps")) {
+      detectedTrack = "Circuit de Spa-Francorchamps";
+      setTrack("Circuit de Spa-Francorchamps");
+    } else if (lowerName.includes("suzuka")) {
+      detectedTrack = "Suzuka International Racing Course";
+      setTrack("Suzuka International Racing Course");
+    } else if (lowerName.includes("interlagos") || lowerName.includes("pace")) {
+      detectedTrack = "Autódromo José Carlos Pace (Interlagos)";
+      setTrack("Autódromo José Carlos Pace (Interlagos)");
+    } else if (lowerName.includes("cota") || lowerName.includes("americas")) {
+      detectedTrack = "Circuit of the Americas (COTA)";
+      setTrack("Circuit of the Americas (COTA)");
+    } else if (lowerName.includes("zandvoort")) {
+      detectedTrack = "Circuit Zandvoort";
+      setTrack("Circuit Zandvoort");
+    } else if (lowerName.includes("barcelona") || lowerName.includes("catalunya")) {
+      detectedTrack = "Circuit de Barcelona-Catalunya";
+      setTrack("Circuit de Barcelona-Catalunya");
     }
 
     if (lowerName.includes("mercedes") || lowerName.includes("amg")) {
@@ -1664,6 +1679,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 benchmarkMode={benchmarkMode}
                 activeCornerId={activeCornerId}
                 onSelectCorner={(corner) => setActiveCornerId(corner ? corner.shortName || corner.id : null)}
+                onSelectCircuit={(circuitKey) => setTrack(circuitKey)}
               />
             )}
 
