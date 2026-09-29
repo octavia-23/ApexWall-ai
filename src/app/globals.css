@@ -8,27 +8,27 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces */
-  --bg-base: #0B0E14;
-  --bg-surface: #11151F;
-  --bg-surface-elevated: #161B26;
-  --bg-surface-hover: #1C2230;
-  --bg-inset: #0E121B;
-  --bg-inset-hover: #141924;
+  /* Surfaces (Porsche Precision Titanium Slate) */
+  --bg-base: #090C14;
+  --bg-surface: #0E1320;
+  --bg-surface-elevated: #151D2E;
+  --bg-surface-hover: #1A2438;
+  --bg-inset: #090D17;
+  --bg-inset-hover: #0D1220;
 
-  /* Borders */
-  --border-subtle: rgba(255, 255, 255, 0.07);
-  --border-default: rgba(255, 255, 255, 0.12);
-  --border-strong: rgba(255, 255, 255, 0.2);
+  /* Restrained, Non-Distracting Hairline Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(59, 130, 246, 0.25);
   --border-accent: #3B82F6;
 
-  /* Typography Colors */
-  --text-primary: #F8FAFC;
+  /* Glare-Free Soft Typography */
+  --text-primary: #F1F5F9;
   --text-secondary: #94A3B8;
   --text-muted: #64748B;
   --text-dim: #475569;
 
-  /* Restrained Engineering Accents */
+  /* Porsche Precision Racing Cobalt Accents */
   --accent-blue: #3B82F6;
   --accent-blue-hover: #2563EB;
   --accent-blue-subtle: rgba(59, 130, 246, 0.12);
@@ -40,8 +40,8 @@
   --status-amber-subtle: rgba(245, 158, 11, 0.12);
   --status-rose: #F43F5E;
   --status-rose-subtle: rgba(244, 63, 94, 0.12);
-  --status-cyan: #06B6D4;
-  --status-cyan-subtle: rgba(6, 182, 212, 0.12);
+  --status-cyan: #38BDF8;
+  --status-cyan-subtle: rgba(56, 189, 248, 0.12);
 
   /* Telemetry Channels */
   --tel-speed: #38BDF8;
@@ -52,7 +52,7 @@
   --tel-gear: #A78BFA;
 
   /* Fonts */
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
   /* Transitions & Shadows */
@@ -60,6 +60,52 @@
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 12px -1px rgba(0, 0, 0, 0.5);
   --shadow-lg: 0 12px 28px -4px rgba(0, 0, 0, 0.7);
+}
+
+/* ==========================================================================
+   SOFT AMOLED / CINEMATIC BLACK MODE (Pitch black base without eye-straining white glare)
+   ========================================================================== */
+html.amoled, body.amoled, [data-theme="amoled"], :root.amoled {
+  --bg-base: #000000 !important;
+  --bg-surface: #07090E !important;
+  --bg-surface-elevated: #0C1017 !important;
+  --bg-surface-hover: #121620 !important;
+  --bg-inset: #030406 !important;
+  --bg-inset-hover: #07090D !important;
+
+  /* Soft smoky hairlines instead of harsh white lines */
+  --border-subtle: rgba(255, 255, 255, 0.04) !important;
+  --border-default: rgba(255, 255, 255, 0.07) !important;
+  --border-strong: rgba(255, 255, 255, 0.12) !important;
+
+  /* Soft ice-silver text to avoid astigmatism halation/glare */
+  --text-primary: #E2E8F0 !important;
+  --text-secondary: #8B99AD !important;
+  --text-muted: #5A6980 !important;
+  --text-dim: #404B5C !important;
+}
+
+body.amoled {
+  background-color: #000000 !important;
+}
+
+.amoled header {
+  background-color: rgba(0, 0, 0, 0.85) !important;
+  border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+.amoled .glass-card,
+.amoled .panel,
+.amoled .glass-card-nested,
+.amoled .score-card-main,
+.amoled .telemetry-chart-module {
+  background: #07090E !important;
+  border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+.amoled .panel-header {
+  background: #0B0E15 !important;
+  border-bottom-color: rgba(255, 255, 255, 0.05) !important;
 }
 
 /* Base Reset */

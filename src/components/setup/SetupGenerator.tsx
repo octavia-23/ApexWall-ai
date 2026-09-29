@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { GeneratedSetupResult } from "@/types/telemetry";
 import { SetupExportModal } from "./SetupExportModal";
+import { SetupMorphModal } from "./SetupMorphModal";
 import { saveSetupToVault } from "@/lib/setup-vault";
 import { ACModIngestor } from "./ACModIngestor";
 import { AssettoCorsaModData } from "@/lib/ac-mod-parser";
@@ -72,6 +73,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
   const [copied, setCopied] = useState(false);
   const [savedToVault, setSavedToVault] = useState(false);
+  const [isMorphModalOpen, setIsMorphModalOpen] = useState(false);
 
   // Sync initial values when transferred from Telemetry Analyzer
   useEffect(() => {
@@ -536,6 +538,16 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 <span>{savedToVault ? "SAVED TO VAULT ✓" : "SAVE TO VAULT"}</span>
               </button>
 
+              <button
+                type="button"
+                className="action-btn flex items-center gap-1.5"
+                onClick={() => setIsMorphModalOpen(true)}
+                title="Adapt this setup to higher/lower track temp or wet weather"
+              >
+                <span className="text-amber-400 font-bold">⚡</span>
+                <span>SETUP MORPH</span>
+              </button>
+
               <SetupExportModal
                 buttonLabel="INJECT / EXPORT SETUP"
                 context={{
@@ -554,6 +566,35 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   sections: result.sections || [],
                 }}
               />
+
+              {isMorphModalOpen && (
+                <SetupMorphModal
+                  isOpen={isMorphModalOpen}
+                  onClose={() => setIsMorphModalOpen(false)}
+                  context={{
+                    game,
+                    car,
+                    track,
+                    sessionType,
+                    weather,
+                    trackTemp,
+                    airTemp,
+                    fuelLoad,
+                    tyreCompound,
+                    driverStyle,
+                    summary: result.summary,
+                    engineerNotes: result.engineerNotes,
+                    sections: result.sections || [],
+                  }}
+                  onApplyMorphedSetup={(newSections, summaryNote) => {
+                    setResult((prev) => prev ? {
+                      ...prev,
+                      sections: newSections,
+                      summary: `${prev.summary}\n\n[DYNAMIC WEATHER MORPH]: ${summaryNote}`,
+                    } : null);
+                  }}
+                />
+              )}
             </div>
           )}
         </div>

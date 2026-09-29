@@ -5,12 +5,16 @@ import {
   generateRFactorSVM,
   generateIRacingText,
   generateF1SetupJson,
+  generateAMS2SVM,
+  generateBeamNGPC,
+  generateRaceRoomXML,
+  generateForzaGTText,
   generateWindowsInstallBat,
   downloadFile,
 } from "./setup-exporter";
 
 export interface SupportedSimConfig {
-  id: "acc" | "assetto-corsa" | "iracing" | "lmu" | "f1";
+  id: "acc" | "assetto-corsa" | "iracing" | "lmu" | "f1" | "ams2" | "beamng" | "raceroom" | "forza-gt";
   displayName: string;
   shortName: string;
   fileExtension: string;
@@ -174,6 +178,88 @@ export const SUPPORTED_SIMS: Record<string, SupportedSimConfig> = {
     getWindowsDirString: (_car: string, track: string) =>
       `Documents\\My Games\\F1 24\\setups\\${normalizeTrackSlug(track, "f1")}`,
   },
+
+  ams2: {
+    id: "ams2",
+    displayName: "Automobilista 2 (AMS2)",
+    shortName: "AMS2",
+    fileExtension: ".svm",
+    mimeType: "text/plain",
+    defaultWindowsPath: "Documents\\Automobilista 2\\savegame\\tuning",
+    carFolderStyle: "slug",
+    trackFolderStyle: "slug",
+    generateContent: generateAMS2SVM,
+    getRelativeDir: (car: string, track: string) => [
+      "Documents",
+      "Automobilista 2",
+      "savegame",
+      "tuning",
+      sanitizeSlug(car),
+      normalizeTrackSlug(track, "ams2"),
+    ],
+    getWindowsDirString: (car: string, track: string) =>
+      `Documents\\Automobilista 2\\savegame\\tuning\\${sanitizeSlug(car)}\\${normalizeTrackSlug(track, "ams2")}`,
+  },
+
+  beamng: {
+    id: "beamng",
+    displayName: "BeamNG.drive",
+    shortName: "BeamNG",
+    fileExtension: ".pc",
+    mimeType: "application/json",
+    defaultWindowsPath: "AppData\\Local\\BeamNG.drive\\0.33\\vehicles",
+    carFolderStyle: "slug",
+    trackFolderStyle: "none" as any,
+    generateContent: generateBeamNGPC,
+    getRelativeDir: (car: string) => [
+      "AppData",
+      "Local",
+      "BeamNG.drive",
+      "0.33",
+      "vehicles",
+      sanitizeSlug(car),
+    ],
+    getWindowsDirString: (car: string) =>
+      `AppData\\Local\\BeamNG.drive\\0.33\\vehicles\\${sanitizeSlug(car)}`,
+  },
+
+  raceroom: {
+    id: "raceroom",
+    displayName: "RaceRoom Racing Experience",
+    shortName: "RaceRoom",
+    fileExtension: ".xml",
+    mimeType: "application/xml",
+    defaultWindowsPath: "Documents\\My Games\\SimBin\\RaceRoom Racing Experience\\UserData\\CarSetups",
+    carFolderStyle: "slug",
+    trackFolderStyle: "slug",
+    generateContent: generateRaceRoomXML,
+    getRelativeDir: (car: string, track: string) => [
+      "Documents",
+      "My Games",
+      "SimBin",
+      "RaceRoom Racing Experience",
+      "UserData",
+      "CarSetups",
+      sanitizeSlug(car),
+      normalizeTrackSlug(track, "raceroom"),
+    ],
+    getWindowsDirString: (car: string, track: string) =>
+      `Documents\\My Games\\SimBin\\RaceRoom Racing Experience\\UserData\\CarSetups\\${sanitizeSlug(car)}\\${normalizeTrackSlug(track, "raceroom")}`,
+  },
+
+  "forza-gt": {
+    id: "forza-gt",
+    displayName: "Forza Motorsport / Gran Turismo 7",
+    shortName: "Forza/GT",
+    fileExtension: ".txt",
+    mimeType: "text/plain",
+    defaultWindowsPath: "Documents\\ApexWall\\TuningSheets",
+    carFolderStyle: "none",
+    trackFolderStyle: "none" as any,
+    generateContent: generateForzaGTText,
+    getRelativeDir: () => ["Documents", "ApexWall", "TuningSheets"],
+    getWindowsDirString: () => `Documents\\ApexWall\\TuningSheets`,
+  },
 };
 
 /**
@@ -192,6 +278,18 @@ export function resolveSimConfig(gameStr?: string): SupportedSimConfig {
   }
   if (g.includes("lmu") || g.includes("mans") || g.includes("rfactor")) {
     return SUPPORTED_SIMS.lmu;
+  }
+  if (g.includes("automobilista") || g.includes("ams2")) {
+    return SUPPORTED_SIMS.ams2;
+  }
+  if (g.includes("beamng")) {
+    return SUPPORTED_SIMS.beamng;
+  }
+  if (g.includes("raceroom") || g.includes("simbin")) {
+    return SUPPORTED_SIMS.raceroom;
+  }
+  if (g.includes("forza") || g.includes("gran turismo") || g.includes("gt7")) {
+    return SUPPORTED_SIMS["forza-gt"];
   }
   return SUPPORTED_SIMS["assetto-corsa"];
 }

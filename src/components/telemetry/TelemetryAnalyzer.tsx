@@ -881,12 +881,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           <div className="panel-tag-group">
             <span className="panel-num">01</span>
             <div className="panel-label-group">
-              <span className="panel-label">TELEMETRY INGEST</span>
-              <span className="panel-sublabel">CHANNELS, CAR SPEC & TRACK CONDITIONS</span>
+              <span className="panel-label">Telemetry Ingest & Configuration</span>
+              <span className="panel-sublabel">Vehicle Spec & Track Conditions</span>
             </div>
           </div>
           <div className="panel-telemetry-badge">
-            <span className="badge-dot badge-dot-cyan"></span> MOTEC / CSV READY
+            <span className="badge-dot"></span> MoTeC / CSV Ready
           </div>
         </div>
 
@@ -896,7 +896,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             <svg className="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M5 17h14M4 14l2-6h12l2 6M6 17a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4z" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
-            01 // VEHICLE & CIRCUIT SPECIFICATION
+            Vehicle & Circuit Specification
           </div>
 
           <div className="field">
@@ -962,7 +962,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" />
               <circle cx="12" cy="12" r="4" />
             </svg>
-            02 // SESSION & AMBIENT CONDITIONS
+            Session & Track Conditions
           </div>
 
           <div className="field">
@@ -1229,7 +1229,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <circle cx="12" cy="12" r="3" />
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
             </svg>
-            04 // DRIVER STYLE & CHASSIS PREFERENCES
+            Driver Style & Setup Intent
           </div>
 
           <div className="field">
@@ -1341,13 +1341,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       </section>
 
       {/* RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & AI RACE ENGINEER */}
+      {/* RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & AI RACE ENGINEER */}
       <section className="panel output-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
             <span className="panel-num">02</span>
             <div className="panel-label-group">
-              <span className="panel-label">TELEMETRY DIAGNOSTIC SUITE</span>
-              <span className="panel-sublabel">CHIEF PERFORMANCE & RACE ENGINEER GUIDANCE</span>
+              <span className="panel-label">Telemetry Diagnostics & MoTeC HUD</span>
+              <span className="panel-sublabel">Multi-Channel Traces, 2D Circuit Map & Chassis Dynamics</span>
             </div>
           </div>
           {state === "result" && result && (
@@ -1368,7 +1369,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               {onDiscussWithEngineer && (
                 <button
                   type="button"
-                  className="action-btn border-cyan-500/40 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
+                  className="action-btn border-blue-500/40 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20"
                   onClick={onDiscussWithEngineer}
                   title="Discuss this telemetry debrief with your AI Chief Race Engineer"
                 >
@@ -1399,8 +1400,29 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           )}
         </div>
 
-        {/* State: Empty Standby */}
-        {state === "empty" && (
+        {/* State: Loading Banner */}
+        {state === "loading" && (
+          <div className="loading-state m-4">
+            <div className="loading-visual">
+              <div className="loading-pulse-ring" aria-hidden="true"></div>
+              <div className="loading-data-wrap">
+                <div className="loading-status-badge">AI TELEMETRY COMPUTATION</div>
+                <p className="loading-text">{telLoadingMessages[loadingTextIndex]}</p>
+                <div className="loading-sub">Analyzing steering scrub, trail-braking pressure decay, and chassis balance</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* State: Error */}
+        {state === "error" && (
+          <div className="error-state m-4">
+            ⚠ {errorMessage}
+          </div>
+        )}
+
+        {/* Fallback Empty Standby (only if no telemetry parsed) */}
+        {!parsedTelemetry && state === "empty" && (
           <div className="empty-state">
             <div className="chassis-schematic" aria-hidden="true">
               <svg viewBox="0 0 240 140" fill="none" className="w-full h-auto text-slate-600">
@@ -1416,7 +1438,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             <div className="empty-text-wrap">
               <h3 className="empty-title">TELEMETRY DIAGNOSTICS STANDBY</h3>
               <p className="empty-description">
-                Upload your MoTeC CSV / JSON log or select a demo stint on the left.<br />
+                Upload your MoTeC CSV / DuckDB log or select a demo stint on the left.<br />
                 The race engineer will plot your speed and pedal traces, calculate trail-braking linearity, diagnose chassis balance, and synthesize an adaptive setup sheet.
               </p>
             </div>
@@ -1428,57 +1450,66 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           </div>
         )}
 
-        {/* State: Loading */}
-        {state === "loading" && (
-          <div className="loading-state">
-            <div className="loading-visual">
-              <div className="loading-pulse-ring" aria-hidden="true"></div>
-              <div className="loading-data-wrap">
-                <div className="loading-status-badge">AI TELEMETRY COMPUTATION</div>
-                <p className="loading-text">{telLoadingMessages[loadingTextIndex]}</p>
-                <div className="loading-sub">Analyzing steering scrub, trail-braking pressure decay, and chassis balance</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* State: Error */}
-        {state === "error" && (
-          <div className="error-state">
-            ⚠ {errorMessage}
-          </div>
-        )}
-
-        {/* State: Result */}
-        {state === "result" && result && (
+        {/* Live Telemetry Viewport (Active whenever parsedTelemetry is present!) */}
+        {parsedTelemetry && (
           <div className="result-state">
-            {/* 1. Score & Overview Banner */}
-            <div className="telemetry-score-card">
-              <div className="score-card-main">
-                <div className="score-dial-wrap">
-                  <div className="score-dial">
-                    <span className="score-number">{result.overallScore}</span>
-                    <span className="score-max">/100</span>
+            {/* 1. Score & Overview Banner OR Live Telemetry Sync Banner */}
+            {state === "result" && result ? (
+              <div className="telemetry-score-card">
+                <div className="score-card-main">
+                  <div className="score-dial-wrap">
+                    <div className="score-dial">
+                      <span className="score-number">{result.overallScore}</span>
+                      <span className="score-max">/100</span>
+                    </div>
+                    <span className="score-label">TELEMETRY SCORE</span>
                   </div>
-                  <span className="score-label">TELEMETRY SCORE</span>
-                </div>
-                <div className="score-details">
-                  <div className="score-tags-row">
-                    <span className="tag-laptime">
-                      LAP: {result.lapTimeObserved || parsedTelemetry?.lapTime}
-                    </span>
-                    <span className="tag-delta">
-                      {result.estimatedTimeLost ? `${result.estimatedTimeLost} TIME ON TABLE` : "-0.85s TIME ON TABLE"}
-                    </span>
-                    <span className="tag-limiter">
-                      {result.primaryLimiter || "APEX UNDERSTEER & BRAKE DUMP"}
-                    </span>
+                  <div className="score-details">
+                    <div className="score-tags-row">
+                      <span className="tag-laptime">
+                        LAP: {result.lapTimeObserved || parsedTelemetry?.lapTime}
+                      </span>
+                      <span className="tag-delta">
+                        {result.estimatedTimeLost ? `${result.estimatedTimeLost} TIME ON TABLE` : "-0.85s TIME ON TABLE"}
+                      </span>
+                      <span className="tag-limiter">
+                        {result.primaryLimiter || "APEX UNDERSTEER & BRAKE DUMP"}
+                      </span>
+                    </div>
+                    <h3 className="score-verdict-title">{result.verdictTitle}</h3>
+                    <p className="score-summary">{result.executiveSummary}</p>
                   </div>
-                  <h3 className="score-verdict-title">{result.verdictTitle}</h3>
-                  <p className="score-summary">{result.executiveSummary}</p>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="telemetry-score-card !bg-blue-600/10 !border-blue-500/25">
+                <div className="score-card-main !p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10B981]"></span>
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">
+                        {car} @ {track}
+                      </span>
+                      <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        {parsedTelemetry.points.length} SAMPLES · {parsedTelemetry.lapTime}
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      MoTeC telemetry channels synchronized. Live crosshair scrubber, 2D circuit map, and Kamm friction circle are ready.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAnalyzeSubmit}
+                    disabled={state === "loading"}
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-tight transition-all shadow-lg flex items-center gap-2 flex-shrink-0"
+                  >
+                    <span>⚡</span>
+                    <span>Analyze Chassis & Synthesize Setup</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Pro Benchmark Comparison Strip */}
             {lapComparison && (
@@ -1492,7 +1523,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     PRO BENCHMARK OVERLAY
                   </span>
                   <span className="benchmark-metric">
-                    Driver: <strong>{result.lapTimeObserved || parsedTelemetry?.lapTime}</strong> vs Pro: <strong>{lapComparison.refLapTime}</strong>
+                    Driver: <strong>{result?.lapTimeObserved || parsedTelemetry?.lapTime}</strong> vs Pro: <strong>{lapComparison.refLapTime}</strong>
                   </span>
                   <span className={`benchmark-delta-pill ${lapComparison.totalTimeDeltaSeconds > 0 ? "loss" : "gain"}`}>
                     Δt: {lapComparison.totalTimeDeltaSeconds > 0 ? `+${lapComparison.totalTimeDeltaSeconds}s` : `${lapComparison.totalTimeDeltaSeconds}s`}
@@ -1768,8 +1799,11 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </div>
             )}
 
-            {/* 4. KPI Progress Grid */}
-            <div className="telemetry-kpis-grid">
+            {/* AI Results Sections (Rendered after AI analysis is run) */}
+            {state === "result" && result ? (
+              <>
+                {/* 4. KPI Progress Grid */}
+                <div className="telemetry-kpis-grid">
               {(result.kpiRatings || []).map((kpi, idx) => {
                 const statusClass =
                   kpi.status.toLowerCase().includes("good") || kpi.status.toLowerCase().includes("optimal")
@@ -1985,8 +2019,30 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <span>Analyze another telemetry stint</span>
               </button>
             </div>
+          </>
+        ) : (
+          <div className="p-6 rounded-2xl border border-blue-500/25 bg-blue-600/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl my-4">
+            <div>
+              <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+                <span>🏁</span> Ready for Chief Race Engineer Diagnosis?
+              </h3>
+              <p className="text-xs text-slate-300 mt-1 max-w-xl">
+                Formulate trail-braking decay scores, tyre slip angle diagnostics, apex understeer metrics, and synthesize a game-authentic adaptive setup sheet for {car}.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAnalyzeSubmit}
+              disabled={state === "loading"}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-tight transition-all shadow-md flex items-center gap-2 flex-shrink-0"
+            >
+              <span>⚡</span>
+              <span>Generate AI Setup & Diagnostic Debrief</span>
+            </button>
           </div>
         )}
+      </div>
+    )}
       </section>
     </div>
   );

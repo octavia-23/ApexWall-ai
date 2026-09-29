@@ -153,17 +153,17 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
   };
 
   return (
-    <div className="sim-injector-card bg-[#0d111a] border border-cyan-500/30 rounded-xl p-5 shadow-2xl text-slate-200">
+    <div className="sim-injector-card bg-[#0E1320] border border-blue-500/30 rounded-xl p-5 shadow-2xl text-slate-200">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400 font-bold text-sm">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/40 flex items-center justify-center text-blue-400 font-bold text-sm">
             ⚡
           </div>
           <div>
             <h3 className="text-sm font-bold tracking-wide uppercase text-white font-mono flex items-center gap-2">
               1-Click Direct Setup Injection
-              <span className="text-[10px] font-sans font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] font-sans font-semibold bg-blue-500/20 text-blue-300 border border-blue-500/30 px-2 py-0.5 rounded-full">
                 ALL SIMS
               </span>
             </h3>
@@ -181,8 +181,8 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
               BRIDGE ACTIVE (0-CLICK)
             </div>
           ) : isFileSystemAccessSupported() ? (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <div className="flex items-center gap-1.5 text-[11px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 rounded-full">
+              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
               BROWSER DISK ACCESS READY
             </div>
           ) : (
@@ -209,7 +209,7 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
         <label className="block text-[11px] font-mono uppercase tracking-wider text-slate-400 mb-1.5">
           Select Target Simulator:
         </label>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-1.5">
           {Object.values(SUPPORTED_SIMS).map((sim) => {
             const isSelected = selectedSim.id === sim.id;
             return (
@@ -222,7 +222,7 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
                 }}
                 className={`px-3 py-2 rounded-lg text-left transition-all border ${
                   isSelected
-                    ? "bg-cyan-500/15 border-cyan-500 text-white shadow-lg shadow-cyan-500/10"
+                    ? "bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 font-bold"
                     : "bg-white/[0.03] border-white/10 text-slate-400 hover:bg-white/[0.06] hover:text-slate-200"
                 }`}
               >
@@ -231,7 +231,7 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
                   <span
                     className={`text-[9px] px-1 py-0.2 rounded font-mono ${
                       isSelected
-                        ? "bg-cyan-500/30 text-cyan-200"
+                        ? "bg-white/20 text-white"
                         : "bg-white/10 text-slate-400"
                     }`}
                   >
@@ -288,11 +288,11 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
           type="button"
           disabled={isInjecting}
           onClick={() => handleInject(false)}
-          className="flex-1 min-w-[200px] bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-bold text-xs font-mono py-2.5 px-4 rounded-lg shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          className="flex-1 min-w-[200px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold text-xs font-mono py-2.5 px-4 rounded-lg shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {isInjecting ? (
             <>
-              <span className="w-3.5 h-3.5 border-2 border-black border-t-transparent rounded-full animate-spin"></span>
+              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
               <span>INJECTING SETUP...</span>
             </>
           ) : (

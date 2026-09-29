@@ -36,6 +36,14 @@ function parseNumber(val: string, fallback: number = 0): number {
   return match ? parseFloat(match[0]) : fallback;
 }
 
+export function sanitizeSlug(input: string): string {
+  return (input || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 /**
  * 1. Assetto Corsa Competizione (ACC) Native Setup JSON
  */
@@ -722,7 +730,187 @@ export function generateF1SetupText(ctx: SetupExportContext): string {
 }
 
 /**
- * 8. Universal 1-Click Windows Batch Auto-Installer (.bat)
+ * 8. Automobilista 2 (AMS2) Setup Specification (.svm)
+ */
+export function generateAMS2SVM(ctx: SetupExportContext): string {
+  const flPsi = findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf"]) || "26.5 psi";
+  const frPsi = findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf"]) || "26.8 psi";
+  const rlPsi = findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr"]) || "26.2 psi";
+  const rrPsi = findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]) || "26.4 psi";
+
+  const fArb = findItemValue(ctx.sections, ["front anti-roll", "front arb"]) || "3";
+  const rArb = findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]) || "2";
+  const fCamber = findItemValue(ctx.sections, ["front camber"]) || "-3.2°";
+  const rCamber = findItemValue(ctx.sections, ["rear camber"]) || "-2.5°";
+  const fToe = findItemValue(ctx.sections, ["front toe"]) || "-0.10°";
+  const rToe = findItemValue(ctx.sections, ["rear toe"]) || "+0.18°";
+  const brakeBias = findItemValue(ctx.sections, ["brake bias"]) || "54.5%";
+  const rWing = findItemValue(ctx.sections, ["rear wing"]) || "7";
+  const fRide = findItemValue(ctx.sections, ["front ride height"]) || "54 mm";
+
+  return `// ApexWall AI Engine Setup Specification (.svm)
+// Platform: Automobilista 2 (Madness Engine)
+// Car: ${ctx.car}
+// Track: ${ctx.track}
+// Generated: ${new Date().toUTCString()}
+
+[GENERAL]
+Vehicle="${ctx.car}"
+Track="${ctx.track}"
+Session="${ctx.sessionType || "Practice / Race"}"
+FuelLoad=${parseNumber(ctx.fuelLoad || "35", 35)}
+
+[FRONTLEFT]
+Pressure=${flPsi}
+Camber=${fCamber}
+Toe=${fToe}
+
+[FRONTRIGHT]
+Pressure=${frPsi}
+Camber=${fCamber}
+Toe=${fToe}
+
+[REARLEFT]
+Pressure=${rlPsi}
+Camber=${rCamber}
+Toe=${rToe}
+
+[REARRIGHT]
+Pressure=${rrPsi}
+Camber=${rCamber}
+Toe=${rToe}
+
+[SUSPENSION]
+FrontAntiRollBar=${fArb}
+RearAntiRollBar=${rArb}
+
+[BRAKES]
+BrakeBias=${brakeBias}
+BrakePressure=100.0%
+
+[AERODYNAMICS]
+FrontRideHeight=${fRide}
+RearWingAngle=${rWing}
+
+[NOTES]
+// ${ctx.summary ? ctx.summary.replace(/\n/g, " ") : "Calibrated baseline by ApexWall AI."}
+`;
+}
+
+/**
+ * 9. BeamNG.drive Vehicle Tuning Configuration (.pc JSON)
+ */
+export function generateBeamNGPC(ctx: SetupExportContext): string {
+  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -3.0);
+  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -2.2);
+  const flPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold"]), 28);
+  const rlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold"]), 26);
+  const brakeBias = parseNumber(findItemValue(ctx.sections, ["brake bias"]), 58) / 100;
+
+  const beamConfig = {
+    format: 2,
+    mainPartName: sanitizeSlug(ctx.car) || "custom_vehicle",
+    model: sanitizeSlug(ctx.car) || "custom_vehicle",
+    description: `ApexWall AI Race Setup — ${ctx.car} @ ${ctx.track}`,
+    vars: {
+      $camber_FR: Number((fCamber * 0.015).toFixed(4)),
+      $camber_RR: Number((rCamber * 0.012).toFixed(4)),
+      $toe_FR: 0.001,
+      $toe_RR: 0.002,
+      $tirepressure_F: Math.round(flPsi),
+      $tirepressure_R: Math.round(rlPsi),
+      $brakebias: Number(brakeBias.toFixed(3)),
+      $arb_F: 3500000,
+      $arb_R: 1800000,
+    },
+    _generatedBy: "ApexWall AI Engine v2.0",
+    _exportedAt: new Date().toISOString(),
+  };
+
+  return JSON.stringify(beamConfig, null, 2);
+}
+
+/**
+ * 10. RaceRoom Racing Experience (.xml)
+ */
+export function generateRaceRoomXML(ctx: SetupExportContext): string {
+  const flPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold"]), 26.5);
+  const frPsi = parseNumber(findItemValue(ctx.sections, ["front right", "fr cold"]), 26.8);
+  const rlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold"]), 26.2);
+  const rrPsi = parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold"]), 26.4);
+  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -3.2);
+  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -2.5);
+  const fArb = parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb"]), 4);
+  const rArb = parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]), 2);
+  const brakeBias = parseNumber(findItemValue(ctx.sections, ["brake bias"]), 55.5);
+  const rWing = parseNumber(findItemValue(ctx.sections, ["rear wing"]), 6);
+
+  return `<?xml version="1.0" encoding="utf-8"?>
+<setup version="1.0">
+  <header>
+    <game>RaceRoom Racing Experience</game>
+    <car>${ctx.car}</car>
+    <track>${ctx.track}</track>
+    <date>${new Date().toISOString()}</date>
+    <author>ApexWall AI</author>
+  </header>
+  <tyres>
+    <pressure_front_left>${flPsi.toFixed(1)}</pressure_front_left>
+    <pressure_front_right>${frPsi.toFixed(1)}</pressure_front_right>
+    <pressure_rear_left>${rlPsi.toFixed(1)}</pressure_rear_left>
+    <pressure_rear_right>${rrPsi.toFixed(1)}</pressure_rear_right>
+  </tyres>
+  <alignment>
+    <camber_front>${fCamber.toFixed(2)}</camber_front>
+    <camber_rear>${rCamber.toFixed(2)}</camber_rear>
+  </alignment>
+  <suspension>
+    <arb_front>${Math.round(fArb)}</arb_front>
+    <arb_rear>${Math.round(rArb)}</arb_rear>
+  </suspension>
+  <aerodynamics>
+    <rear_wing>${Math.round(rWing)}</rear_wing>
+  </aerodynamics>
+  <brakes>
+    <balance_front>${brakeBias.toFixed(1)}</balance_front>
+  </brakes>
+</setup>
+`;
+}
+
+/**
+ * 11. Forza Motorsport & Gran Turismo 7 In-Game Tuning Card (Text / Markdown)
+ */
+export function generateForzaGTText(ctx: SetupExportContext): string {
+  let out = `================================================================================\n`;
+  out += `APEXWALL AI // FORZA MOTORSPORT & GRAN TURISMO 7 TUNING GUIDE\n`;
+  out += `CAR:   ${ctx.car.toUpperCase()}\n`;
+  out += `TRACK: ${ctx.track.toUpperCase()}\n`;
+  out += `DATE:  ${new Date().toLocaleDateString()}\n`;
+  out += `================================================================================\n\n`;
+
+  out += `[IN-GAME TUNING MENU CLICK-BY-CLICK SPECIFICATION]\n\n`;
+
+  (ctx.sections || []).forEach((sec) => {
+    out += `--- ${sec.title.toUpperCase()} ---\n`;
+    sec.items.forEach((it) => {
+      out += `  • ${it.label.padEnd(28, " ")}: ${it.value}\n`;
+      if (it.styleNote) {
+        out += `    ↳ In-game advice: ${it.styleNote}\n`;
+      }
+    });
+    out += `\n`;
+  });
+
+  if (ctx.summary) {
+    out += `[DRIVING & SETUP STRATEGY]\n${ctx.summary}\n\n`;
+  }
+
+  return out;
+}
+
+/**
+ * 12. Universal 1-Click Windows Batch Auto-Installer (.bat)
  */
 export function generateWindowsInstallBat(
   targetDirWindows: string,
