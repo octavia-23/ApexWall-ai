@@ -61,30 +61,14 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
   return (
     <header className="sticky top-0 z-50 h-12 w-full bg-[var(--bg-base)]/90 backdrop-blur-xl border-b border-white/[0.08] select-none transition-colors duration-200">
       <div className="max-w-[1780px] h-full mx-auto px-4 flex items-center justify-between gap-3">
-        {/* LEFT: Brand & Engine Status */}
+        {/* LEFT: Brand */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm font-extrabold text-xs tracking-wider">
               AW
             </div>
-            <div className="flex items-baseline gap-1.5">
-              <span className="font-extrabold text-sm tracking-tight text-white font-sans">
-                ApexWall
-              </span>
-              <span className="text-[10px] font-semibold text-blue-400 px-1.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
-                PRO
-              </span>
-            </div>
-          </div>
-
-          <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-white/[0.08] text-xs text-slate-400">
-            <span
-              className={`w-2 h-2 rounded-full ${
-                isLoading ? "bg-amber-400 animate-ping" : "bg-emerald-400 shadow-[0_0_6px_#10B981]"
-              }`}
-            ></span>
-            <span className="text-slate-300 font-medium">
-              {isLoading ? "PROCESSING" : "ENGINE READY"}
+            <span className="font-extrabold text-sm tracking-tight text-white font-sans">
+              ApexWall
             </span>
           </div>
         </div>
