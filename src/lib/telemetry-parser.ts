@@ -107,8 +107,22 @@ export function parseTelemetryCSV(csvText: string, filename: string = "telemetry
   const seconds = (totalDuration % 60).toFixed(3);
   const lapTimeFormatted = `${minutes}:${seconds.padStart(6, "0")}`;
 
-  // Downsample to ~120 evenly spaced points
-  const targetSamples = 120;
+  // Extract statistical metrics across full raw dataset for 100% accuracy
+  let topSpeed = 0;
+  let minSpeed = 999;
+  let maxLatG = 0;
+  let maxDecelG = 0;
+
+  parsedPoints.forEach((p) => {
+    if (p.speed > topSpeed) topSpeed = p.speed;
+    if (p.speed > 30 && p.speed < minSpeed) minSpeed = p.speed;
+    if (Math.abs(p.latG) > maxLatG) maxLatG = Math.abs(p.latG);
+    if (p.longG < maxDecelG) maxDecelG = p.longG;
+  });
+  if (minSpeed === 999) minSpeed = 0;
+
+  // Downsample to high-density points (up to 1,500 points) for buttery smooth 60fps canvas curves
+  const targetSamples = 1500;
   const step = Math.max(1, Math.floor(parsedPoints.length / targetSamples));
   const downsampled: TelemetryPoint[] = [];
   for (let i = 0; i < parsedPoints.length; i += step) {
@@ -118,19 +132,8 @@ export function parseTelemetryCSV(csvText: string, filename: string = "telemetry
     downsampled.push(parsedPoints[parsedPoints.length - 1]);
   }
 
-  // Extract statistical metrics
-  let topSpeed = 0;
-  let minSpeed = 999;
-  let maxLatG = 0;
-  let maxDecelG = 0;
   const cornerSpeeds: MinCornerSpeed[] = [];
-
   downsampled.forEach((p, idx) => {
-    if (p.speed > topSpeed) topSpeed = p.speed;
-    if (p.speed < minSpeed) minSpeed = p.speed;
-    if (Math.abs(p.latG) > maxLatG) maxLatG = Math.abs(p.latG);
-    if (p.longG < maxDecelG) maxDecelG = p.longG;
-
     // Detect corner apex (local minimum speed with steering angle > 15 deg)
     if (idx > 2 && idx < downsampled.length - 2) {
       const prev = downsampled[idx - 1].speed;
