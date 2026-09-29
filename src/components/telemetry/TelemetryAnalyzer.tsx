@@ -171,6 +171,22 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         file: "/sample-telemetry/redbullring-amg-gt4.csv",
         refFile: "",
       },
+      acevo: {
+        game: "Assetto Corsa Evo",
+        car: "Ferrari 296 GT3",
+        track: "Autodromo Internazionale Enzo e Dino Ferrari (Imola)",
+        weather: "Dry",
+        trackTemp: "31°C",
+        airTemp: "23°C",
+        tyres: "Hard Slick",
+        fuel: "30 L",
+        driverStyle: "Heavy Trail-Braker",
+        balance: "Neutral Balance",
+        target: "Qualifying Hotlap (Peak Grip)",
+        complaint: "Bottoming out on Variante Alta kerbs, understeer through Tamburello entry",
+        file: "/sample-telemetry/acevo-imola-gt3.csv",
+        refFile: "/sample-telemetry/spa-gt3-pro-reference.csv",
+      },
     };
 
     const cfg = presets[presetKey];
@@ -290,6 +306,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
     if (lowerName.includes("iracing") || lowerName.includes(".ibt")) {
       setGame("iRacing");
+    } else if (lowerName.includes("ace") || lowerName.includes("evo") || lowerName.includes("acevo")) {
+      setGame("Assetto Corsa Evo");
     } else if (lowerName.includes("assetto") || lowerName.includes("acc")) {
       setGame("Assetto Corsa Competizione");
     }
@@ -1179,7 +1197,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   {isParsingDuckDB ? "Executing DuckDB-Wasm Engine..." : "Drag & drop your Telemetry file"}
                 </span>
                 <span className="dropzone-sub">
-                  Supports <strong>Le Mans Ultimate (.duckdb)</strong>, <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong>, <strong>iRacing</strong> & <strong>JSON</strong> logs
+                  Supports <strong>Assetto Corsa Evo (MoTeC CSV)</strong>, <strong>Le Mans Ultimate (.duckdb)</strong>, <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong> & <strong>iRacing</strong> logs
                 </span>
               </div>
               <button
@@ -1235,18 +1253,18 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <span>Quick reference runs:</span>
               <span className="text-[10px] text-slate-500 font-mono">OPTIONAL</span>
             </div>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
-                  activePreset === "redbullring"
+                  activePreset === "acevo"
                     ? "border-blue-500/50 bg-blue-500/10 text-white"
                     : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
                 }`}
-                onClick={() => loadPreset("redbullring")}
+                onClick={() => loadPreset("acevo")}
               >
-                <div className="font-semibold truncate">Red Bull Ring (iRacing)</div>
-                <div className="text-[10px] text-slate-400">AMG GT4 · 60 Hz</div>
+                <div className="font-semibold truncate">Imola (AC Evo)</div>
+                <div className="text-[10px] text-slate-400">Ferrari 296 GT3 · MoTeC</div>
               </button>
 
               <button
@@ -1259,7 +1277,20 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 onClick={() => loadPreset("spa")}
               >
                 <div className="font-semibold truncate">Spa-Francorchamps</div>
-                <div className="text-[10px] text-slate-400">Ferrari 296 GT3</div>
+                <div className="text-[10px] text-slate-400">Ferrari 296 GT3 · ACC</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "redbullring"
+                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("redbullring")}
+              >
+                <div className="font-semibold truncate">Red Bull Ring</div>
+                <div className="text-[10px] text-slate-400">AMG GT4 · iRacing</div>
               </button>
             </div>
           </div>

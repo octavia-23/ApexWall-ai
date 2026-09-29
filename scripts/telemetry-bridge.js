@@ -7,6 +7,7 @@
  * frames to the ApexWall AI web dashboard over WebSockets.
  *
  * Usage:
+ *   node scripts/telemetry-bridge.js --game acevo   # Assetto Corsa Evo Shared Memory Bridge
  *   node scripts/telemetry-bridge.js --game f1      # F1 23/24 UDP (port 20777)
  *   node scripts/telemetry-bridge.js --game acc     # ACC UDP (port 9000)
  *   node scripts/telemetry-bridge.js --test         # Simulated test broadcast
@@ -17,19 +18,21 @@ const dgram = require("dgram");
 const http = require("http");
 const fs = require("fs");
 const path = require("path");
+const { spawn } = require("child_process");
+const readline = require("readline");
 const { WebSocketServer } = require("ws");
 
 const args = process.argv.slice(2);
 const isTestMode = args.includes("--test");
-const gameArg = args.find((a, i) => args[i - 1] === "--game") || "f1";
+const gameArg = (args.find((a, i) => args[i - 1] === "--game") || "f1").toLowerCase();
 
 const WS_PORT = 9001;
-const UDP_PORT = gameArg === "acc" ? 9000 : 20777;
+const UDP_PORT = gameArg === "acc" ? 9000 : (gameArg === "acevo" || gameArg === "assetto-corsa-evo" ? 9002 : 20777);
 
 console.log("=====================================================");
-console.log("  🏁 APEXWALL AI // LOCAL TELEMETRY UDP BRIDGE");
+console.log("  🏁 APEXWALL AI // LOCAL TELEMETRY UDP & SHM BRIDGE");
 console.log("=====================================================");
-console.log(`• Sim Target: ${gameArg.toUpperCase()} (Listening UDP Port: ${UDP_PORT})`);
+console.log(`• Sim Target: ${gameArg.toUpperCase()}${gameArg === "acevo" || gameArg === "assetto-corsa-evo" ? " (Shared Memory: Local\\acevo_pmf_*)" : ` (Listening UDP Port: ${UDP_PORT})`}`);
 console.log(`• WebSocket Broadcast Server: ws://localhost:${WS_PORT}`);
 console.log(`• Setup Injection API: http://localhost:${WS_PORT}/api/inject-setup`);
 console.log("=====================================================\n");
@@ -72,6 +75,8 @@ const server = http.createServer((req, res) => {
           targetDir = path.join(userProfile, "Documents", "Assetto Corsa Competizione", "Setups", car || "generic", track || "spa");
         } else if (sim === "assetto-corsa") {
           targetDir = path.join(userProfile, "Documents", "Assetto Corsa", "setups", car || "generic", track || "spa");
+        } else if (sim === "assetto-corsa-evo" || sim === "acevo") {
+          targetDir = path.join(userProfile, "Documents", "Assetto Corsa Evo", "setups", car || "generic", track || "spa");
         } else if (sim === "iracing") {
           targetDir = path.join(userProfile, "Documents", "iRacing", "setups", car || "generic", track || "spa");
         } else if (sim === "lmu") {
@@ -158,8 +163,48 @@ if (isTestMode) {
       tyrePressures: { FL: 26.9, FR: 27.1, RL: 26.8, RR: 27.0 },
     });
   }, 1000 / 60);
+} else if (gameArg === "acevo" || gameArg === "assetto-corsa-evo") {
+  // 3. Assetto Corsa Evo Native Shared Memory Integration (via acevo-bridge.py)
+  console.log("[ACEVO] Launching Assetto Corsa Evo Shared Memory Bridge process...");
+  const scriptPath = path.join(__dirname, "acevo-bridge.py");
+  const pyArgs = [scriptPath];
+  if (isTestMode) pyArgs.push("--test");
+
+  const pyProcess = spawn("python", pyArgs, { stdio: ["ignore", "pipe", "inherit"] });
+
+  const rl = readline.createInterface({ input: pyProcess.stdout });
+  rl.on("line", (line) => {
+    try {
+      if (!line.trim()) return;
+      const frame = JSON.parse(line.trim());
+      broadcastFrame(frame);
+    } catch (parseErr) {
+      // Ignore non-json lines
+    }
+  });
+
+  pyProcess.on("error", (err) => {
+    console.error("[ACEVO ERROR] Failed to start Python bridge:", err.message);
+    console.log("[TIP] Ensure Python 3 is installed, or run: python scripts/acevo-bridge.py");
+  });
+
+  pyProcess.on("exit", (code) => {
+    console.log(`[ACEVO] Python bridge process exited with code ${code}`);
+  });
+
+  // Also listen on UDP port 9002 in case user runs bridge or SimHub separately with UDP broadcast
+  const udpSocket = dgram.createSocket("udp4");
+  udpSocket.on("message", (msg) => {
+    try {
+      const data = JSON.parse(msg.toString("utf8"));
+      broadcastFrame(data);
+    } catch (e) {}
+  });
+  udpSocket.bind(UDP_PORT, () => {
+    console.log(`[UDP] Ready for secondary UDP relay packets on port ${UDP_PORT}...`);
+  });
 } else {
-  // 3. UDP Socket Listener for Sim Racing Packets
+  // 4. UDP Socket Listener for Sim Racing Packets (F1 / ACC)
   const udpSocket = dgram.createSocket("udp4");
 
   udpSocket.on("error", (err) => {

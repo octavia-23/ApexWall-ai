@@ -9,6 +9,7 @@
     "build": "next build",
     "start": "next start",
     "telemetry-bridge": "node scripts/telemetry-bridge.js",
+    "telemetry-bridge:acevo": "node scripts/telemetry-bridge.js --game acevo",
     "serve:legacy": "node server.js"
   },
   "dependencies": {

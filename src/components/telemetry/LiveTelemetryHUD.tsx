@@ -162,7 +162,7 @@ export const LiveTelemetryHUD: React.FC = () => {
 
     ws.onerror = () => {
       setIsConnected(false);
-      setBridgeStatus("Bridge Offline (Run scripts/telemetry-bridge.js)");
+      setBridgeStatus("Bridge Offline (Run npm run telemetry-bridge:acevo)");
     };
 
     ws.onclose = () => {
@@ -344,7 +344,7 @@ export const LiveTelemetryHUD: React.FC = () => {
               onClick={() => setActiveSim("bridge")}
               className={`px-2 py-0.5 rounded transition-colors ${activeSim === "bridge" ? "bg-cyan-500/20 text-cyan-300 font-semibold" : "text-slate-400 hover:text-slate-200"}`}
             >
-              Live Rig Bridge (UDP)
+              Live Rig Bridge (AC Evo / UDP)
             </button>
           </div>
         </div>
