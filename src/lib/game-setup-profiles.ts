@@ -624,6 +624,144 @@ LMU uses WEC Hypercar / LMP2 / GT3 garage tabs:
 };
 
 // ----------------------------------------------------------------------------
+// 6. ASSETTO CORSA EVO
+// ----------------------------------------------------------------------------
+export const aceProfile: GameSetupProfile = {
+  gameKey: "assetto-corsa-evo",
+  displayName: "Assetto Corsa Evo",
+  menuTabs: [
+    "TYRES",
+    "ALIGNMENT",
+    "SUSPENSION",
+    "DAMPERS",
+    "DRIVETRAIN",
+    "AERO",
+    "BRAKES",
+    "ELECTRONICS",
+  ],
+  systemPromptGuidance: `
+TARGET SIMULATOR: Assetto Corsa Evo (AC Evo by Kunos Simulazioni, 2025).
+Assetto Corsa Evo inherits AC's INI-based garage but with a modernised, per-wheel UI closer to ACC. Key tabs and ranges:
+1. "TYRES":
+   • Cold Pressure FL, FR, RL, RR in psi (e.g. 26.0-32.0 psi). Compound (e.g. Street, Sport, Semi-Slick, Slick Soft/Medium/Hard).
+2. "ALIGNMENT":
+   • Camber FL, FR, RL, RR in degrees (e.g. -3.0 front, -2.2 rear). Negative = top tilted inward.
+   • Toe FL, FR, RL, RR in mm with 0.1 mm precision (e.g. -1.5 mm front toe-out, +1.8 mm rear toe-in). Negative = toe-out.
+   • Caster (degrees, e.g. 8.2).
+3. "SUSPENSION":
+   • Front & Rear Anti-Roll Bar in integer clicks / notch (0-10 scale).
+   • Spring Rate FL, FR, RL, RR in N/mm (e.g. 120-220 N/mm).
+   • Ride Height FL, FR, RL, RR in mm (e.g. 65-130 mm).
+4. "DAMPERS":
+   • Bump (Slow) FL, FR, RL, RR: integer clicks (0-40).
+   • Fast Bump FL, FR, RL, RR: integer clicks (0-40).
+   • Rebound (Slow) FL, FR, RL, RR: integer clicks (0-40).
+   • Fast Rebound FL, FR, RL, RR: integer clicks (0-40).
+5. "DRIVETRAIN":
+   • Differential Power Lock (% 0-100%).
+   • Differential Coast Lock (% 0-100%).
+   • Differential Preload (Nm, e.g. 30-100 Nm).
+6. "AERO":
+   • Rear Wing in integer notches (e.g. 0-12). Front Splitter (0-5 if supported by car).
+   • Brake Duct Front & Rear (0-6 on cars that support it).
+7. "BRAKES":
+   • Brake Bias (% front, e.g. 56%-70%).
+   • Brake Power (%, typically 100%).
+8. "ELECTRONICS" (cars that support it):
+   • TC (Traction Control level, e.g. 0-10 or Off/Low/Medium/High).
+   • ABS level (0-10 or Off/Low/Medium/High).
+   • Engine Map (e.g. 1-5 or named map).
+`,
+  generateProceduralSetup: (p) => {
+    const isUndersteer = /understeer|push|wash/i.test(p.handlingIssue || "");
+    const isOversteer = /oversteer|snap|loose|tail/i.test(p.handlingIssue || "");
+    const isHighSpeed = /monza|spa|silverstone|mugello|le mans/i.test(p.track);
+    const isStreet = /street|road|city/i.test(p.tyreCompound || "");
+
+    return {
+      summary: `Assetto Corsa Evo garage setup for ${p.car} at ${p.track}. Calibrated to AC Evo's modernised per-wheel damper interface (0-40 clicks), 0.1 mm toe precision, and notch-based ARB system to eliminate ${p.handlingIssue ? `"${p.handlingIssue}"` : "mid-corner imbalance"}.`,
+      sections: [
+        {
+          title: "TYRES",
+          items: [
+            { label: "Tyre Compound", value: p.tyreCompound || "Semi-Slick" },
+            { label: "Cold Pressure FL / FR", value: isStreet ? "29.0 / 29.5 psi" : "26.5 / 27.0 psi" },
+            { label: "Cold Pressure RL / RR", value: isStreet ? "28.0 / 28.5 psi" : "25.8 / 26.3 psi" },
+            { label: "Target Hot Pressure (FL/FR)", value: "32.0 psi" },
+            { label: "Target Hot Pressure (RL/RR)", value: "31.0 psi" },
+          ],
+        },
+        {
+          title: "ALIGNMENT",
+          items: [
+            { label: "Camber FL / FR", value: isUndersteer ? "-3.4 / -3.4" : "-3.0 / -3.0" },
+            { label: "Camber RL / RR", value: "-2.2 / -2.2" },
+            { label: "Toe FL / FR", value: isUndersteer ? "-1.8 mm / -1.8 mm (Toe-out for turn-in)" : "-1.0 mm / -1.0 mm (Toe-out)" },
+            { label: "Toe RL / RR", value: "+1.6 mm / +1.6 mm (Toe-in for stability)" },
+            { label: "Caster", value: "8.2" },
+          ],
+        },
+        {
+          title: "SUSPENSION",
+          items: [
+            { label: "Anti-Roll Bar Front", value: isUndersteer ? "3 / 10 (Softened for front grip)" : "5 / 10" },
+            { label: "Anti-Roll Bar Rear", value: isOversteer ? "2 / 10 (Softened for traction)" : "4 / 10" },
+            { label: "Spring Rate FL / FR", value: "145 N/mm" },
+            { label: "Spring Rate RL / RR", value: "120 N/mm" },
+            { label: "Ride Height FL / FR", value: "72 mm" },
+            { label: "Ride Height RL / RR", value: "78 mm (Positive rake for aero)" },
+          ],
+        },
+        {
+          title: "DAMPERS",
+          items: [
+            { label: "Bump FL / FR", value: "12 / 40 clicks" },
+            { label: "Fast Bump FL / FR", value: "8 / 40 clicks (Kerb compliance)" },
+            { label: "Rebound FL / FR", value: "18 / 40 clicks" },
+            { label: "Fast Rebound FL / FR", value: "12 / 40 clicks" },
+            { label: "Bump RL / RR", value: "10 / 40 clicks" },
+            { label: "Fast Bump RL / RR", value: "6 / 40 clicks" },
+            { label: "Rebound RL / RR", value: "15 / 40 clicks" },
+            { label: "Fast Rebound RL / RR", value: "10 / 40 clicks" },
+          ],
+        },
+        {
+          title: "DRIVETRAIN",
+          items: [
+            { label: "Differential Power Lock", value: isOversteer ? "40% (Reduce snap on exit)" : "55%" },
+            { label: "Differential Coast Lock", value: isUndersteer ? "30% (Promote off-throttle rotation)" : "45%" },
+            { label: "Differential Preload", value: "55 Nm" },
+          ],
+        },
+        {
+          title: "AERO",
+          items: [
+            { label: "Rear Wing", value: isHighSpeed ? "4 / 12 (Low drag for straights)" : "8 / 12 (Downforce)" },
+            { label: "Front Splitter", value: "2 / 5" },
+          ],
+        },
+        {
+          title: "BRAKES",
+          items: [
+            { label: "Brake Bias", value: /trail/i.test(p.driverStyle || "") ? "63% Front (Shifted rearward for trail-braking)" : "67% Front" },
+            { label: "Brake Power", value: "100%" },
+          ],
+        },
+        {
+          title: "ELECTRONICS",
+          items: [
+            { label: "Traction Control", value: p.skillLevel === "Beginner" ? "Medium (Level 5 / 10)" : p.skillLevel === "Pro / iRating high" ? "Off / Level 1" : "Low (Level 3 / 10)" },
+            { label: "ABS", value: p.skillLevel === "Beginner" ? "Medium (Level 5 / 10)" : "Low (Level 2 / 10)" },
+            { label: "Engine Map", value: "Map 1 (Max Power)" },
+          ],
+        },
+      ],
+      engineerNotes: `Copy driver: in Assetto Corsa Evo, toe is dialled to ${isUndersteer ? "-1.8 mm" : "-1.0 mm"} front toe-out in 0.1 mm steps to force the nose to rotate on turn-in, directly curing "${p.handlingIssue || "mid-corner scrub"}". Dampers follow the 0-40 click scale — fast-bump is kept soft at 8 clicks to absorb kerbs without upsetting the aero platform. Diff power at ${isOversteer ? "40%" : "55%"} is conservative; add 5% increments if traction allows on corner exit.`,
+    };
+  },
+};
+
+// ----------------------------------------------------------------------------
 // HELPER: RESOLVE PROFILE FOR GIVEN SIM TITLE
 // ----------------------------------------------------------------------------
 export function getGameSetupProfile(gameName: string): GameSetupProfile {
@@ -631,6 +769,9 @@ export function getGameSetupProfile(gameName: string): GameSetupProfile {
 
   if (g.includes("competizione") || g === "acc") {
     return accProfile;
+  }
+  if (g.includes("evo") && (g.includes("assetto") || g.includes("ace"))) {
+    return aceProfile;
   }
   if (g.includes("f1") || g.includes("formula 1")) {
     return f1Profile;
@@ -644,3 +785,4 @@ export function getGameSetupProfile(gameName: string): GameSetupProfile {
   // Default to Assetto Corsa if AC or generic
   return assettoCorsaProfile;
 }
+

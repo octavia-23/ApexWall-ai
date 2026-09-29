@@ -2,6 +2,7 @@ import {
   SetupExportContext,
   generateACCJson,
   generateAssettoCorsaINI,
+  generateACEvoINI,
   generateRFactorSVM,
   generateIRacingText,
   generateF1SetupJson,
@@ -13,8 +14,9 @@ import {
   downloadFile,
 } from "./setup-exporter";
 
+
 export interface SupportedSimConfig {
-  id: "acc" | "assetto-corsa" | "iracing" | "lmu" | "f1" | "ams2" | "beamng" | "raceroom" | "forza-gt";
+  id: "acc" | "assetto-corsa" | "assetto-corsa-evo" | "iracing" | "lmu" | "f1" | "ams2" | "beamng" | "raceroom" | "forza-gt";
   displayName: string;
   shortName: string;
   fileExtension: string;
@@ -113,6 +115,27 @@ export const SUPPORTED_SIMS: Record<string, SupportedSimConfig> = {
     ],
     getWindowsDirString: (car: string, track: string) =>
       `Documents\\Assetto Corsa\\setups\\${sanitizeSlug(car)}\\${normalizeTrackSlug(track, "assetto-corsa")}`,
+  },
+
+  "assetto-corsa-evo": {
+    id: "assetto-corsa-evo",
+    displayName: "Assetto Corsa Evo",
+    shortName: "AC Evo",
+    fileExtension: ".ini",
+    mimeType: "text/plain",
+    defaultWindowsPath: "Documents\\Assetto Corsa Evo\\setups",
+    carFolderStyle: "slug",
+    trackFolderStyle: "slug",
+    generateContent: generateACEvoINI,
+    getRelativeDir: (car: string, track: string) => [
+      "Documents",
+      "Assetto Corsa Evo",
+      "setups",
+      sanitizeSlug(car),
+      normalizeTrackSlug(track, "assetto-corsa-evo"),
+    ],
+    getWindowsDirString: (car: string, track: string) =>
+      `Documents\\Assetto Corsa Evo\\setups\\${sanitizeSlug(car)}\\${normalizeTrackSlug(track, "assetto-corsa-evo")}`,
   },
 
   iracing: {
@@ -269,6 +292,9 @@ export function resolveSimConfig(gameStr?: string): SupportedSimConfig {
   const g = (gameStr || "").toLowerCase();
   if (g.includes("competizione") || g === "acc") {
     return SUPPORTED_SIMS.acc;
+  }
+  if (g.includes("evo") && (g.includes("assetto") || g.includes("ace"))) {
+    return SUPPORTED_SIMS["assetto-corsa-evo"];
   }
   if (g.includes("f1") || g.includes("formula 1")) {
     return SUPPORTED_SIMS.f1;

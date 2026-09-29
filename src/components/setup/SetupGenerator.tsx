@@ -245,6 +245,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 <option>Assetto Corsa Competizione</option>
                 <option>iRacing</option>
                 <option>Assetto Corsa</option>
+                <option>Assetto Corsa Evo</option>
                 <option>rFactor 2</option>
                 <option>Automobilista 2</option>
                 <option>Le Mans Ultimate</option>

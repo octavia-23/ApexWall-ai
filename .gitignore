@@ -26,3 +26,6 @@ Thumbs.db
 
 # typescript
 *.tsbuildinfo
+
+.vercel
+.env*

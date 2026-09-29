@@ -627,7 +627,170 @@ FUEL=${fuel}
 }
 
 /**
- * 6. EA Sports F1 (F1 23 / 24) Native Setup JSON Specification
+ * 6. Assetto Corsa Evo (.ini) — modernised per-wheel garage format
+ */
+export function generateACEvoINI(ctx: SetupExportContext): string {
+  const flPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure fl"]), 27));
+  const frPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure fr"]), 27));
+  const rlPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure rl"]), 26));
+  const rrPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), 26));
+
+  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -3.0);
+  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -2.2);
+  // AC Evo toe is in mm (0.1 precision)
+  const fToe = parseNumber(findItemValue(ctx.sections, ["toe fl", "front toe"]), -1.0);
+  const rToe = parseNumber(findItemValue(ctx.sections, ["toe rl", "rear toe"]), 1.6);
+
+  const fArb = Math.round(parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb"]), 5));
+  const rArb = Math.round(parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]), 4));
+
+  const fSpring = Math.round(parseNumber(findItemValue(ctx.sections, ["spring rate fl", "spring rate front"]), 145));
+  const rSpring = Math.round(parseNumber(findItemValue(ctx.sections, ["spring rate rl", "spring rate rear"]), 120));
+
+  const fRide = Math.round(parseNumber(findItemValue(ctx.sections, ["ride height fl", "front ride"]), 72));
+  const rRide = Math.round(parseNumber(findItemValue(ctx.sections, ["ride height rl", "rear ride"]), 78));
+
+  const bumpF = Math.round(parseNumber(findItemValue(ctx.sections, ["bump fl", "bump front"]), 12));
+  const fbumpF = Math.round(parseNumber(findItemValue(ctx.sections, ["fast bump fl", "fast bump front"]), 8));
+  const rebF = Math.round(parseNumber(findItemValue(ctx.sections, ["rebound fl", "rebound front"]), 18));
+  const frebF = Math.round(parseNumber(findItemValue(ctx.sections, ["fast rebound fl", "fast rebound front"]), 12));
+  const bumpR = Math.round(parseNumber(findItemValue(ctx.sections, ["bump rl", "bump rear"]), 10));
+  const fbumpR = Math.round(parseNumber(findItemValue(ctx.sections, ["fast bump rl", "fast bump rear"]), 6));
+  const rebR = Math.round(parseNumber(findItemValue(ctx.sections, ["rebound rl", "rebound rear"]), 15));
+  const frebR = Math.round(parseNumber(findItemValue(ctx.sections, ["fast rebound rl", "fast rebound rear"]), 10));
+
+  const fWing = Math.round(parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing"]), 2));
+  const rWing = Math.round(parseNumber(findItemValue(ctx.sections, ["rear wing"]), 8));
+
+  const diffPower = Math.round(parseNumber(findItemValue(ctx.sections, ["diff power", "power lock"]), 55));
+  const diffCoast = Math.round(parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), 45));
+  const diffPreload = Math.round(parseNumber(findItemValue(ctx.sections, ["diff preload", "preload"]), 55));
+
+  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias"]), 67));
+  const fuel = Math.round(parseNumber(ctx.fuelLoad || "35", 35));
+
+  return `[HEADER]
+VERSION=2
+CAR=${ctx.car}
+TRACK=${ctx.track}
+SIM=Assetto Corsa Evo
+CREATED_BY=ApexWall AI Homologated Engineering Engine v2.0
+DATE=${new Date().toISOString()}
+
+[TYRES]
+VALUE=0
+PRESSURE_FL=${flPsi}
+PRESSURE_FR=${frPsi}
+PRESSURE_RL=${rlPsi}
+PRESSURE_RR=${rrPsi}
+
+[CAMBER_FL]
+VALUE=${fCamber.toFixed(1)}
+[CAMBER_FR]
+VALUE=${fCamber.toFixed(1)}
+[CAMBER_RL]
+VALUE=${rCamber.toFixed(1)}
+[CAMBER_RR]
+VALUE=${rCamber.toFixed(1)}
+
+; Toe in mm (0.1mm precision) — negative = toe-out
+[TOE_FL]
+VALUE=${fToe.toFixed(1)}
+[TOE_FR]
+VALUE=${fToe.toFixed(1)}
+[TOE_RL]
+VALUE=${rToe.toFixed(1)}
+[TOE_RR]
+VALUE=${rToe.toFixed(1)}
+
+[ARB_FRONT]
+VALUE=${fArb}
+[ARB_REAR]
+VALUE=${rArb}
+
+[SPRING_RATE_FL]
+VALUE=${fSpring}
+[SPRING_RATE_FR]
+VALUE=${fSpring}
+[SPRING_RATE_RL]
+VALUE=${rSpring}
+[SPRING_RATE_RR]
+VALUE=${rSpring}
+
+[RIDE_HEIGHT_FL]
+VALUE=${fRide}
+[RIDE_HEIGHT_FR]
+VALUE=${fRide}
+[RIDE_HEIGHT_RL]
+VALUE=${rRide}
+[RIDE_HEIGHT_RR]
+VALUE=${rRide}
+
+[DAMP_BUMP_FL]
+VALUE=${bumpF}
+[DAMP_BUMP_FR]
+VALUE=${bumpF}
+[DAMP_BUMP_RL]
+VALUE=${bumpR}
+[DAMP_BUMP_RR]
+VALUE=${bumpR}
+
+[DAMP_FAST_BUMP_FL]
+VALUE=${fbumpF}
+[DAMP_FAST_BUMP_FR]
+VALUE=${fbumpF}
+[DAMP_FAST_BUMP_RL]
+VALUE=${fbumpR}
+[DAMP_FAST_BUMP_RR]
+VALUE=${fbumpR}
+
+[DAMP_REBOUND_FL]
+VALUE=${rebF}
+[DAMP_REBOUND_FR]
+VALUE=${rebF}
+[DAMP_REBOUND_RL]
+VALUE=${rebR}
+[DAMP_REBOUND_RR]
+VALUE=${rebR}
+
+[DAMP_FAST_REBOUND_FL]
+VALUE=${frebF}
+[DAMP_FAST_REBOUND_FR]
+VALUE=${frebF}
+[DAMP_FAST_REBOUND_RL]
+VALUE=${frebR}
+[DAMP_FAST_REBOUND_RR]
+VALUE=${frebR}
+
+[WING_FRONT]
+VALUE=${fWing}
+[WING_REAR]
+VALUE=${rWing}
+
+[DIFF_POWER]
+VALUE=${diffPower}
+[DIFF_COAST]
+VALUE=${diffCoast}
+[DIFF_PRELOAD]
+VALUE=${diffPreload}
+
+[BRAKE_POWER_MULT]
+VALUE=100
+[FRONT_BIAS]
+VALUE=${brakeBias}
+
+[ELECTRONICS]
+TC=3
+ABS=2
+ENGINE_MAP=1
+
+[GENERIC]
+FUEL=${fuel}
+`;
+}
+
+/**
+ * 7. EA Sports F1 (F1 23 / 24) Native Setup JSON Specification
  */
 export function generateF1SetupJson(ctx: SetupExportContext): string {
   const fWing = Math.round(parseNumber(findItemValue(ctx.sections, ["front wing", "front downforce"]), 36));

@@ -5,6 +5,7 @@ import {
   SetupExportContext,
   generateACCJson,
   generateAssettoCorsaINI,
+  generateACEvoINI,
   generateRFactorSVM,
   generateIRacingText,
   generateF1SetupJson,
@@ -56,6 +57,12 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
     const iniStr = generateAssettoCorsaINI(context);
     downloadFile(iniStr, `${baseFilename}.ini`, "text/plain");
     notify("Exported Assetto Corsa .ini setup file");
+  };
+
+  const handleExportACEvo = () => {
+    const iniStr = generateACEvoINI(context);
+    downloadFile(iniStr, `${baseFilename}_ace.ini`, "text/plain");
+    notify("Exported Assetto Corsa Evo .ini setup file");
   };
 
   const handleExportIRacing = () => {
@@ -169,6 +176,23 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400">Kunos / Content Mgr</div>
+                </button>
+
+                {/* Assetto Corsa Evo */}
+                <button
+                  type="button"
+                  onClick={handleExportACEvo}
+                  className="px-2.5 py-2 bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 rounded-lg text-left transition-all flex flex-col justify-between group"
+                >
+                  <div className="flex items-center justify-between w-full mb-1">
+                    <span className="text-[11px] font-bold text-teal-200 group-hover:text-teal-100">
+                      AC Evo
+                    </span>
+                    <span className="text-[9px] font-mono bg-teal-500/30 text-teal-200 px-1 py-0.2 rounded font-bold">
+                      .INI
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-slate-400">Kunos 2025</div>
                 </button>
 
                 {/* ACC */}
