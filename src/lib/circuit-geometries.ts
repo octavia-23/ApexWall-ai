@@ -68,12 +68,30 @@ export const REAL_CIRCUITS: Record<string, RealCircuitDefinition> = {
       { name: "Turn 18-19 (Bus Stop Chicane)", shortName: "T18-19", dist: 6362, x: 458.3, y: 281.1 },
     ],
   },
+  redbullring: {
+    name: "Red Bull Ring (Spielberg GP)",
+    officialDistance: 4318,
+    points: [
+      {"dist":0,"x":220.0,"y":950.0},{"dist":36,"x":223.0,"y":935.0},{"dist":72,"x":226.0,"y":920.0},{"dist":108,"x":229.0,"y":905.0},{"dist":144,"x":232.0,"y":890.0},{"dist":180,"x":235.0,"y":875.0},{"dist":216,"x":238.0,"y":860.0},{"dist":252,"x":241.0,"y":845.0},{"dist":288,"x":244.0,"y":830.0},{"dist":324,"x":247.0,"y":815.0},{"dist":360,"x":250.0,"y":800.0},{"dist":409,"x":275.0,"y":767.5},{"dist":459,"x":300.0,"y":735.0},{"dist":508,"x":325.0,"y":702.5},{"dist":558,"x":350.0,"y":670.0},{"dist":607,"x":375.0,"y":637.5},{"dist":657,"x":400.0,"y":605.0},{"dist":706,"x":425.0,"y":572.5},{"dist":756,"x":450.0,"y":540.0},{"dist":805,"x":475.0,"y":507.5},{"dist":855,"x":500.0,"y":475.0},{"dist":904,"x":525.0,"y":442.5},{"dist":954,"x":550.0,"y":410.0},{"dist":1003,"x":575.0,"y":377.5},{"dist":1053,"x":600.0,"y":345.0},{"dist":1102,"x":625.0,"y":312.5},{"dist":1152,"x":650.0,"y":280.0},{"dist":1201,"x":675.0,"y":247.5},{"dist":1251,"x":700.0,"y":215.0},{"dist":1300,"x":725.0,"y":182.5},{"dist":1350,"x":750.0,"y":150.0},{"dist":1394,"x":755.6,"y":172.2},{"dist":1439,"x":761.1,"y":194.4},{"dist":1483,"x":766.7,"y":216.7},{"dist":1528,"x":772.2,"y":238.9},{"dist":1572,"x":777.8,"y":261.1},{"dist":1617,"x":783.3,"y":283.3},{"dist":1661,"x":788.9,"y":305.6},{"dist":1706,"x":794.4,"y":327.8},{"dist":1750,"x":800.0,"y":350.0},{"dist":1794,"x":805.6,"y":372.2},{"dist":1839,"x":811.1,"y":394.4},{"dist":1883,"x":816.7,"y":416.7},{"dist":1928,"x":822.2,"y":438.9},{"dist":1972,"x":827.8,"y":461.1},{"dist":2017,"x":833.3,"y":483.3},{"dist":2061,"x":838.9,"y":505.6},{"dist":2106,"x":844.4,"y":527.8},{"dist":2150,"x":850.0,"y":550.0},{"dist":2188,"x":841.2,"y":558.8},{"dist":2225,"x":832.5,"y":567.5},{"dist":2262,"x":823.8,"y":576.2},{"dist":2300,"x":815.0,"y":585.0},{"dist":2338,"x":806.2,"y":593.8},{"dist":2375,"x":797.5,"y":602.5},{"dist":2412,"x":788.8,"y":611.2},{"dist":2450,"x":780.0,"y":620.0},{"dist":2488,"x":760.0,"y":627.5},{"dist":2525,"x":740.0,"y":635.0},{"dist":2562,"x":720.0,"y":642.5},{"dist":2600,"x":700.0,"y":650.0},{"dist":2638,"x":680.0,"y":657.5},{"dist":2675,"x":660.0,"y":665.0},{"dist":2712,"x":640.0,"y":672.5},{"dist":2750,"x":620.0,"y":680.0},{"dist":2795,"x":612.0,"y":690.0},{"dist":2840,"x":604.0,"y":700.0},{"dist":2885,"x":596.0,"y":710.0},{"dist":2930,"x":588.0,"y":720.0},{"dist":2975,"x":580.0,"y":730.0},{"dist":3020,"x":572.0,"y":740.0},{"dist":3065,"x":564.0,"y":750.0},{"dist":3110,"x":556.0,"y":760.0},{"dist":3155,"x":548.0,"y":770.0},{"dist":3200,"x":540.0,"y":780.0},{"dist":3238,"x":528.8,"y":787.5},{"dist":3275,"x":517.5,"y":795.0},{"dist":3312,"x":506.2,"y":802.5},{"dist":3350,"x":495.0,"y":810.0},{"dist":3388,"x":483.8,"y":817.5},{"dist":3425,"x":472.5,"y":825.0},{"dist":3462,"x":461.2,"y":832.5},{"dist":3500,"x":450.0,"y":840.0},{"dist":3554,"x":434.2,"y":847.5},{"dist":3608,"x":418.3,"y":855.0},{"dist":3662,"x":402.5,"y":862.5},{"dist":3717,"x":386.7,"y":870.0},{"dist":3771,"x":370.8,"y":877.5},{"dist":3825,"x":355.0,"y":885.0},{"dist":3879,"x":339.2,"y":892.5},{"dist":3933,"x":323.3,"y":900.0},{"dist":3988,"x":307.5,"y":907.5},{"dist":4042,"x":291.7,"y":915.0},{"dist":4096,"x":275.8,"y":922.5},{"dist":4150,"x":260.0,"y":930.0},{"dist":4178,"x":253.3,"y":933.3},{"dist":4206,"x":246.7,"y":936.7},{"dist":4234,"x":240.0,"y":940.0},{"dist":4262,"x":233.3,"y":943.3},{"dist":4290,"x":226.7,"y":946.7},{"dist":4318,"x":220.0,"y":950.0}
+    ],
+    corners: [
+      { name: "Turn 1 (Niki Lauda Kurve)", shortName: "T1", dist: 360, x: 250, y: 800 },
+      { name: "Turn 3 (Remus Hairpin)", shortName: "T3", dist: 1350, x: 750, y: 150 },
+      { name: "Turn 4 (Rauch Kurve)", shortName: "T4", dist: 2150, x: 850, y: 550 },
+      { name: "Turn 5 (Gerhard Berger Kurve)", shortName: "T5", dist: 2450, x: 780, y: 620 },
+      { name: "Turn 6 (Gösser Kurve)", shortName: "T6", dist: 2750, x: 620, y: 680 },
+      { name: "Turn 7 (Würth Kurve)", shortName: "T7", dist: 3200, x: 540, y: 780 },
+      { name: "Turn 8 (Rindt Kurve)", shortName: "T8", dist: 3500, x: 450, y: 840 },
+      { name: "Turn 9-10 (Red Bull Mobile / Final)", shortName: "T9-10", dist: 4150, x: 260, y: 930 },
+    ],
+  },
 };
 
 export function getAuthenticTrackGeometry(trackName: string): RealCircuitDefinition | null {
   const lower = (trackName || "").toLowerCase();
   if (lower.includes("silverstone")) return REAL_CIRCUITS.silverstone;
   if (lower.includes("monza")) return REAL_CIRCUITS.monza;
+  if (lower.includes("redbull") || lower.includes("red bull") || lower.includes("spielberg") || lower.includes("austria") || lower.includes("rbr")) return REAL_CIRCUITS.redbullring;
   if (lower.includes("spa")) return REAL_CIRCUITS.spa;
   return null;
 }

@@ -102,13 +102,20 @@ export function generateTrackMapData(
   let realCircuit: RealCircuitDefinition | null = null;
   let circuitName = "Grand Prix Circuit";
 
-  if (hint.includes("silverstone")) {
+  const lowerFile = (telemetry.filename || "").toLowerCase();
+  const lowerTrack = (trackHint || "").toLowerCase();
+
+  if (lowerFile.includes("redbull") || lowerFile.includes("red_bull") || lowerFile.includes("spielberg") || lowerFile.includes("rbr") ||
+      lowerTrack.includes("redbull") || lowerTrack.includes("red bull") || lowerTrack.includes("spielberg") || lowerTrack.includes("rbr")) {
+    realCircuit = REAL_CIRCUITS.redbullring;
+    circuitName = "Red Bull Ring (Spielberg GP)";
+  } else if (lowerFile.includes("silverstone") || lowerTrack.includes("silverstone")) {
     realCircuit = REAL_CIRCUITS.silverstone;
     circuitName = "Silverstone Grand Prix Circuit";
-  } else if (hint.includes("monza")) {
+  } else if (lowerFile.includes("monza") || lowerTrack.includes("monza")) {
     realCircuit = REAL_CIRCUITS.monza;
     circuitName = "Autodromo Nazionale Monza";
-  } else if (hint.includes("spa")) {
+  } else if (lowerFile.includes("spa") || lowerTrack.includes("spa")) {
     realCircuit = REAL_CIRCUITS.spa;
     circuitName = "Circuit de Spa-Francorchamps";
   }

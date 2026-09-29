@@ -155,6 +155,22 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         file: "/sample-telemetry/silverstone-f1.csv",
         refFile: "/sample-telemetry/silverstone-f1-pro-reference.csv",
       },
+      redbullring: {
+        game: "iRacing",
+        car: "Mercedes-AMG GT4",
+        track: "Red Bull Ring (Spielberg GP)",
+        weather: "Dry",
+        trackTemp: "39°C",
+        airTemp: "25°C",
+        tyres: "Michelin Pilot Sport GT",
+        fuel: "40 L",
+        driverStyle: "Heavy Trail-Braker",
+        balance: "Neutral Balance",
+        target: "Sprint Race (Tyre Life & Agility)",
+        complaint: "Understeer on entry into Turn 3 Remus hairpin, snap oversteer across Turn 6 exit kerb",
+        file: "/sample-telemetry/redbullring-amg-gt4.csv",
+        refFile: "",
+      },
     };
 
     const cfg = presets[presetKey];
@@ -229,18 +245,46 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     setParsedTelemetry(parsed);
     setActivePreset("");
 
-    if (referenceTelemetry) {
-      try {
-        const comp = computeLapComparison(parsed, referenceTelemetry, track);
-        setLapComparison(comp);
-      } catch (errComp) {
-        console.warn("Could not compute lap comparison:", errComp);
-        setLapComparison(null);
-      }
+    // Auto-detect track, car, and sim game from filename
+    const lowerName = parsed.filename.toLowerCase();
+    let detectedTrack = track;
+
+    if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr")) {
+      detectedTrack = "Red Bull Ring (Spielberg GP)";
+      setTrack("Red Bull Ring (Spielberg GP)");
+    } else if (lowerName.includes("silverstone")) {
+      detectedTrack = "Silverstone Grand Prix Circuit";
+      setTrack("Silverstone Grand Prix Circuit");
+    } else if (lowerName.includes("monza")) {
+      detectedTrack = "Autodromo Nazionale Monza";
+      setTrack("Autodromo Nazionale Monza");
+    } else if (lowerName.includes("spa")) {
+      detectedTrack = "Spa-Francorchamps GP";
+      setTrack("Spa-Francorchamps GP");
     }
 
+    if (lowerName.includes("mercedes") || lowerName.includes("amg")) {
+      setCar("Mercedes-AMG GT4");
+    } else if (lowerName.includes("corvette")) {
+      setCar("Corvette C7.R");
+    } else if (lowerName.includes("porsche")) {
+      setCar("Porsche 992 GT3 R");
+    } else if (lowerName.includes("ferrari")) {
+      setCar("Ferrari 296 GT3");
+    }
+
+    if (lowerName.includes("iracing") || lowerName.includes(".ibt")) {
+      setGame("iRacing");
+    } else if (lowerName.includes("assetto") || lowerName.includes("acc")) {
+      setGame("Assetto Corsa Competizione");
+    }
+
+    // Reset reference comparison if it was from a different track
+    setReferenceTelemetry(null);
+    setLapComparison(null);
+
     try {
-      const gg = computeGGFrictionCircle(parsed, referenceTelemetry);
+      const gg = computeGGFrictionCircle(parsed, null);
       setFrictionCircleData(gg);
     } catch (errGg) {
       console.warn("Could not compute G-G friction circle:", errGg);
@@ -1218,6 +1262,21 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <div className="demo-btn-meta">
                   <span>Red Bull F1</span>
                   <span className="demo-laptime">1:28.150</span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                className={`demo-btn ${activePreset === "redbullring" ? "active" : ""}`}
+                onClick={() => loadPreset("redbullring")}
+              >
+                <div className="demo-btn-top">
+                  <span className="demo-btn-title">Red Bull Ring</span>
+                  {activePreset === "redbullring" && <span className="demo-active-pill">ACTIVE</span>}
+                </div>
+                <div className="demo-btn-meta">
+                  <span>AMG GT4 (iRacing)</span>
+                  <span className="demo-laptime">60 Hz Real</span>
                 </div>
               </button>
             </div>
