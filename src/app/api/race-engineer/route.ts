@@ -79,7 +79,7 @@ Guidelines:
    - Diagnose whether the issue is mechanical balance, aerodynamic balance, damper transition, or driving technique (e.g. brake release profile).
    - Give CONCRETE, actionable click/setting recommendations tailored to their game (${activeSim}).
 3. Use exact simulator units:
-   - Assetto Corsa: clicks/mm for toe (-6 clicks / -1.5mm), 0-40 clicks for dampers, differential lock % (40% power / 60% coast).
+   - Assetto Corsa & Assetto Corsa Evo: clicks/mm for toe (-6 clicks / -1.5mm), 0-40 clicks for dampers, differential lock % (40% power / 60% coast).
    - ACC: 0.1 psi pressures, mm ride heights, GT3 ARB steps 1-6, wheel rate N/mm.
    - iRacing: lbs/in or N/mm, brake bias %, click settings.
    - F1 23/24: 1-50 wings, 1-41 suspension, 50-100% on-throttle diff.

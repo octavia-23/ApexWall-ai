@@ -82,6 +82,17 @@ export const TYRE_PRESETS: TyrePreset[] = [
     baseTrackTemp: 28,
     baseColdPressures: { FL: 24.2, FR: 24.5, RL: 23.9, RR: 24.2 },
   },
+  {
+    id: "ace_semi_slick",
+    name: "Assetto Corsa Evo — Semi-Slick / Sport",
+    game: "Assetto Corsa Evo",
+    compound: "Semi-Slick",
+    targetHotPressure: 32.0,
+    minHotPressure: 31.0,
+    maxHotPressure: 33.0,
+    baseTrackTemp: 30,
+    baseColdPressures: { FL: 26.5, FR: 27.0, RL: 25.8, RR: 26.3 },
+  },
 ];
 
 export interface TyreCalculationInput {
