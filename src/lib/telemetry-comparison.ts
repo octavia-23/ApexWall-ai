@@ -104,7 +104,7 @@ function interpolateDeltaAtDist(deltaPoints: DeltaPoint[], targetDist: number): 
   return +(p0.timeDelta + (p1.timeDelta - p0.timeDelta) * factor).toFixed(3);
 }
 
-import { REAL_CIRCUITS, RealCircuitDefinition } from "./circuit-geometries";
+import { REAL_CIRCUITS, RealCircuitDefinition, getAuthenticTrackGeometry } from "./circuit-geometries";
 
 /**
  * Identify circuit by track name, filenames, or total distance
@@ -115,16 +115,8 @@ function detectCircuit(
   trackHint?: string
 ): RealCircuitDefinition | null {
   const combined = `${trackHint || ""} ${driver.filename || ""} ${ref.filename || ""}`.toLowerCase();
-  if (combined.includes("spa")) return REAL_CIRCUITS.spa;
-  if (combined.includes("monza")) return REAL_CIRCUITS.monza;
-  if (combined.includes("silverstone")) return REAL_CIRCUITS.silverstone;
-
   const maxDist = driver.points[driver.points.length - 1]?.dist || 0;
-  if (maxDist >= 6700 && maxDist <= 7300) return REAL_CIRCUITS.spa;
-  if (maxDist >= 5650 && maxDist <= 5850) return REAL_CIRCUITS.monza;
-  if (maxDist >= 5851 && maxDist <= 6000) return REAL_CIRCUITS.silverstone;
-
-  return null;
+  return getAuthenticTrackGeometry(combined, maxDist);
 }
 
 /**

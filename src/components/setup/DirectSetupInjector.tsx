@@ -176,18 +176,15 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
         {/* Live Bridge / File API Status Indicator */}
         <div className="flex items-center gap-2">
           {bridgeStatus === "online" ? (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-full">
               BRIDGE ACTIVE (0-CLICK)
             </div>
           ) : isFileSystemAccessSupported() ? (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+            <div className="text-[11px] font-mono text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 rounded-full">
               BROWSER DISK ACCESS READY
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 text-[11px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">
-              <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+            <div className="text-[11px] font-mono text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-full">
               DIRECT DOWNLOAD + .BAT
             </div>
           )}

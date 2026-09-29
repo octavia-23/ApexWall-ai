@@ -323,7 +323,6 @@ export const LiveTelemetryHUD: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-xl bg-slate-900/60 border border-slate-800">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`}></span>
             <span className="font-mono text-xs font-bold uppercase tracking-wider text-slate-200">
               {bridgeStatus}
             </span>
@@ -523,7 +522,6 @@ export const LiveTelemetryHUD: React.FC = () => {
         <div className="lg:col-span-2 p-5 rounded-xl bg-slate-900/60 border border-slate-800 flex flex-col">
           <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
               <span className="text-xs font-mono font-bold uppercase tracking-wider text-slate-200">
                 Live 2D Track Position // {circuitGeo?.name || "Circuit"}
               </span>

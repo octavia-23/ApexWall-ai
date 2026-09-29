@@ -242,17 +242,7 @@ body {
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--status-emerald);
-}
-.status-dot.active {
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
-}
-.status-dot.busy {
-  background: var(--status-amber);
-  animation: pulse-dot 1.2s infinite ease-in-out;
+  display: none !important;
 }
 
 @keyframes pulse-dot {
@@ -404,14 +394,9 @@ body {
   border: 1px solid var(--border-subtle);
 }
 
-.badge-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--status-emerald);
-}
+.badge-dot,
 .badge-dot-cyan {
-  background: var(--tel-speed);
+  display: none !important;
 }
 
 /* ==========================================================================
@@ -1016,10 +1001,7 @@ textarea {
 }
 
 .spec-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--text-dim);
+  display: none !important;
 }
 
 .loading-state {

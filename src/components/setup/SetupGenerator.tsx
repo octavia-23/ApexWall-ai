@@ -221,7 +221,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             </div>
           </div>
           <div className="panel-telemetry-badge">
-            <span className="badge-dot"></span> BASELINE BUILDER
+            BASELINE BUILDER
           </div>
         </div>
 

@@ -5,7 +5,6 @@ export const Footer: React.FC = () => {
     <footer className="footer">
       <div className="footer-inner">
         <div className="footer-branding">
-          <span className="w-1.5 h-1.5 rounded-full bg-slate-500 inline-block"></span>
           <span>ApexWall AI Engineering Platform</span>
         </div>
         <div className="footer-text">

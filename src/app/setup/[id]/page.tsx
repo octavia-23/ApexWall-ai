@@ -228,7 +228,6 @@ export default function SharedSetupPage() {
           <div className="p-5 rounded-xl bg-[#0D121F] border border-blue-500/20 mb-8">
             <div className="flex items-center justify-between text-xs font-mono mb-2 text-blue-400">
               <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></span>
                 <span className="font-bold">PIT WALL // RACE ENGINEER BRIEFING</span>
               </div>
               <span className="text-slate-500">RADIO CH 1 · SECURE</span>

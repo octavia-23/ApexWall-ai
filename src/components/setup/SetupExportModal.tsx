@@ -150,7 +150,6 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
             <div className="px-6 py-4 bg-[#07090F] border-t border-white/10">
               <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                   Direct File Downloads (Standalone Native Files):
                 </span>
                 {downloadNotice && (

@@ -169,7 +169,6 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
                 <span className="text-slate-200 font-medium max-w-[90px] truncate hidden sm:inline">
                   {displayName}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
               </button>
 
               {dropdownOpen && (

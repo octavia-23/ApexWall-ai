@@ -193,8 +193,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
               <span className="text-xs font-bold font-mono tracking-wider text-white uppercase">
                 CHIEF RACE ENGINEER // PIT WALL TELEMETRY DEBRIEF
               </span>
-              <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                 RADIO COMMS ACTIVE
               </span>
             </div>
@@ -314,8 +313,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
               <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center text-xs font-bold animate-pulse">
                 ⚡
               </div>
-              <div className="bg-[#121824] border border-cyan-500/25 rounded-2xl p-4 text-xs font-mono text-cyan-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+              <div className="bg-[#121824] border border-cyan-500/25 rounded-2xl p-4 text-xs font-mono text-cyan-300">
                 <span>Race Engineer analyzing telemetry channels & calculating setup changes...</span>
               </div>
             </div>

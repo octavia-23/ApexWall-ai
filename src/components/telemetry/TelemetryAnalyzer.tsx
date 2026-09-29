@@ -20,6 +20,7 @@ import {
 } from "@/types/telemetry";
 import { SetupExportModal } from "../setup/SetupExportModal";
 import { saveSetupToVault } from "@/lib/setup-vault";
+import { getAuthenticTrackGeometry } from "@/lib/circuit-geometries";
 
 interface TelemetryAnalyzerProps {
   onLoadingChange: (loading: boolean) => void;
@@ -187,6 +188,54 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         file: "/sample-telemetry/acevo-imola-gt3.csv",
         refFile: "/sample-telemetry/spa-gt3-pro-reference.csv",
       },
+      roadatlanta: {
+        game: "iRacing",
+        car: "Porsche 992 GT3 R",
+        track: "Michelin Raceway Road Atlanta",
+        weather: "Dry",
+        trackTemp: "33°C",
+        airTemp: "24°C",
+        tyres: "Michelin Pilot Sport GT",
+        fuel: "45 L",
+        driverStyle: "Momentum / Smooth Roller",
+        balance: "Neutral Balance",
+        target: "Sprint Race (Tyre Life & Agility)",
+        complaint: "Bottoming out through Turn 12 downhill compression, oversteer on Turn 3 crest",
+        file: "/sample-telemetry/roadatlanta-imsa-gt3.csv",
+        refFile: "",
+      },
+      nordschleife: {
+        game: "Assetto Corsa Competizione",
+        car: "Porsche 992 GT3 R",
+        track: "Nürburgring Nordschleife (Full Course)",
+        weather: "Dry",
+        trackTemp: "26°C",
+        airTemp: "19°C",
+        tyres: "DHE Slick",
+        fuel: "60 L",
+        driverStyle: "Planted / Safe Rear",
+        balance: "Planted / Safe Rear",
+        target: "Endurance Race (Pace & Stability)",
+        complaint: "Instability through Flugplatz crest, high kerb harshness at Karussell entry",
+        file: "/sample-telemetry/nordschleife-gt3.csv",
+        refFile: "",
+      },
+      jeddah: {
+        game: "F1 24",
+        car: "Red Bull RB20",
+        track: "Jeddah Corniche Circuit",
+        weather: "Dry",
+        trackTemp: "34°C",
+        airTemp: "29°C",
+        tyres: "Soft Slick (C4)",
+        fuel: "38 L",
+        driverStyle: "Momentum / Smooth Roller",
+        balance: "Pointy / Loose Rotation",
+        target: "Qualifying Hotlap (Peak Grip)",
+        complaint: "Front wing wash through high-speed sweeps (Turns 8-10), snap oversteer on Turn 27 exit",
+        file: "/sample-telemetry/jeddah-f1.csv",
+        refFile: "",
+      },
     };
 
     const cfg = presets[presetKey];
@@ -265,7 +314,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     const lowerName = parsed.filename.toLowerCase();
     let detectedTrack = track;
 
-    if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr") || lowerName.includes("austria")) {
+    const maxDist = parsed.points[parsed.points.length - 1]?.dist || 0;
+    const authCircuit = getAuthenticTrackGeometry(lowerName, maxDist);
+    if (authCircuit) {
+      detectedTrack = authCircuit.name;
+      setTrack(authCircuit.name);
+    } else if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr") || lowerName.includes("austria")) {
       detectedTrack = "Red Bull Ring (Spielberg GP)";
       setTrack("Red Bull Ring (Spielberg GP)");
     } else if (lowerName.includes("silverstone")) {
@@ -963,7 +1017,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             </div>
           </div>
           <div className="panel-telemetry-badge">
-            <span className="badge-dot"></span> MoTeC / CSV Ready
+            MoTeC / CSV Ready
           </div>
         </div>
 
@@ -1253,7 +1307,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <span>Quick reference runs:</span>
               <span className="text-[10px] text-slate-500 font-mono">OPTIONAL</span>
             </div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <button
                 type="button"
                 className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
@@ -1264,7 +1318,46 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 onClick={() => loadPreset("acevo")}
               >
                 <div className="font-semibold truncate">Imola (AC Evo)</div>
-                <div className="text-[10px] text-slate-400">Ferrari 296 GT3 · MoTeC</div>
+                <div className="text-[10px] text-slate-400 truncate">Ferrari 296 · MoTeC</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "nordschleife"
+                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("nordschleife")}
+              >
+                <div className="font-semibold truncate">Nordschleife</div>
+                <div className="text-[10px] text-slate-400 truncate">992 GT3 R · ACC</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "roadatlanta"
+                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("roadatlanta")}
+              >
+                <div className="font-semibold truncate">Road Atlanta</div>
+                <div className="text-[10px] text-slate-400 truncate">992 GT3 R · iRacing</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "jeddah"
+                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("jeddah")}
+              >
+                <div className="font-semibold truncate">Jeddah Corniche</div>
+                <div className="text-[10px] text-slate-400 truncate">RB20 · F1 24</div>
               </button>
 
               <button
@@ -1277,7 +1370,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 onClick={() => loadPreset("spa")}
               >
                 <div className="font-semibold truncate">Spa-Francorchamps</div>
-                <div className="text-[10px] text-slate-400">Ferrari 296 GT3 · ACC</div>
+                <div className="text-[10px] text-slate-400 truncate">296 GT3 · ACC</div>
               </button>
 
               <button
@@ -1290,7 +1383,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 onClick={() => loadPreset("redbullring")}
               >
                 <div className="font-semibold truncate">Red Bull Ring</div>
-                <div className="text-[10px] text-slate-400">AMG GT4 · iRacing</div>
+                <div className="text-[10px] text-slate-400 truncate">AMG GT4 · iRacing</div>
               </button>
             </div>
           </div>
@@ -1515,9 +1608,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </p>
             </div>
             <div className="empty-specs-strip">
-              <span className="spec-node"><span className="spec-dot"></span>MULTI-CHANNEL OVERLAY</span>
-              <span className="spec-node"><span className="spec-dot"></span>TRAIL-BRAKING LINEARITY</span>
-              <span className="spec-node"><span className="spec-dot"></span>ADAPTIVE SETUP SYNTHESIS</span>
+              <span className="spec-node">MULTI-CHANNEL OVERLAY</span>
+              <span className="spec-node">TRAIL-BRAKING LINEARITY</span>
+              <span className="spec-node">ADAPTIVE SETUP SYNTHESIS</span>
             </div>
           </div>
         )}
@@ -1558,7 +1651,6 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <div className="score-card-main !p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10B981]"></span>
                       <span className="text-xs font-bold uppercase tracking-wider text-white">
                         {car} @ {track}
                       </span>
