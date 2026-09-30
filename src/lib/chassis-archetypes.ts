@@ -15,6 +15,8 @@
  * ============================================================================
  */
 
+import { getCircuitAeroProfile, CircuitAeroProfile } from "./circuit-aero-profiles";
+
 export type ChassisArchetypeId =
   | "gt3"
   | "formula_modern"
@@ -736,6 +738,7 @@ export function getCalibratedAdaptiveSetup(
   game?: string
 ) {
   const archetype = detectChassisArchetype(car, game);
+  const aeroProfile = getCircuitAeroProfile(track);
   const style = driverStyle || "Heavy Trail-Braker";
   const balance = balancePreference || "Neutral Balance";
 
@@ -772,8 +775,28 @@ export function getCalibratedAdaptiveSetup(
   const aero = archetype.aero;
   const elec = archetype.electronics;
 
+  // Determine aerodynamic wing setup adapted to circuit downforce tier
+  let resolvedFrontWing = aero.frontWingNotches;
+  let resolvedRearWing = aero.rearWingNotches;
+
+  if (archetype.id === "formula_modern") {
+    resolvedFrontWing = aeroProfile.wings.formulaModern.frontWingNotches;
+    resolvedRearWing = aeroProfile.wings.formulaModern.rearWingNotches;
+  } else if (archetype.id === "formula_historic") {
+    resolvedFrontWing = aeroProfile.wings.formulaHistoric.frontWingNotches;
+    resolvedRearWing = aeroProfile.wings.formulaHistoric.rearWingNotches;
+  } else if (archetype.id === "gt3") {
+    resolvedFrontWing = aeroProfile.wings.gt3.frontSplitter;
+    resolvedRearWing = aeroProfile.wings.gt3.rearWing;
+  } else if (archetype.id === "prototype") {
+    resolvedFrontWing = aeroProfile.wings.prototype.frontNotches;
+    resolvedRearWing = aeroProfile.wings.prototype.rearWing;
+  } else if (archetype.id === "cup_gt4") {
+    resolvedRearWing = aeroProfile.wings.cupGt4.rearWing;
+  }
+
   return {
-    philosophy: `Championship ${archetype.displayName} baseline engineered for your ${style} technique and ${balance} requirement on ${track}. Calibrated against authentic ${archetype.id.toUpperCase()} vehicle dynamics: cold tyre pressures dialed to ${flPsi}/${frPsi} psi (targeting ${p.hotTarget}), differential set to ${diff.powerRecommended}% Power / ${diff.coastRecommended}% Coast to ensure stable trail-braking entry without throttle-exit traction snap, and compliant suspension geometry to preserve the tire contact patch.`,
+    philosophy: `Championship ${archetype.displayName} baseline engineered for your ${style} technique and ${balance} requirement on ${track}. Configured for ${aeroProfile.tierName}: ${aeroProfile.rationale} Calibrated against authentic ${archetype.id.toUpperCase()} vehicle dynamics: cold tyre pressures dialed to ${flPsi}/${frPsi} psi (targeting ${p.hotTarget}), differential set to ${diff.powerRecommended}% Power / ${diff.coastRecommended}% Coast to ensure stable trail-braking entry without throttle-exit traction snap, and compliant suspension geometry to preserve the tire contact patch.`,
     sections: [
       {
         title: "Tyres & Cold Pressures",
@@ -807,9 +830,11 @@ export function getCalibratedAdaptiveSetup(
       {
         title: "Aerodynamics & Ride Height",
         items: [
+          { label: "Aerodynamic Trim", value: aeroProfile.tierName, styleNote: aeroProfile.rationale },
           { label: "Front Rod Length / Ride Height", value: `${susp.rodLengthFrontMm} mm`, styleNote: "Low drag, consistent aerodynamic platform" },
           { label: "Rear Rod Length / Ride Height", value: `${susp.rodLengthRearMm} mm`, styleNote: "Diffuser expansion ratio control" },
-          ...(aero.hasRearWing ? [{ label: "Rear Wing Angle", value: `${aero.rearWingNotches} notches`, styleNote: "Circuit downforce vs drag trade-off" }] : []),
+          ...(aero.hasFrontWing ? [{ label: archetype.id === "gt3" ? "Front Splitter Position" : "Front Wing Angle", value: `${resolvedFrontWing} ${archetype.id === "gt3" ? "" : "notches"}`, styleNote: "Front aerodynamic balance" }] : []),
+          ...(aero.hasRearWing ? [{ label: "Rear Wing Angle", value: `${resolvedRearWing} notches`, styleNote: `Targeted for ${aeroProfile.tier.toUpperCase()} downforce circuit speed` }] : []),
         ],
       },
       {

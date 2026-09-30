@@ -4,12 +4,31 @@ import {
   matchACCarFolder,
   getInstalledACCarFolders,
 } from "@/lib/sim-path-resolver";
+import { getCarSetupDataFromSystem } from "@/lib/ac-car-reader";
 
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const sim = searchParams.get("sim") || "assetto-corsa";
     const carQuery = searchParams.get("car") || "";
+    const trackQuery = searchParams.get("track") || "";
+    const action = searchParams.get("action") || "";
+
+    // 1. Inspect installed car and return authentic setup sliders / values
+    if (action === "inspect" && carQuery) {
+      const carData = getCarSetupDataFromSystem(carQuery, trackQuery);
+      if (!carData) {
+        return NextResponse.json({
+          success: false,
+          error: `Could not locate installed setups or data files for car "${carQuery}".`,
+        });
+      }
+      return NextResponse.json({
+        success: true,
+        source: "installed_game",
+        carData,
+      });
+    }
 
     if (sim === "assetto-corsa") {
       const rootInfo = resolveACSetupsRoot();

@@ -1,52 +1,101 @@
 "use client";
 
 import React, { useState, useRef } from "react";
-import { parseAssettoCorsaModZip, AssettoCorsaModData, ACModSlider } from "@/lib/ac-mod-parser";
+import { parseAssettoCorsaModZip, parseACSetupINI, AssettoCorsaModData, ACModSlider } from "@/lib/ac-mod-parser";
 
 interface ACModIngestorProps {
   onModParsed: (modData: AssettoCorsaModData) => void;
   onClearMod: () => void;
   currentMod: AssettoCorsaModData | null;
+  currentCar?: string;
+  currentTrack?: string;
 }
 
 export const ACModIngestor: React.FC<ACModIngestorProps> = ({
   onModParsed,
   onClearMod,
   currentMod,
+  currentCar,
+  currentTrack,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDetecting, setIsDetecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [detectStatus, setDetectStatus] = useState<string | null>(null);
   const [showSlidersDrawer, setShowSlidersDrawer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".zip")) {
-      setError("Please upload an Assetto Corsa car mod archive (.zip format).");
+    const isZip = file.name.toLowerCase().endsWith(".zip");
+    const isIni = file.name.toLowerCase().endsWith(".ini");
+
+    if (!isZip && !isIni) {
+      setError("Please upload an Assetto Corsa mod archive (.zip) or setup file (.ini, e.g. setup.ini or last.ini).");
       return;
     }
 
     setIsLoading(true);
     setError(null);
+    setDetectStatus(null);
 
     try {
       const startTime = performance.now();
-      const modData = await parseAssettoCorsaModZip(file);
-      const elapsed = Math.round(performance.now() - startTime);
+      let modData: AssettoCorsaModData;
 
-      if (modData.sliders.length === 0 && !modData.hasAcdOnly && !modData.weightKg) {
-        throw new Error(
-          "No Assetto Corsa physics files (setup.ini, car.ini, or ui_car.json) were found in this ZIP archive."
-        );
+      if (isIni) {
+        const text = await file.text();
+        modData = parseACSetupINI(text, file.name);
+        if (modData.sliders.length === 0) {
+          throw new Error("No setup parameters or slider values found in this .ini file.");
+        }
+      } else {
+        modData = await parseAssettoCorsaModZip(file);
+        if (modData.sliders.length === 0 && !modData.hasAcdOnly && !modData.weightKg) {
+          throw new Error(
+            "No Assetto Corsa physics files (setup.ini, car.ini, or ui_car.json) were found in this ZIP archive."
+          );
+        }
       }
 
-      console.log(`[ACModIngestor] Selectively unpacked in ${elapsed}ms:`, modData);
+      const elapsed = Math.round(performance.now() - startTime);
+      console.log(`[ACModIngestor] Parsed in ${elapsed}ms:`, modData);
       onModParsed(modData);
     } catch (err: any) {
       console.error("Mod ingestion error:", err);
-      setError(err?.message || "Failed to parse Assetto Corsa mod archive.");
+      setError(err?.message || "Failed to parse Assetto Corsa setup file.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAutoDetect = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDetecting(true);
+    setError(null);
+    setDetectStatus("Scanning local Assetto Corsa installation & Document setups...");
+
+    try {
+      const targetCar = currentCar || "ferrari 488 gt3";
+      const targetTrack = currentTrack || "";
+      const res = await fetch(
+        `/api/sim-cars?action=inspect&car=${encodeURIComponent(targetCar)}&track=${encodeURIComponent(targetTrack)}`
+      );
+      const data = await res.json();
+
+      if (!res.ok || !data.success || !data.carData) {
+        throw new Error(
+          data.error || `Could not find installed setups for "${targetCar}" in Documents/Assetto Corsa/setups.`
+        );
+      }
+
+      onModParsed(data.carData);
+      setDetectStatus(null);
+    } catch (err: any) {
+      console.error("Auto-detect error:", err);
+      setError(err?.message || "Failed to auto-detect installed Assetto Corsa car setup.");
+    } finally {
+      setIsDetecting(false);
     }
   };
 
@@ -79,7 +128,7 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
           <input
             ref={fileInputRef}
             type="file"
-            accept=".zip"
+            accept=".zip,.ini"
             className="hidden"
             onChange={(e) => {
               if (e.target.files && e.target.files.length > 0) {
@@ -90,7 +139,7 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
 
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
-              {isLoading ? (
+              {isLoading || isDetecting ? (
                 <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -106,18 +155,39 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
 
             <div>
               <div className="text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5">
-                <span>Ingest Assetto Corsa Car Mod (.zip)</span>
+                <span>Ingest Assetto Corsa Setup / Mod</span>
                 <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded">
-                  NEW
+                  AUTHENTIC PHYSICS
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {isLoading
-                  ? "Selectively reading setup.ini & vehicle dynamics in browser..."
-                  : "Drag & drop car mod archive (RSS, VRC, URD, Drift) — extracts physics in ~50ms"}
+                  ? "Reading vehicle dynamics in browser..."
+                  : "Drag & drop car mod (.zip) or setup file (.ini: setup.ini, last.ini) — or auto-detect below"}
               </p>
             </div>
+
+            {/* Direct 1-Click Auto-Detect Button */}
+            <div className="mt-1 pt-1 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleAutoDetect}
+                disabled={isDetecting}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-semibold shadow-sm transition-all"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                {isDetecting ? "Scanning System..." : "Auto-Detect from Installed Assetto Corsa"}
+              </button>
+            </div>
           </div>
+
+          {detectStatus && (
+            <div className="mt-2 text-[11px] text-cyan-300 bg-cyan-500/10 border border-cyan-500/20 rounded p-1.5">
+              {detectStatus}
+            </div>
+          )}
 
           {error && (
             <div className="mt-2 text-[11px] text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded p-1.5">

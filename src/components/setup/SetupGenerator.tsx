@@ -263,6 +263,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             onModParsed={handleModParsed}
             onClearMod={handleClearMod}
             currentMod={acModData}
+            currentCar={car}
+            currentTrack={track}
           />
 
           <div className="field-row">

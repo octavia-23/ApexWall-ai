@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGroqWithFallback } from "@/lib/groq";
 import { detectChassisArchetype, getCalibratedAdaptiveSetup } from "@/lib/chassis-archetypes";
+import { getCircuitAeroProfile } from "@/lib/circuit-aero-profiles";
 
 function getDefaultAdaptiveSetup(car: string, track: string, driverStyle: string, balancePreference: string, game?: string) {
   return getCalibratedAdaptiveSetup(car, track, driverStyle, balancePreference, game);
@@ -89,6 +90,7 @@ Telemetry Traces: ${compactTelemetrySlice}
 `.trim();
 
     const archetype = detectChassisArchetype(car, game);
+    const aeroProfile = getCircuitAeroProfile(track);
     const calibratedBaseline = getCalibratedAdaptiveSetup(car, track, driverStyle, balancePreference, game);
 
     const systemPrompt = `You are a World-Class Chief Performance & Race Telemetry Engineer (F1, Prototype & GT vehicle dynamics expert).
@@ -96,6 +98,9 @@ Analyze the telemetry metrics and synthesize an in-depth diagnosis plus a COMPLE
 
 CRITICAL VEHICLE PHYSICS ARCHETYPE CONSTRAINTS FOR "${car}" (${archetype.displayName}):
 ${archetype.promptGuidance}
+
+CRITICAL CIRCUIT AERODYNAMIC DOWNFORCE & WING CONSTRAINTS FOR "${track}" (${aeroProfile.tierName}):
+${aeroProfile.promptGuidance}
 
 Output ONLY valid JSON matching this schema:
 {

@@ -1,5 +1,6 @@
 import { SetupSection } from "@/types/telemetry";
 import { detectChassisArchetype } from "./chassis-archetypes";
+import { getCircuitAeroProfile } from "./circuit-aero-profiles";
 
 export interface SetupExportContext {
   game?: string;
@@ -695,10 +696,19 @@ export function generateAssettoCorsaINI(ctx: SetupExportContext): string {
     const diffPower = Math.max(15, Math.min(50, Math.round(rawDiffPower > 50 ? 30 : rawDiffPower)));
     const diffCoast = Math.max(30, Math.min(70, Math.round(rawDiffCoast < 35 ? 50 : rawDiffCoast)));
 
-    // Aero: Splitter [Wing 1] = 1, Wing [Wing 2] = 6 (low drag Spa) or 8
-    const isSpaOrHighSpeed = /spa|monza|silverstone|lemans|le_mans/i.test(ctx.track);
-    const wing1 = 1;
-    const wing2 = isSpaOrHighSpeed ? 6 : 8;
+    // Aero: Splitter [Wing 1] = 1, Wing [Wing 2] calibrated to circuit downforce tier (Spa = 5, Monza = 2, High = 11)
+    const aeroProfile = getCircuitAeroProfile(ctx.track);
+    const rawWing2 = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 2", "wing 1"]), aeroProfile.wings.gt3.rearWing);
+    const wing1 = aeroProfile.wings.gt3.frontSplitter;
+    // Enforce low-drag wing cap on high-speed circuits (Spa / Monza)
+    let wing2 = Math.round(rawWing2);
+    if (aeroProfile.tier === "super_low") {
+      wing2 = Math.min(wing2, 3);
+    } else if (aeroProfile.tier === "low") {
+      wing2 = Math.min(wing2, 6);
+    } else {
+      wing2 = Math.max(1, Math.min(12, wing2));
+    }
 
     // Electronics
     const rawAbs = parseNumber(findItemValue(ctx.sections, ["abs"]), 6);
@@ -990,12 +1000,43 @@ VERSION=0.3.0-preview342
   const diffCoast = Math.max(diffRules.coastMin, Math.min(diffRules.coastMax, Math.round(rawDiffCoast)));
   const diffPreload = diffRules.preloadNm;
 
-  // Aero / Wings
+  // Aero / Wings calibrated to circuit downforce tier
+  const aeroProfile = getCircuitAeroProfile(ctx.track);
   const aeroRules = archetype.aero;
-  const rawFWing = parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing", "wing 0"]), aeroRules.frontWingNotches);
-  const rawRWing = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 1", "wing 2"]), aeroRules.rearWingNotches);
-  const fWing = Math.round(rawFWing);
-  const rWing = Math.round(rawRWing);
+
+  let defaultFWing = aeroRules.frontWingNotches;
+  let defaultRWing = aeroRules.rearWingNotches;
+
+  if (archetype.id === "formula_modern") {
+    defaultFWing = aeroProfile.wings.formulaModern.frontWingNotches;
+    defaultRWing = aeroProfile.wings.formulaModern.rearWingNotches;
+  } else if (archetype.id === "formula_historic") {
+    defaultFWing = aeroProfile.wings.formulaHistoric.frontWingNotches;
+    defaultRWing = aeroProfile.wings.formulaHistoric.rearWingNotches;
+  } else if (archetype.id === "prototype") {
+    defaultFWing = aeroProfile.wings.prototype.frontNotches;
+    defaultRWing = aeroProfile.wings.prototype.rearWing;
+  } else if (archetype.id === "cup_gt4") {
+    defaultRWing = aeroProfile.wings.cupGt4.rearWing;
+  }
+
+  const rawFWing = parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing", "wing 0"]), defaultFWing);
+  const rawRWing = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 1", "wing 2"]), defaultRWing);
+  let fWing = Math.round(rawFWing);
+  let rWing = Math.round(rawRWing);
+
+  // Guarantee anti-drag wing protection on low-downforce circuits like Spa and Monza
+  if (aeroProfile.tier === "super_low") {
+    if (archetype.id === "formula_modern") {
+      fWing = Math.min(fWing, 5);
+      rWing = Math.min(rWing, 2);
+    }
+  } else if (aeroProfile.tier === "low") {
+    if (archetype.id === "formula_modern") {
+      fWing = Math.min(fWing, 9);
+      rWing = Math.min(rWing, 4);
+    }
+  }
 
   // Brakes & Fuel
   const elec = archetype.electronics;

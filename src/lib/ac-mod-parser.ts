@@ -270,3 +270,81 @@ export async function parseAssettoCorsaModZip(file: File): Promise<AssettoCorsaM
     unpackedFilesFound,
   };
 }
+
+/**
+ * Parses raw Assetto Corsa .ini files (such as setup.ini, last.ini, or custom .ini setups)
+ * directly without needing a ZIP archive.
+ */
+export function parseACSetupINI(iniText: string, fileName: string = "setup.ini"): AssettoCorsaModData {
+  const ini = parseSimpleINI(iniText);
+  const sliders: ACModSlider[] = [];
+
+  let carId = "";
+  let carName = fileName.replace(/\.ini$/i, "");
+  let brand = "Assetto Corsa";
+  let author = "";
+
+  if (ini["CAR"]?.["MODEL"]) {
+    carId = ini["CAR"]["MODEL"];
+    carName = carId.replace(/_/g, " ");
+  }
+  if (ini["ABOUT"]?.["AUTHOR"]) {
+    author = ini["ABOUT"]["AUTHOR"];
+  }
+
+  const isSetupDefinition = Object.values(ini).some(fields => fields["MIN"] !== undefined && fields["MAX"] !== undefined);
+
+  if (isSetupDefinition) {
+    // This is a data/setup.ini file with formal MIN/MAX bounds
+    for (const [secName, fields] of Object.entries(ini)) {
+      if (secName === "DEFAULT" || secName === "HEADER" || secName === "CAR" || secName === "ABOUT") continue;
+      const name = fields["NAME"] || secName.replace(/_/g, " ");
+      const min = fields["MIN"] !== undefined ? parseFloat(fields["MIN"]) : NaN;
+      const max = fields["MAX"] !== undefined ? parseFloat(fields["MAX"]) : NaN;
+      const step = fields["STEP"] !== undefined ? parseFloat(fields["STEP"]) : 1;
+      const pos = fields["POS"] !== undefined ? parseFloat(fields["POS"]) : undefined;
+      const help = fields["HELP"];
+
+      if (!isNaN(min) && !isNaN(max)) {
+        sliders.push({
+          key: secName,
+          name,
+          category: categorizeSection(secName, name),
+          min,
+          max,
+          step: step || 1,
+          defaultValue: pos,
+          help: help || undefined,
+        });
+      }
+    }
+  } else {
+    // This is an active setup .ini (like last.ini or saved setup) with VALUE= entries
+    for (const [secName, fields] of Object.entries(ini)) {
+      if (secName === "DEFAULT" || secName === "HEADER" || secName === "CAR" || secName === "ABOUT" || secName === "__EXT_PATCH") continue;
+      const valStr = fields["VALUE"];
+      if (valStr !== undefined) {
+        const numVal = parseFloat(valStr);
+        const isNumeric = !isNaN(numVal);
+        sliders.push({
+          key: secName,
+          name: secName.replace(/_/g, " "),
+          category: categorizeSection(secName, secName),
+          min: isNumeric ? (numVal < 0 ? numVal * 1.5 : 0) : 0,
+          max: isNumeric ? (numVal > 0 ? Math.max(numVal * 1.5, 10) : 0) : 100,
+          step: 1,
+          defaultValue: isNumeric ? numVal : undefined,
+        });
+      }
+    }
+  }
+
+  return {
+    carId: carId || fileName.replace(/\.ini$/i, ""),
+    name: carName,
+    brand,
+    author,
+    sliders,
+    unpackedFilesFound: [fileName],
+  };
+}
