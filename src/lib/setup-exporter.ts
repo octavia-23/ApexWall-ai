@@ -611,9 +611,304 @@ export function generateAssettoCorsaINI(ctx: SetupExportContext): string {
   const isFormula =
     /(formula|hybrid|exos|tatus|sf23|superformula|indycar|gp2|f1|f2|f3|f4|rss_formula|vrc_formula|ks_ferrari_sf|ks_ferrari_f)/i.test(carId) ||
     /(formula|hybrid|f1|exos|tatuus|rss)/i.test(ctx.car);
+  const isGT3 =
+    /(gt3|gt2|gte|488|huracan|911_gt3|amg_gt3|r8_lms|m6_gt3|z4_gt3|sls_gt3|650s|gtr_gt3|corvette_c7r|ferrari_488)/i.test(carId) ||
+    /(gt3|gt2|gte|488 gt3|ferrari 488)/i.test(ctx.car);
   const isTouringOrFWD =
     /(clio|cup|civic|tcr|golf|btcc|fsr_clio|mini|abarth|alfa_romeo_giulietta)/i.test(carId) ||
     /(clio|cup|fwd|tcr)/i.test(ctx.car);
+
+  // ============================================================================
+  // AUTHENTIC ASSETTO CORSA GT3 CALIBRATION (Kunos Physics Grounded)
+  // ============================================================================
+  if (isGT3) {
+    const defaultFlPsi = 18;
+    const defaultFrPsi = 17;
+    const defaultRlPsi = 16;
+    const defaultRrPsi = 17;
+
+    const rawFl = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf", "pressure fl"]), defaultFlPsi);
+    const rawFr = parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf", "pressure fr"]), defaultFrPsi);
+    const rawRl = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr", "pressure rl"]), defaultRlPsi);
+    const rawRr = parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), defaultRrPsi);
+
+    // Enforce authentic AC GT3 slick cold pressure bounds [15 - 20 psi]
+    const flPsi = Math.max(14, Math.min(20, Math.round(rawFl > 22 ? defaultFlPsi : rawFl)));
+    const frPsi = Math.max(14, Math.min(20, Math.round(rawFr > 22 ? defaultFrPsi : rawFr)));
+    const rlPsi = Math.max(14, Math.min(20, Math.round(rawRl > 22 ? defaultRlPsi : rawRl)));
+    const rrPsi = Math.max(14, Math.min(20, Math.round(rawRr > 22 ? defaultRrPsi : rawRr)));
+
+    // Camber in tenths of a degree (-2.8 deg -> -28)
+    const rawFCamber = parseNumber(findItemValue(ctx.sections, ["front camber", "camber lf"]), -2.8);
+    const rawRCamber = parseNumber(findItemValue(ctx.sections, ["rear camber", "camber lr"]), -2.4);
+    const fCamber = Math.round(rawFCamber < 0 ? (rawFCamber > -10 ? rawFCamber * 10 : rawFCamber) : -28);
+    const rCamber = Math.round(rawRCamber < 0 ? (rawRCamber > -10 ? rawRCamber * 10 : rawRCamber) : -24);
+
+    // Toe in integer clicks (standard 4 front toe-out, 5 rear toe-in)
+    const rawFToe = parseNumber(findItemValue(ctx.sections, ["front toe", "toe lf"]), 4);
+    const rawRToe = parseNumber(findItemValue(ctx.sections, ["rear toe", "toe lr"]), 5);
+    const fToe = Math.max(0, Math.min(10, Math.round(Math.abs(rawFToe) <= 2 ? 4 : Math.abs(rawFToe))));
+    const rToe = Math.max(0, Math.min(10, Math.round(Math.abs(rawRToe) <= 2 ? 5 : Math.abs(rawRToe))));
+
+    // Anti-Roll Bars (1-8 scale, front 6, rear 4)
+    const rawFArb = parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb", "arb front"]), 6);
+    const rawRArb = parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb", "arb rear"]), 4);
+    const fArb = Math.max(1, Math.min(8, Math.round(rawFArb)));
+    const rArb = Math.max(1, Math.min(8, Math.round(rawRArb)));
+
+    // Rod Lengths (0-15 scale, standard flat low drag 5 / 5)
+    const rawRodF = parseNumber(findItemValue(ctx.sections, ["rod length lf", "rod length front", "front ride"]), 5);
+    const rawRodR = parseNumber(findItemValue(ctx.sections, ["rod length lr", "rod length rear", "rear ride"]), 5);
+    const rodF = Math.max(0, Math.min(15, Math.round(rawRodF > 15 ? 5 : rawRodF)));
+    const rodR = Math.max(0, Math.min(15, Math.round(rawRodR > 15 ? 5 : rawRodR)));
+
+    // Springs (N/mm: front 120, rear 115)
+    const rawSpringF = parseNumber(findItemValue(ctx.sections, ["front wheel rate", "spring lf"]), 120);
+    const rawSpringR = parseNumber(findItemValue(ctx.sections, ["rear wheel rate", "spring lr"]), 115);
+    const springF = Math.round(rawSpringF > 60 && rawSpringF < 200 ? rawSpringF : 120);
+    const springR = Math.round(rawSpringR > 60 && rawSpringR < 200 ? rawSpringR : 115);
+
+    // Packers (49mm front, 62mm rear)
+    const rawPackerF = parseNumber(findItemValue(ctx.sections, ["front packers travel", "packer lf"]), 49);
+    const rawPackerR = parseNumber(findItemValue(ctx.sections, ["rear packers travel", "packer lr"]), 62);
+    const packerF = Math.round(rawPackerF < 25 ? 49 : rawPackerF);
+    const packerR = Math.round(rawPackerR < 25 ? 62 : rawPackerR);
+
+    // Dampers (0-12/16 scale: bump 9/8, fast bump 8/8, rebound 7/8, fast rebound 9/9)
+    const rawBumpF = parseNumber(findItemValue(ctx.sections, ["bump lf", "slow bump lf"]), 9);
+    const rawBumpR = parseNumber(findItemValue(ctx.sections, ["bump lr", "slow bump lr"]), 8);
+    const bumpF = Math.max(1, Math.min(16, Math.round(rawBumpF > 16 ? 9 : rawBumpF)));
+    const bumpR = Math.max(1, Math.min(16, Math.round(rawBumpR > 16 ? 8 : rawBumpR)));
+
+    const rawFastBumpF = parseNumber(findItemValue(ctx.sections, ["fast bump lf"]), 8);
+    const rawFastBumpR = parseNumber(findItemValue(ctx.sections, ["fast bump lr"]), 8);
+    const fastBumpF = Math.max(1, Math.min(16, Math.round(rawFastBumpF > 16 ? 8 : rawFastBumpF)));
+    const fastBumpR = Math.max(1, Math.min(16, Math.round(rawFastBumpR > 16 ? 8 : rawFastBumpR)));
+
+    const rawReboundF = parseNumber(findItemValue(ctx.sections, ["rebound lf", "slow rebound lf"]), 7);
+    const rawReboundR = parseNumber(findItemValue(ctx.sections, ["rebound lr", "slow rebound lr"]), 8);
+    const reboundF = Math.max(1, Math.min(16, Math.round(rawReboundF > 16 ? 7 : rawReboundF)));
+    const reboundR = Math.max(1, Math.min(16, Math.round(rawReboundR > 16 ? 8 : rawReboundR)));
+
+    const rawFastReboundF = parseNumber(findItemValue(ctx.sections, ["fast rebound lf"]), 9);
+    const rawFastReboundR = parseNumber(findItemValue(ctx.sections, ["fast rebound lr"]), 9);
+    const fastReboundF = Math.max(1, Math.min(16, Math.round(rawFastReboundF > 16 ? 9 : rawFastReboundF)));
+    const fastReboundR = Math.max(1, Math.min(16, Math.round(rawFastReboundR > 16 ? 9 : rawFastReboundR)));
+
+    // Differential (30% power, 50% coast)
+    const rawDiffPower = parseNumber(findItemValue(ctx.sections, ["diff power", "power lock"]), 30);
+    const rawDiffCoast = parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), 50);
+    const diffPower = Math.max(15, Math.min(50, Math.round(rawDiffPower > 50 ? 30 : rawDiffPower)));
+    const diffCoast = Math.max(30, Math.min(70, Math.round(rawDiffCoast < 35 ? 50 : rawDiffCoast)));
+
+    // Aero: Splitter [Wing 1] = 1, Wing [Wing 2] = 6 (low drag Spa) or 8
+    const isSpaOrHighSpeed = /spa|monza|silverstone|lemans|le_mans/i.test(ctx.track);
+    const wing1 = 1;
+    const wing2 = isSpaOrHighSpeed ? 6 : 8;
+
+    // Electronics
+    const rawAbs = parseNumber(findItemValue(ctx.sections, ["abs"]), 6);
+    const rawTc = parseNumber(findItemValue(ctx.sections, ["traction control", "tc"]), 5);
+    const abs = Math.max(1, Math.min(12, Math.round(rawAbs)));
+    const tc = Math.max(1, Math.min(12, Math.round(rawTc)));
+
+    const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), 64));
+    const fuel = Math.round(parseNumber(ctx.fuelLoad || "30", 30));
+
+    return `[ABOUT]
+AUTHOR=APEXWALL AI
+DESCRIPTION=${ctx.summary ? ctx.summary.replace(/[\\r\\n]+/g, " ") : "Championship Calibrated Baseline"}
+
+[ABS]
+VALUE=${abs}
+
+[ARB_FRONT]
+VALUE=${fArb}
+
+[ARB_REAR]
+VALUE=${rArb}
+
+[BRAKE_POWER_MULT]
+VALUE=100
+
+[CAMBER_LF]
+VALUE=${fCamber}
+
+[CAMBER_LR]
+VALUE=${rCamber}
+
+[CAMBER_RF]
+VALUE=${fCamber}
+
+[CAMBER_RR]
+VALUE=${rCamber}
+
+[CAR]
+MODEL=${carId}
+
+[DAMP_BUMP_LF]
+VALUE=${bumpF}
+
+[DAMP_BUMP_LR]
+VALUE=${bumpR}
+
+[DAMP_BUMP_RF]
+VALUE=${bumpF}
+
+[DAMP_BUMP_RR]
+VALUE=${bumpR}
+
+[DAMP_FAST_BUMP_LF]
+VALUE=${fastBumpF}
+
+[DAMP_FAST_BUMP_LR]
+VALUE=${fastBumpR}
+
+[DAMP_FAST_BUMP_RF]
+VALUE=${fastBumpF}
+
+[DAMP_FAST_BUMP_RR]
+VALUE=${fastBumpR}
+
+[DAMP_FAST_REBOUND_LF]
+VALUE=${fastReboundF}
+
+[DAMP_FAST_REBOUND_LR]
+VALUE=${fastReboundR}
+
+[DAMP_FAST_REBOUND_RF]
+VALUE=${fastReboundF}
+
+[DAMP_FAST_REBOUND_RR]
+VALUE=${fastReboundR}
+
+[DAMP_REBOUND_LF]
+VALUE=${reboundF}
+
+[DAMP_REBOUND_LR]
+VALUE=${reboundR}
+
+[DAMP_REBOUND_RF]
+VALUE=${reboundF}
+
+[DAMP_REBOUND_RR]
+VALUE=${reboundR}
+
+[DIFF_COAST]
+VALUE=${diffCoast}
+
+[DIFF_POWER]
+VALUE=${diffPower}
+
+[DIFF_PRELOAD]
+VALUE=40
+
+[ENGINE_LIMITER]
+VALUE=100
+
+[FINAL_RATIO]
+VALUE=1
+
+[FRONT_BIAS]
+VALUE=${brakeBias}
+
+[FUEL]
+VALUE=${fuel}
+
+[INTERNAL_GEAR_2]
+VALUE=0
+
+[INTERNAL_GEAR_3]
+VALUE=3
+
+[INTERNAL_GEAR_4]
+VALUE=6
+
+[INTERNAL_GEAR_5]
+VALUE=14
+
+[INTERNAL_GEAR_6]
+VALUE=12
+
+[INTERNAL_GEAR_7]
+VALUE=18
+
+[PACKER_RANGE_LF]
+VALUE=${packerF}
+
+[PACKER_RANGE_LR]
+VALUE=${packerR}
+
+[PACKER_RANGE_RF]
+VALUE=${packerF}
+
+[PACKER_RANGE_RR]
+VALUE=${packerR}
+
+[PRESSURE_LF]
+VALUE=${flPsi}
+
+[PRESSURE_LR]
+VALUE=${rlPsi}
+
+[PRESSURE_RF]
+VALUE=${frPsi}
+
+[PRESSURE_RR]
+VALUE=${rrPsi}
+
+[ROD_LENGTH_LF]
+VALUE=${rodF}
+
+[ROD_LENGTH_LR]
+VALUE=${rodR}
+
+[ROD_LENGTH_RF]
+VALUE=${rodF}
+
+[ROD_LENGTH_RR]
+VALUE=${rodR}
+
+[SPRING_RATE_LF]
+VALUE=${springF}
+
+[SPRING_RATE_LR]
+VALUE=${springR}
+
+[SPRING_RATE_RF]
+VALUE=${springF}
+
+[SPRING_RATE_RR]
+VALUE=${springR}
+
+[TOE_OUT_LF]
+VALUE=${fToe}
+
+[TOE_OUT_LR]
+VALUE=${rToe}
+
+[TOE_OUT_RF]
+VALUE=${fToe}
+
+[TOE_OUT_RR]
+VALUE=${rToe}
+
+[TRACTION_CONTROL]
+VALUE=${tc}
+
+[TYRES]
+VALUE=1
+
+[WING_1]
+VALUE=${wing1}
+
+[WING_2]
+VALUE=${wing2}
+
+[__EXT_PATCH]
+VERSION=0.3.0-preview342
+`;
+  }
 
   // --- TYRE PRESSURES ---
   const defaultPsi = isFormula ? 15 : isTouringOrFWD ? 28 : 26;

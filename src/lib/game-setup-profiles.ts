@@ -60,37 +60,141 @@ export const assettoCorsaProfile: GameSetupProfile = {
   ],
   systemPromptGuidance: `
 TARGET SIMULATOR: Assetto Corsa (Original AC by Kunos).
-In Assetto Corsa, the garage setup menu has specific tabs and units:
+In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and physics rules:
 - "TYRES":
-  • For GT / Touring: Pressures in psi (typically 24-28 psi).
+  • For GT3 / GTE / GT Racing (Ferrari 488 GT3, Porsche 911 GT3, AMG GT3, Huracan, R8 LMS):
+    Cold pressures MUST be 16.0 - 18.0 psi (e.g. 17-18 psi Front, 16-17 psi Rear). Slicks warm up by +9-10 psi to hit the optimal 26.0 - 27.5 psi hot window. Starting at 24+ psi is catastrophically overinflated!
   • For Formula / Open-Wheel (Formula Hybrid, F1, RSS, Exos, Tatuus): Pressures MUST be 14-16 psi cold (aim for 21-22 psi hot).
+  • For Street / Touring: 26-28 psi cold.
 - "ALIGNMENT":
-  • Camber LF/RF/LR/RR in degrees with negative values (e.g., -3.3° front, -1.5° rear for Formula; -3.2° / -2.4° for GT).
-  • Toe LF/RF/LR/RR: In AC, Toe is set in INTEGER CLICKS or MILLIMETERS (e.g. 0 to -6 clicks front toe-out, +6 to +12 clicks rear toe-in).
-  • Caster in degrees (e.g. 7.5°).
+  • Camber: In degrees with negative values (GT3: -2.8° front, -2.4° rear; Formula: -3.3° front, -1.5° rear).
+  • Toe: In AC, Toe is set in integer clicks / notches (GT3: 4 clicks front toe-out, 5 clicks rear toe-in).
+  • Caster in degrees (e.g. 7.2°).
 - "SUSPENSION":
-  • Antiroll Bar Front & Rear: For GT cars, 1 to 6 steps. For Formula / RSS Hybrid, measured in N/m (e.g. 100,000 N/m front, 100,000 N/m rear).
-  • Corner Spring Rates: 140 N/mm front, 80-115 N/mm rear.
-  • Heave Springs (Formula / 3rd element): 100 N/mm front, 20 N/mm rear.
-  • Rod Length / Ride Height: LF/RF +5 mm / clicks (ensures front clears 20.0mm legal minimum without scraping), LR/RR +95 mm (high aerodynamic rake for diffuser downforce).
+  • Antiroll Bar Front & Rear: For GT3, 1 to 8 steps (typically Front 6, Rear 4).
+  • Corner Spring Rates: GT3 uses ~120 N/mm front, 115 N/mm rear.
+  • Rod Length / Ride Height: For GT3, keep LF/RF at 5 mm and LR/RR at 5 mm for a flat, stable, low-drag aerodynamic platform.
 - "SUSPENSION ADV.":
-  • Packers / Travel: Front 19 mm, Rear 74 mm (Formula) or 12mm / 18mm (GT). Bumpstop Rate: 70.
+  • Packers / Travel: For GT3, Front 45-52 mm (49mm baseline) and Rear 55-65 mm (62mm baseline) to provide suspension compliance before hitting bumpstops. NEVER use 12-18mm which causes the car to bottom out!
+  • Bumpstop Rate: 70 N/mm.
 - "DAMPERS":
-  • Bump LF/RF (11 / 40 clicks), Rebound LF/RF (10-18 / 40 clicks), Fast Bump / Fast Rebound (4-8 clicks).
+  • In Kunos GT3 cars, dampers use a 0-12 or 0-16 click scale (NOT 40!):
+    Slow Bump: 8-9 front, 7-8 rear. Fast Bump: 7-8 front, 7-8 rear.
+    Slow Rebound: 6-7 front, 7-8 rear. Fast Rebound: 8-9 front, 8-9 rear.
 - "DRIVETRAIN":
-  • Diff Power: 15-20% for turbo-hybrid Formula (prevents instantaneous snap oversteer on throttle), 45-55% for GT.
-  • Diff Coast: 25-35%. Diff Preload: 30-50 Nm.
+  • For GT3: Diff Power MUST be 25% - 35% (30% is ideal, unlocking rotation on corner exit). Diff Coast MUST be 45% - 55% (50% is ideal, stabilizing the rear axle under heavy trail-braking into chicanes/hairpins). Diff Preload: 30-50 Nm.
+  • For Formula: Diff Power 15-20%, Diff Coast 20-30%.
 - "AERO":
-  • Formula / RSS Hybrid: Front Wing [Wing 0] (10 to 22 notches), Rear Wing [Wing 1] (4 to 8 notches).
-  • GT cars: Rear Wing (0 to 12 notches), Front Splitter (0 to 3).
-- "BRAKES": Brake Bias (% front, 52-56% for Formula, 62-66% for GT), Brake Engine (6 for hybrid), Brake Power (100%).
-- "GENERIC": Fuel in Liters (15 L for sprint/quali, 40-70 L for race).
+  • For GT3: Front Splitter [Wing 1] (1 to 2 notches), Rear Wing [Wing 2] (5 to 8 notches).
+  • NEVER output [WING_0] or [WING_11] on GT3 cars.
+- "ELECTRONICS":
+  • For GT3: ABS (5 to 7 / 12, standard 6), Traction Control (4 to 6 / 12, standard 5).
+  • NEVER output hybrid MGU-K/MGU-H or heave springs on GT3 cars.
+- "BRAKES": Brake Bias (% front: 62-65% for GT3, 52-56% for Formula), Brake Power (100%).
+- "GENERIC": Fuel in Liters (30 L for sprint/quali, 60-100 L for endurance).
 `,
   generateProceduralSetup: (p) => {
     const isUndersteer = /understeer|push|wash/i.test(p.handlingIssue || "");
     const isOversteer = /oversteer|snap|loose|tail/i.test(p.handlingIssue || "");
     const isHighSpeed = /monza|spa|silverstone|mugello/i.test(p.track);
     const isFormula = /(formula|hybrid|exos|tatus|sf23|superformula|indycar|gp2|f1|f2|f3|f4|rss_formula|vrc_formula|ks_ferrari_sf|ks_ferrari_f)/i.test(p.car);
+    const isGT3 = /(gt3|gt2|gte|488|huracan|911_gt3|amg_gt3|r8_lms|m6_gt3|z4_gt3|sls_gt3|650s|gtr_gt3|corvette_c7r|ferrari_488)/i.test(p.car);
+
+    if (isGT3) {
+      return {
+        summary: `Assetto Corsa GT3 championship specification for ${p.car} at ${p.track}. Calibrated directly against authentic Kunos GT3 physics & verified race telemetry: cold slick pressures at 17-18 psi (targeting 26.5-27.0 psi hot optimal grip window), 30% diff power to eliminate traction snap on throttle exit, 50% coast lock for trail-braking stability into big stops, compliant 0-12 damper clicks with 49/62mm packers, and flat 5mm rod length aerodynamic platform.`,
+        sections: [
+          {
+            title: "TYRES",
+            items: [
+              { label: "Tyre Compound", value: p.tyreCompound || "Slick Medium / DHE" },
+              { label: "Front Left Pressure", value: "18 psi (aim for 26.8 psi hot)" },
+              { label: "Front Right Pressure", value: "17 psi (aim for 26.5 psi hot)" },
+              { label: "Rear Left Pressure", value: "16 psi (aim for 26.5 psi hot)" },
+              { label: "Rear Right Pressure", value: "17 psi (aim for 26.8 psi hot)" },
+            ],
+          },
+          {
+            title: "ALIGNMENT",
+            items: [
+              { label: "Camber LF / RF", value: isUndersteer ? "-3.0° / -3.0°" : "-2.8° / -2.8°" },
+              { label: "Camber LR / RR", value: "-2.4° / -2.4°" },
+              { label: "Toe LF / RF", value: isUndersteer ? "5 clicks (toe-out for sharper turn-in)" : "4 clicks" },
+              { label: "Toe LR / RR", value: "5 clicks (toe-in for high-speed rear tracking)" },
+              { label: "Caster", value: "7.2°" },
+            ],
+          },
+          {
+            title: "SUSPENSION",
+            items: [
+              { label: "Antiroll Bar Front", value: isUndersteer ? "5 / 8" : "6 / 8" },
+              { label: "Antiroll Bar Rear", value: isOversteer ? "3 / 8" : "4 / 8" },
+              { label: "Front Wheel Rate", value: "120 N/mm" },
+              { label: "Rear Wheel Rate", value: "115 N/mm" },
+              { label: "Rod Length LF/RF", value: "5 mm (Flat low-drag aero platform)" },
+              { label: "Rod Length LR/RR", value: "5 mm (Balanced diffuser pitch)" },
+            ],
+          },
+          {
+            title: "SUSPENSION ADV.",
+            items: [
+              { label: "Front Packers Travel", value: "49 mm (High bumpstop clearance)" },
+              { label: "Rear Packers Travel", value: "62 mm" },
+              { label: "Bumpstop Rate", value: "70 N/mm" },
+            ],
+          },
+          {
+            title: "DAMPERS",
+            items: [
+              { label: "Bump LF/RF", value: "9 / 12 clicks" },
+              { label: "Bump LR/RR", value: "8 / 12 clicks" },
+              { label: "Fast Bump LF/RF", value: "8 / 12 clicks (Kerb absorption)" },
+              { label: "Fast Bump LR/RR", value: "8 / 12 clicks" },
+              { label: "Rebound LF/RF", value: "7 / 12 clicks" },
+              { label: "Rebound LR/RR", value: "8 / 12 clicks" },
+              { label: "Fast Rebound LF/RF", value: "9 / 12 clicks" },
+              { label: "Fast Rebound LR/RR", value: "9 / 12 clicks" },
+            ],
+          },
+          {
+            title: "DRIVETRAIN",
+            items: [
+              { label: "Diff Power", value: "30% (Smooth exit rotation without snap)" },
+              { label: "Diff Coast", value: isOversteer ? "55% (Maximum trail-braking stability)" : "50%" },
+              { label: "Diff Preload", value: "40 Nm" },
+            ],
+          },
+          {
+            title: "AERO",
+            items: [
+              { label: "Front Splitter [Wing 1]", value: "1 notch" },
+              { label: "Rear Wing [Wing 2]", value: isHighSpeed ? "6 notches (Low drag for Spa/Monza)" : "8 notches (Downforce)" },
+            ],
+          },
+          {
+            title: "ELECTRONICS",
+            items: [
+              { label: "ABS", value: "6 / 12 (Deep trail-braking threshold)" },
+              { label: "Traction Control", value: "5 / 12 (Optimum tyre slip angle)" },
+            ],
+          },
+          {
+            title: "BRAKES",
+            items: [
+              { label: "Brake Bias", value: "64% Front" },
+              { label: "Brake Power", value: "100%" },
+            ],
+          },
+          {
+            title: "GENERIC",
+            items: [
+              { label: "Fuel Load", value: p.fuelLoad || "30 L (Sprint / Quali)" },
+            ],
+          },
+        ],
+        engineerNotes: `Copy driver, in Assetto Corsa your GT3 setup has been calibrated directly against authentic Kunos telemetry: cold slick pressures are at 17-18 psi (preventing hot pressures from blowing out past 30 psi), diff power is unlocked to 30% for smooth exit rotation without snap-oversteer, diff coast is locked to 50% for stable trail-braking, packers are opened to 49/62mm to eliminate bottoming out, and dampers are dialed in 0-12 click range for smooth curb riding.`,
+      };
+    }
 
     if (isFormula) {
       return {
