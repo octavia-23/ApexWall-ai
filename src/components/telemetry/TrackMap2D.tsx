@@ -7,7 +7,7 @@ import {
   TrackCorner,
   LapComparisonSummary,
 } from "@/types/telemetry";
-import { REAL_CIRCUITS } from "@/lib/circuit-geometries";
+import { REAL_CIRCUITS, getCircuitsByCategory } from "@/lib/circuit-geometries";
 
 interface TrackMap2DProps {
   data: TrackMapData;
@@ -124,16 +124,43 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     ctx.scale(dpr, dpr);
     ctx.clearRect(0, 0, width, height);
 
-    // Padding & Isometric 1:1 Aspect Ratio Transform
+    // Padding & Isometric 1:1 Aspect Ratio Transform from data.bounds
+    const bounds = data.bounds && typeof data.bounds.minX === "number" && isFinite(data.bounds.minX)
+      ? data.bounds
+      : (() => {
+          const allPts = data.fullCircuitPoints && data.fullCircuitPoints.length > 0
+            ? data.fullCircuitPoints
+            : data.points;
+          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          for (const p of allPts) {
+            if (p.x < minX) minX = p.x;
+            if (p.x > maxX) maxX = p.x;
+            if (p.y < minY) minY = p.y;
+            if (p.y > maxY) maxY = p.y;
+          }
+          return {
+            minX: isFinite(minX) ? minX : 0,
+            maxX: isFinite(maxX) ? maxX : 1000,
+            minY: isFinite(minY) ? minY : 0,
+            maxY: isFinite(maxY) ? maxY : 1000,
+          };
+        })();
+
+    const spanX = Math.max(1, bounds.maxX - bounds.minX);
+    const spanY = Math.max(1, bounds.maxY - bounds.minY);
+
     const pad = 42;
     const viewW = width - pad * 2;
     const viewH = height - pad * 2;
-    const size = Math.min(viewW, viewH);
-    const offsetX = pad + (viewW - size) / 2;
-    const offsetY = pad + (viewH - size) / 2;
 
-    const toCanvasX = (rawX: number) => offsetX + (rawX / 1000) * size;
-    const toCanvasY = (rawY: number) => offsetY + (rawY / 1000) * size;
+    const scale = Math.min(viewW / spanX, viewH / spanY);
+    const drawW = spanX * scale;
+    const drawH = spanY * scale;
+    const offsetX = pad + (viewW - drawW) / 2;
+    const offsetY = pad + (viewH - drawH) / 2;
+
+    const toCanvasX = (rawX: number) => offsetX + (rawX - bounds.minX) * scale;
+    const toCanvasY = (rawY: number) => offsetY + (rawY - bounds.minY) * scale;
 
     // 1. Subtle Engineering Blueprint Grid
     ctx.strokeStyle = "rgba(255, 255, 255, 0.02)";
@@ -465,23 +492,35 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
 
-    const width = rect.width;
+    const width = Math.max(340, rect.width);
     const height = Math.min(540, Math.max(380, width * 0.58));
+
+    const bounds = data.bounds && typeof data.bounds.minX === "number" && isFinite(data.bounds.minX)
+      ? data.bounds
+      : { minX: 0, maxX: 1000, minY: 0, maxY: 1000 };
+    const spanX = Math.max(1, bounds.maxX - bounds.minX);
+    const spanY = Math.max(1, bounds.maxY - bounds.minY);
+
     const pad = 42;
     const viewW = width - pad * 2;
     const viewH = height - pad * 2;
-    const size = Math.min(viewW, viewH);
-    const offsetX = pad + (viewW - size) / 2;
-    const offsetY = pad + (viewH - size) / 2;
 
-    const normMouseX = ((mouseX - offsetX) / size) * 1000;
-    const normMouseY = ((mouseY - offsetY) / size) * 1000;
+    const scale = Math.min(viewW / spanX, viewH / spanY);
+    const drawW = spanX * scale;
+    const drawH = spanY * scale;
+    const offsetX = pad + (viewW - drawW) / 2;
+    const offsetY = pad + (viewH - drawH) / 2;
 
-    // 1. Check if hovering near a corner badge
+    const toCanvasX = (rawX: number) => offsetX + (rawX - bounds.minX) * scale;
+    const toCanvasY = (rawY: number) => offsetY + (rawY - bounds.minY) * scale;
+
+    // 1. Check if hovering near a corner badge (screen distance in pixels)
     let foundCorner: TrackCorner | null = null;
     for (const c of data.corners) {
-      const dist = Math.hypot(c.x - normMouseX, c.y - normMouseY);
-      if (dist < 32) {
+      const cx = toCanvasX(c.x);
+      const cy = toCanvasY(c.y);
+      const distPx = Math.hypot(cx - mouseX, cy - mouseY);
+      if (distPx < 22) {
         foundCorner = c;
         break;
       }
@@ -491,20 +530,22 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
       onSelectCorner?.(foundCorner);
     }
 
-    // 2. Find nearest track point to scrub
+    // 2. Find nearest track point to scrub (screen distance in pixels)
     let closestIdx = -1;
-    let minDist = Infinity;
+    let minDistPx = Infinity;
 
     for (let i = 0; i < data.points.length; i++) {
       const p = data.points[i];
-      const d = Math.hypot(p.x - normMouseX, p.y - normMouseY);
-      if (d < minDist) {
-        minDist = d;
+      const px = toCanvasX(p.x);
+      const py = toCanvasY(p.y);
+      const distPx = Math.hypot(px - mouseX, py - mouseY);
+      if (distPx < minDistPx) {
+        minDistPx = distPx;
         closestIdx = i;
       }
     }
 
-    if (minDist < 90 && closestIdx !== -1) {
+    if (minDistPx < 55 && closestIdx !== -1) {
       onHoverPoint?.(closestIdx);
     }
   };
@@ -547,6 +588,8 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
     return nearest;
   }, [currentHoverPoint, data.corners]);
 
+  const circuitGroups = useMemo(() => getCircuitsByCategory(), []);
+
   return (
     <div className="trackmap-module glass-card-nested">
       {/* Header with Title, FIA Grade Badge & Channel Selectors */}
@@ -578,21 +621,26 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
                 value={data.circuitKey || ""}
                 onChange={(e) => onSelectCircuit(e.target.value)}
                 style={{
-                  background: "rgba(15, 23, 42, 0.8)",
-                  color: "#94A3B8",
-                  border: "1px solid rgba(255, 255, 255, 0.15)",
+                  background: "rgba(15, 23, 42, 0.9)",
+                  color: "#E2E8F0",
+                  border: "1px solid rgba(255, 255, 255, 0.2)",
                   borderRadius: "6px",
                   fontSize: "11px",
-                  padding: "3px 8px",
+                  padding: "4px 10px",
                   fontFamily: "var(--font-jetbrains)",
                   cursor: "pointer",
+                  maxWidth: "280px",
                 }}
               >
-                <option value="">Auto-Detect Circuit</option>
-                {Object.entries(REAL_CIRCUITS).map(([k, c]) => (
-                  <option key={k} value={k}>
-                    {c.name} ({c.officialDistance}m)
-                  </option>
+                <option value="">Auto-Detect ({data.circuitName})</option>
+                {circuitGroups.map((group) => (
+                  <optgroup key={group.id} label={`${group.badge} — ${group.label}`}>
+                    {group.circuits.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.officialDistance.toLocaleString()}m)
+                      </option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             )}

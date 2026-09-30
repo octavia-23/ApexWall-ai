@@ -133,18 +133,20 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
 
       {/* Modal Backdrop & Container */}
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-start sm:items-center justify-center bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
           <div
-            className="relative w-full max-w-3xl bg-[#090C14] border border-blue-500/30 rounded-2xl shadow-2xl overflow-hidden text-left"
+            className="relative w-full max-w-3xl my-auto bg-[#090C14] border border-blue-500/30 rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col max-h-[calc(100vh-2.5rem)]"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Direct Setup Injector Engine */}
-            <div className="p-1">
-              <DirectSetupInjector
-                context={context}
-                onClose={() => setIsOpen(false)}
-              />
-            </div>
+            {/* Scrollable Modal Body */}
+            <div className="overflow-y-auto flex-1 custom-scrollbar">
+              {/* Direct Setup Injector Engine */}
+              <div>
+                <DirectSetupInjector
+                  context={context}
+                  onClose={() => setIsOpen(false)}
+                />
+              </div>
 
             {/* Quick Standalone File Downloads Section */}
             <div className="px-6 py-4 bg-[#07090F] border-t border-white/10">
@@ -164,17 +166,17 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
                 <button
                   type="button"
                   onClick={handleExportAC}
-                  className="px-2.5 py-2 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30 rounded-lg text-left transition-all flex flex-col justify-between group"
+                  className="px-2.5 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-all flex flex-col justify-between group"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[11px] font-bold text-white group-hover:text-blue-300">
+                    <span className="text-[11px] font-bold text-[#c4c7cc] group-hover:text-[#f0f2f5]">
                       Assetto Corsa
                     </span>
-                    <span className="text-[9px] font-mono bg-blue-500/30 text-blue-200 px-1 py-0.2 rounded font-bold">
+                    <span className="text-[9px] font-mono bg-[#25282d] text-[#808690] border border-[#353941] px-1 py-0.2 rounded">
                       .INI
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400">Kunos / Content Mgr</div>
+                  <div className="text-[10px] text-[#808690]">Kunos / Content Mgr</div>
                 </button>
 
                 {/* Assetto Corsa Evo */}
@@ -286,14 +288,14 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
                   className="px-2.5 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 rounded-lg text-left transition-all flex flex-col justify-between group"
                 >
                   <div className="flex items-center justify-between w-full mb-1">
-                    <span className="text-[11px] font-bold text-slate-200 group-hover:text-white">
+                    <span className="text-[11px] font-bold text-[#c4c7cc] group-hover:text-[#f0f2f5]">
                       BeamNG
                     </span>
-                    <span className="text-[9px] font-mono bg-orange-500/20 text-orange-300 px-1 py-0.2 rounded">
+                    <span className="text-[9px] font-mono bg-[#25282d] text-[#808690] border border-[#353941] px-1 py-0.2 rounded">
                       .PC
                     </span>
                   </div>
-                  <div className="text-[10px] text-slate-400">Vehicle Tuning</div>
+                  <div className="text-[10px] text-[#808690]">Vehicle Tuning</div>
                 </button>
 
                 {/* RaceRoom */}
@@ -350,7 +352,8 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
     </div>
   );
 };

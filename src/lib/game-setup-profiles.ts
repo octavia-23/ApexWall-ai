@@ -61,35 +61,128 @@ export const assettoCorsaProfile: GameSetupProfile = {
   systemPromptGuidance: `
 TARGET SIMULATOR: Assetto Corsa (Original AC by Kunos).
 In Assetto Corsa, the garage setup menu has specific tabs and units:
-- "TYRES": Pressures in psi (typically 24-34 psi). Compound (e.g., Semi-Slicks, Slicks Medium/Soft/Hard, Vintage 60s).
+- "TYRES":
+  • For GT / Touring: Pressures in psi (typically 24-28 psi).
+  • For Formula / Open-Wheel (Formula Hybrid, F1, RSS, Exos, Tatuus): Pressures MUST be 14-16 psi cold (aim for 21-22 psi hot).
 - "ALIGNMENT":
-  • Camber LF/RF/LR/RR in degrees with negative values (e.g., -3.2° front, -2.4° rear).
-  • Toe LF/RF/LR/RR: In AC, Toe is set in INTEGER CLICKS or MILLIMETERS (e.g. -8 to +8 clicks, or -2mm to +2mm. Negative is toe-out, positive is toe-in. NEVER use milliradians or tiny 0.05 fractions).
+  • Camber LF/RF/LR/RR in degrees with negative values (e.g., -3.3° front, -1.5° rear for Formula; -3.2° / -2.4° for GT).
+  • Toe LF/RF/LR/RR: In AC, Toe is set in INTEGER CLICKS or MILLIMETERS (e.g. 0 to -6 clicks front toe-out, +6 to +12 clicks rear toe-in).
   • Caster in degrees (e.g. 7.5°).
 - "SUSPENSION":
-  • Antiroll Bar Front & Rear in integer steps (e.g. 0 to 6, or specific N/m rate).
-  • Wheel Rate / Spring Rate LF/RF/LR/RR (in N/m or N/mm).
-  • Rod Length / Ride Height LF/RF/LR/RR (in integer clicks/mm, e.g. -10mm to +10mm).
-- "SUSPENSION ADV.": Packers / Travel Range in mm (e.g. 10mm front, 15mm rear).
+  • Antiroll Bar Front & Rear: For GT cars, 1 to 6 steps. For Formula / RSS Hybrid, measured in N/m (e.g. 100,000 N/m front, 100,000 N/m rear).
+  • Corner Spring Rates: 140 N/mm front, 80-115 N/mm rear.
+  • Heave Springs (Formula / 3rd element): 100 N/mm front, 20 N/mm rear.
+  • Rod Length / Ride Height: LF/RF +5 mm / clicks (ensures front clears 20.0mm legal minimum without scraping), LR/RR +95 mm (high aerodynamic rake for diffuser downforce).
+- "SUSPENSION ADV.":
+  • Packers / Travel: Front 19 mm, Rear 74 mm (Formula) or 12mm / 18mm (GT). Bumpstop Rate: 70.
 - "DAMPERS":
-  • Bump LF/RF/LR/RR (integer clicks, range 0 to 40, e.g. 12 clicks).
-  • Fast Bump LF/RF/LR/RR (integer clicks, range 0 to 40, e.g. 8 clicks).
-  • Rebound LF/RF/LR/RR (integer clicks, range 0 to 40, e.g. 16 clicks).
-  • Fast Rebound LF/RF/LR/RR (integer clicks, range 0 to 40, e.g. 11 clicks).
+  • Bump LF/RF (11 / 40 clicks), Rebound LF/RF (10-18 / 40 clicks), Fast Bump / Fast Rebound (4-8 clicks).
 - "DRIVETRAIN":
-  • Diff Power (% lock, e.g. 50%).
-  • Diff Coast (% lock, e.g. 35%).
-  • Diff Preload (Nm, e.g. 60 Nm).
+  • Diff Power: 15-20% for turbo-hybrid Formula (prevents instantaneous snap oversteer on throttle), 45-55% for GT.
+  • Diff Coast: 25-35%. Diff Preload: 30-50 Nm.
 - "AERO":
-  • Rear Wing in integer notches (e.g. 0 to 12, e.g. 6).
-  • Front Splitter (if car supports it, 0 to 3).
-- "BRAKES": Brake Bias (% front, e.g. 66% or 58%), Brake Power (%).
-- "GENERIC": Fuel in Liters (e.g. 30 L).
+  • Formula / RSS Hybrid: Front Wing [Wing 0] (10 to 22 notches), Rear Wing [Wing 1] (4 to 8 notches).
+  • GT cars: Rear Wing (0 to 12 notches), Front Splitter (0 to 3).
+- "BRAKES": Brake Bias (% front, 52-56% for Formula, 62-66% for GT), Brake Engine (6 for hybrid), Brake Power (100%).
+- "GENERIC": Fuel in Liters (15 L for sprint/quali, 40-70 L for race).
 `,
   generateProceduralSetup: (p) => {
     const isUndersteer = /understeer|push|wash/i.test(p.handlingIssue || "");
     const isOversteer = /oversteer|snap|loose|tail/i.test(p.handlingIssue || "");
     const isHighSpeed = /monza|spa|silverstone|mugello/i.test(p.track);
+    const isFormula = /(formula|hybrid|exos|tatus|sf23|superformula|indycar|gp2|f1|f2|f3|f4|rss_formula|vrc_formula|ks_ferrari_sf|ks_ferrari_f)/i.test(p.car);
+
+    if (isFormula) {
+      return {
+        summary: `Assetto Corsa race-ready specification for ${p.car} at ${p.track}. Calibrated specifically for high-downforce open-wheel physics: 15.0 psi cold pressures, 100,000 N/m ARB, safe +5 rod length (clears 20mm scrutineering limit), +95 rear rake, 3rd-element heave springs, and 15% diff power to eliminate traction snap.`,
+        sections: [
+          {
+            title: "TYRES",
+            items: [
+              { label: "Tyre Compound", value: p.tyreCompound || "Soft Slicks" },
+              { label: "Front Left Pressure", value: "15.0 psi (aim for 21.0 psi hot)" },
+              { label: "Front Right Pressure", value: "15.0 psi (aim for 21.0 psi hot)" },
+              { label: "Rear Left Pressure", value: "15.0 psi (aim for 21.0 psi hot)" },
+              { label: "Rear Right Pressure", value: "15.0 psi (aim for 21.0 psi hot)" },
+            ],
+          },
+          {
+            title: "ALIGNMENT",
+            items: [
+              { label: "Camber LF / RF", value: "-3.3° / -3.3°" },
+              { label: "Camber LR / RR", value: "-1.5° / -1.5°" },
+              { label: "Toe LF / RF", value: isUndersteer ? "-2 clicks (-0.5mm toe-out for sharper turn-in)" : "0 clicks (0.0mm neutral drag)" },
+              { label: "Toe LR / RR", value: "+10 clicks (+2.0mm toe-in for high-speed rear stability)" },
+              { label: "Caster", value: "8.5°" },
+            ],
+          },
+          {
+            title: "SUSPENSION",
+            items: [
+              { label: "Antiroll Bar Front", value: "100,000 N/m (Optimal roll stiffness)" },
+              { label: "Antiroll Bar Rear", value: isOversteer ? "80,000 N/m (Softened for exit traction)" : "100,000 N/m" },
+              { label: "Front Wheel Rate", value: "140 N/mm" },
+              { label: "Rear Wheel Rate", value: "80 N/mm" },
+              { label: "Front Heave Spring (3rd Element)", value: "100 N/mm (Aero platform support)" },
+              { label: "Rear Heave Spring (3rd Element)", value: "20 N/mm" },
+              { label: "Rod Length / Height LF/RF", value: "+5 mm (25.3mm ground clearance, scraper eliminated)" },
+              { label: "Rod Length / Height LR/RR", value: "+95 mm (High aerodynamic rake)" },
+            ],
+          },
+          {
+            title: "SUSPENSION ADV.",
+            items: [
+              { label: "Front Packers Travel", value: "19 mm" },
+              { label: "Rear Packers Travel", value: "74 mm" },
+              { label: "Bumpstop Rate", value: "70 N/mm" },
+            ],
+          },
+          {
+            title: "DAMPERS",
+            items: [
+              { label: "Bump LF/RF", value: "11 / 40 clicks" },
+              { label: "Fast Bump LF/RF", value: "7 / 40 clicks (curb compliance)" },
+              { label: "Rebound LF/RF", value: "10 / 40 clicks" },
+              { label: "Fast Rebound LF/RF", value: "7 / 40 clicks" },
+              { label: "Bump LR/RR", value: "4 / 40 clicks" },
+              { label: "Rebound LR/RR", value: "4 / 40 clicks" },
+              { label: "Heave Bump Front / Rear", value: "4 / 2 clicks" },
+              { label: "Heave Rebound Front / Rear", value: "4 / 2 clicks" },
+            ],
+          },
+          {
+            title: "DRIVETRAIN",
+            items: [
+              { label: "Diff Power", value: "15% (Low lock prevents violent turbo torque wheelspin)" },
+              { label: "Diff Coast", value: isUndersteer ? "20% (Agile turn-in)" : "25%" },
+              { label: "Diff Preload", value: "30 Nm" },
+            ],
+          },
+          {
+            title: "AERO",
+            items: [
+              { label: "Front Wing [Wing 0]", value: isHighSpeed ? "13 notches" : "15 notches (Range 0-25)" },
+              { label: "Rear Wing [Wing 1]", value: isHighSpeed ? "4 notches (Low drag)" : "6 notches (Range 0-10)" },
+            ],
+          },
+          {
+            title: "BRAKES",
+            items: [
+              { label: "Brake Bias", value: "54% Front" },
+              { label: "Brake Engine", value: "6" },
+              { label: "Brake Power", value: "100%" },
+            ],
+          },
+          {
+            title: "GENERIC",
+            items: [
+              { label: "Fuel Load", value: p.fuelLoad || "15 L (Sprint / Quali)" },
+            ],
+          },
+        ],
+        engineerNotes: `Copy driver, in Assetto Corsa your Formula Hybrid setup has been calibrated to authentic open-wheel physics: front rod length is raised to +5 (clearing the 20mm floor limit and eliminating chassis scraping), while rear rod length is dialed to +95 for high aero-rake. Heave springs are active to support aerodynamic downforce at speed, ARB is set to 100,000 N/m, and diff power is lowered to 15% to stop the rear axle snapping on throttle application.`,
+      };
+    }
 
     return {
       summary: `Assetto Corsa garage specification for ${p.car} at ${p.track}. Calibrated specifically for AC's physics engine: integer toe notches, 0-40 damper clicks, and differential lock percentages to eliminate ${p.handlingIssue ? `"${p.handlingIssue}"` : "cornering scrub"}.`,
@@ -121,8 +214,8 @@ In Assetto Corsa, the garage setup menu has specific tabs and units:
             { label: "Antiroll Bar Rear", value: isOversteer ? "1 / 6 (Softened for traction)" : "3 / 6" },
             { label: "Front Wheel Rate", value: "140 N/mm" },
             { label: "Rear Wheel Rate", value: "115 N/mm" },
-            { label: "Rod Length / Height LF/RF", value: "-5 mm (Lower front nose)" },
-            { label: "Rod Length / Height LR/RR", value: "+5 mm (Positive rake)" },
+            { label: "Rod Length / Height LF/RF", value: "15 mm (Clearance above 55mm min)" },
+            { label: "Rod Length / Height LR/RR", value: "25 mm (Positive aero rake)" },
           ],
         },
         {

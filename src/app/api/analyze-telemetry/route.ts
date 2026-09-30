@@ -296,7 +296,7 @@ Output ONLY valid JSON matching this schema:
           {
             name: "Chassis Balance",
             score: 75,
-            status: balancePreference.includes("Loose") ? "Oversteer" : "Understeer",
+            status: (balancePreference || "").toLowerCase().includes("loose") || (balancePreference || "").toLowerCase().includes("oversteer") ? "Oversteer" : "Understeer",
             feedback: `Mechanical roll balance is front-biased, restricting apex rotation in medium-speed complexes.`,
           },
         ],

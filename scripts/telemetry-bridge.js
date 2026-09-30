@@ -57,6 +57,153 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+// Helper: Dynamically find Windows Documents paths across all PCs (OneDrive, UserProfile, Registry)
+function getWindowsDocsPaths() {
+  const candidates = [];
+  if (process.platform === "win32") {
+    try {
+      const { execSync } = require("child_process");
+      const regCmd = 'reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders" /v Personal';
+      const regOutput = execSync(regCmd, { encoding: "utf8", stdio: ["pipe", "pipe", "ignore"] });
+      const match = regOutput.match(/Personal\s+REG_\w+\s+(.*)/i);
+      if (match && match[1]) {
+        let regPath = match[1].trim();
+        const userProf = process.env.USERPROFILE || "";
+        regPath = regPath.replace(/%USERPROFILE%/i, userProf);
+        if (regPath && fs.existsSync(regPath)) candidates.push(regPath);
+      }
+    } catch (_err) {}
+  }
+
+  const userProfile = process.env.USERPROFILE || process.env.HOME || "C:\\Users\\Default";
+  if (userProfile) {
+    candidates.push(path.join(userProfile, "OneDrive", "Documents"));
+    candidates.push(path.join(userProfile, "Documents"));
+  }
+  if (process.env.OneDrive) candidates.push(path.join(process.env.OneDrive, "Documents"));
+  if (process.env.OneDriveConsumer) candidates.push(path.join(process.env.OneDriveConsumer, "Documents"));
+
+  const seen = new Set();
+  return candidates.filter((p) => {
+    if (!p) return false;
+    const n = path.normalize(p).toLowerCase();
+    if (seen.has(n)) return false;
+    seen.add(n);
+    return fs.existsSync(p);
+  });
+}
+
+function getACSetupsRoot() {
+  const docsList = getWindowsDocsPaths();
+  let bestRoot = null;
+  let maxCars = -1;
+
+  for (const doc of docsList) {
+    const candidate = path.join(doc, "Assetto Corsa", "setups");
+    if (fs.existsSync(candidate)) {
+      try {
+        const count = fs.readdirSync(candidate).filter((f) => {
+          try {
+            return fs.statSync(path.join(candidate, f)).isDirectory();
+          } catch {
+            return false;
+          }
+        }).length;
+        if (count > maxCars) {
+          maxCars = count;
+          bestRoot = candidate;
+        }
+      } catch (_e) {}
+    }
+  }
+
+  if (!bestRoot && docsList.length > 0) {
+    bestRoot = path.join(docsList[0], "Assetto Corsa", "setups");
+  } else if (!bestRoot) {
+    const up = process.env.USERPROFILE || "C:\\Users\\Default";
+    bestRoot = path.join(up, "Documents", "Assetto Corsa", "setups");
+  }
+
+  return bestRoot;
+}
+
+function findBestMatchingCarFolder(setupsRoot, carQuery) {
+  if (!fs.existsSync(setupsRoot)) return carQuery || "generic";
+  const folders = fs.readdirSync(setupsRoot).filter((f) => {
+    try {
+      return fs.statSync(path.join(setupsRoot, f)).isDirectory() && !f.startsWith(".");
+    } catch {
+      return false;
+    }
+  });
+
+  if (folders.length === 0) return carQuery || "generic";
+
+  const qLower = (carQuery || "").toLowerCase().trim();
+  const qSlug = qLower.replace(/[^a-z0-9]+/g, "");
+  const qTokens = qLower.split(/[^a-z0-9]+/).filter((t) => t.length > 1 && !["the", "car", "mod", "assetto", "corsa"].includes(t));
+
+  // 1. Exact match
+  const exact = folders.find((f) => f.toLowerCase() === qLower);
+  if (exact) return exact;
+
+  // 2. Slug match
+  const slugMatch = folders.find((f) => f.toLowerCase().replace(/[^a-z0-9]+/g, "") === qSlug);
+  if (slugMatch) return slugMatch;
+
+  // 3. Substring match
+  const subMatch = folders.find((f) => f.toLowerCase().includes(qLower) || (qLower.length > 4 && qLower.includes(f.toLowerCase())));
+  if (subMatch) return subMatch;
+
+  // 4. Token scoring
+  let bestFolder = null;
+  let highestScore = 0;
+
+  for (const f of folders) {
+    const fLower = f.toLowerCase();
+    const fTokens = fLower.split(/[^a-z0-9]+/).filter((t) => t.length > 0);
+    let score = 0;
+
+    for (const t of qTokens) {
+      if (fTokens.includes(t)) {
+        if (/^\d{4}$/.test(t)) score += 6;
+        else if (["rss", "vrc", "ferrari", "porsche", "bmw", "audi", "amg", "mercedes", "mclaren", "lamborghini", "redbull", "alpine", "clio"].includes(t)) score += 4;
+        else score += 2;
+      } else if (fLower.includes(t)) {
+        score += 1;
+      }
+    }
+
+    if (score > highestScore) {
+      highestScore = score;
+      bestFolder = f;
+    }
+  }
+
+  if (bestFolder && highestScore >= 2) return bestFolder;
+  return qLower.replace(/[^a-z0-9]+/g, "_") || "generic";
+}
+
+  // List AC Cars endpoint for dashboard autocomplete
+  if (req.method === "GET" && req.url.startsWith("/api/ac-cars")) {
+    const setupsRoot = getACSetupsRoot();
+    let cars = [];
+    if (fs.existsSync(setupsRoot)) {
+      try {
+        cars = fs.readdirSync(setupsRoot).filter((f) => {
+          try {
+            return fs.statSync(path.join(setupsRoot, f)).isDirectory() && !f.startsWith(".");
+          } catch {
+            return false;
+          }
+        }).sort((a, b) => a.localeCompare(b));
+      } catch (_e) {}
+    }
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true, setupsRoot, count: cars.length, cars }));
+    return;
+  }
+
   // 1-Click Setup Injection Endpoint
   if (req.method === "POST" && req.url === "/api/inject-setup") {
     let body = "";
@@ -67,24 +214,56 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try {
         const payload = JSON.parse(body);
-        const { sim, car, track, filename, content } = payload;
-        const userProfile = process.env.USERPROFILE || process.env.HOME || "C:\\Users\\Default";
+        const { sim, car, track, filename, content, customCarFolder } = payload;
+        const docsList = getWindowsDocsPaths();
+        const primaryDocs = docsList[0] || path.join(process.env.USERPROFILE || "C:\\Users\\Default", "Documents");
         let targetDir = "";
+        let genericPath = null;
+        let resolvedCarFolder = car;
 
         if (sim === "acc") {
-          targetDir = path.join(userProfile, "Documents", "Assetto Corsa Competizione", "Setups", car || "generic", track || "spa");
+          targetDir = path.join(primaryDocs, "Assetto Corsa Competizione", "Setups", car || "generic", track || "spa");
         } else if (sim === "assetto-corsa") {
-          targetDir = path.join(userProfile, "Documents", "Assetto Corsa", "setups", car || "generic", track || "spa");
+          const setupsRoot = getACSetupsRoot();
+          resolvedCarFolder = customCarFolder ? customCarFolder.trim() : findBestMatchingCarFolder(setupsRoot, car);
+
+          targetDir = path.join(setupsRoot, resolvedCarFolder, track || "ks_silverstone");
+          const genericDir = path.join(setupsRoot, resolvedCarFolder, "generic");
+
+          fs.mkdirSync(targetDir, { recursive: true });
+          const filePath = path.join(targetDir, filename);
+          fs.writeFileSync(filePath, content, "utf8");
+
+          try {
+            fs.mkdirSync(genericDir, { recursive: true });
+            const genFilePath = path.join(genericDir, filename);
+            fs.writeFileSync(genFilePath, content, "utf8");
+            genericPath = genFilePath;
+          } catch (_e) {}
+
+          console.log(`[INJECT] ✓ Successfully injected AC setup into: ${filePath}`);
+          if (genericPath) {
+            console.log(`[INJECT] ✓ Also mirrored into generic setup library: ${genericPath}`);
+          }
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({
+            success: true,
+            carFolder: resolvedCarFolder,
+            setupsRoot,
+            savedPath: filePath,
+            genericPath,
+          }));
+          return;
         } else if (sim === "assetto-corsa-evo" || sim === "acevo") {
-          targetDir = path.join(userProfile, "Documents", "Assetto Corsa Evo", "setups", car || "generic", track || "spa");
+          targetDir = path.join(primaryDocs, "Assetto Corsa Evo", "setups", car || "generic", track || "spa");
         } else if (sim === "iracing") {
-          targetDir = path.join(userProfile, "Documents", "iRacing", "setups", car || "generic", track || "spa");
+          targetDir = path.join(primaryDocs, "iRacing", "setups", car || "generic", track || "spa");
         } else if (sim === "lmu") {
-          targetDir = path.join(userProfile, "Documents", "Le Mans Ultimate", "UserData", "player", "Settings", track || "spa");
+          targetDir = path.join(primaryDocs, "Le Mans Ultimate", "UserData", "player", "Settings", track || "spa");
         } else if (sim === "f1") {
-          targetDir = path.join(userProfile, "Documents", "My Games", "F1 24", "setups", track || "spa");
+          targetDir = path.join(primaryDocs, "My Games", "F1 24", "setups", track || "spa");
         } else {
-          targetDir = path.join(userProfile, "Documents", "ApexWall_Setups", car || "generic", track || "spa");
+          targetDir = path.join(primaryDocs, "ApexWall_Setups", car || "generic", track || "spa");
         }
 
         fs.mkdirSync(targetDir, { recursive: true });

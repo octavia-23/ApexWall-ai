@@ -197,6 +197,13 @@ export function generateTrackMapData(
       };
     });
 
+    const xs = realCircuit.points.map((p) => p.x);
+    const ys = realCircuit.points.map((p) => p.y);
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
     return {
       circuitKey: realCircuit.id,
       circuitName: realCircuit.name,
@@ -208,7 +215,7 @@ export function generateTrackMapData(
       corners,
       drsZones: realCircuit.drsZones,
       sectors: realCircuit.sectors,
-      bounds: { minX: 0, maxX: 1000, minY: 0, maxY: 1000 },
+      bounds: { minX, maxX, minY, maxY },
     };
   }
 

@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { parseTelemetryCSV } from "@/lib/telemetry-parser";
-import { parseDuckDBTelemetry } from "@/lib/duckdb-parser";
 import { computeLapComparison } from "@/lib/telemetry-comparison";
 import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
 import { generateTrackMapData } from "@/lib/track-map-generator";
@@ -382,6 +381,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     if (file.name.toLowerCase().endsWith(".duckdb")) {
       setIsParsingDuckDB(true);
       try {
+        const { parseDuckDBTelemetry } = await import("@/lib/duckdb-parser");
         const parsed = await parseDuckDBTelemetry(file);
         processParsedTelemetry(parsed);
       } catch (err: any) {

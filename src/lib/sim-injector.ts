@@ -12,6 +12,7 @@ import {
   generateForzaGTText,
   generateWindowsInstallBat,
   downloadFile,
+  resolveACCarId,
 } from "./setup-exporter";
 
 
@@ -37,11 +38,38 @@ export function sanitizeSlug(input: string): string {
     .replace(/^_+|_+$/g, "");
 }
 
+export { resolveACCarId };
+
 /**
  * Standard track slug normalization for popular sim racing venues
  */
 export function normalizeTrackSlug(trackName: string, simId: string): string {
   const lower = (trackName || "").toLowerCase();
+
+  // Assetto Corsa official & community track folder conventions
+  if (simId === "assetto-corsa") {
+    if (lower.includes("spa")) return "spa";
+    if (lower.includes("monza")) return "monza";
+    if (lower.includes("silverstone")) return "ks_silverstone";
+    if (lower.includes("nordschleife") || lower.includes("tourist")) return "ks_nordschleife";
+    if (lower.includes("nurburg")) return "ks_nurburgring";
+    if (lower.includes("barcelona") || lower.includes("catalunya")) return "ks_barcelona";
+    if (lower.includes("brands")) return "ks_brands_hatch";
+    if (lower.includes("laguna")) return "ks_laguna_seca";
+    if (lower.includes("red bull") || lower.includes("spielberg")) return "ks_red_bull_ring";
+    if (lower.includes("vallelunga")) return "ks_vallelunga";
+    if (lower.includes("zandvoort")) return "ks_zandvoort";
+    if (lower.includes("imola")) return "imola";
+    if (lower.includes("mugello")) return "mugello";
+    if (lower.includes("magione")) return "magione";
+    if (lower.includes("bathurst") || lower.includes("panorama")) return "rt_bathurst";
+    if (lower.includes("sepang")) return "acu_sepang";
+    if (lower.includes("watkins")) return "lilski_watkins_glen";
+    if (lower.includes("lemans") || lower.includes("le mans")) return "fn_lemans";
+    if (lower.includes("atlanta")) return "jr_road_atlanta_2022";
+    if (lower.includes("jeddah")) return "jeddah_2021_chq";
+    return sanitizeSlug(trackName);
+  }
 
   if (lower.includes("spa")) return "spa";
   if (lower.includes("monza")) return "monza";
@@ -110,11 +138,11 @@ export const SUPPORTED_SIMS: Record<string, SupportedSimConfig> = {
       "Documents",
       "Assetto Corsa",
       "setups",
-      sanitizeSlug(car),
+      resolveACCarId(car),
       normalizeTrackSlug(track, "assetto-corsa"),
     ],
     getWindowsDirString: (car: string, track: string) =>
-      `Documents\\Assetto Corsa\\setups\\${sanitizeSlug(car)}\\${normalizeTrackSlug(track, "assetto-corsa")}`,
+      `Documents\\Assetto Corsa\\setups\\${resolveACCarId(car)}\\${normalizeTrackSlug(track, "assetto-corsa")}`,
   },
 
   "assetto-corsa-evo": {
@@ -342,25 +370,71 @@ export async function checkLocalBridgeHealth(): Promise<{ online: boolean; game?
 }
 
 /**
- * 2. Method A: Inject directly via the Local Telemetry Bridge daemon (Fastest, zero dialogs)
+ * Query local PC / server API for installed sim cars and active Documents setups root
  */
-export async function injectViaLocalBridge(params: {
+export async function fetchLocalSimCars(simId: string, carQuery?: string): Promise<{
+  success: boolean;
+  setupsRoot?: string;
+  documentsPath?: string;
+  carCount?: number;
+  matchedCar?: string | null;
+  matchMethod?: string | null;
+  cars?: string[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch(`/api/sim-cars?sim=${encodeURIComponent(simId)}&car=${encodeURIComponent(carQuery || "")}`);
+    if (res.ok) {
+      return await res.json();
+    }
+  } catch (_e) {}
+
+  // Fallback to local telemetry bridge if running
+  try {
+    const bridgeRes = await fetch("http://localhost:9001/api/ac-cars");
+    if (bridgeRes.ok) {
+      const data = await bridgeRes.json();
+      return {
+        success: true,
+        setupsRoot: data.setupsRoot,
+        carCount: data.count,
+        cars: data.cars,
+      };
+    }
+  } catch (_e) {}
+
+  return { success: false };
+}
+
+/**
+ * Method A1: Inject directly via local Next.js API route (Fastest, direct local PC disk access)
+ */
+export async function injectViaLocalApi(params: {
   simId: string;
   car: string;
   track: string;
   filename: string;
   content: string;
-}): Promise<{ success: boolean; message: string; savedPath?: string }> {
+  customCarFolder?: string;
+}): Promise<{
+  success: boolean;
+  message: string;
+  savedPath?: string;
+  genericPath?: string;
+  carFolder?: string;
+  setupsRoot?: string;
+}> {
   try {
-    const res = await fetch("http://localhost:9001/api/inject-setup", {
+    const res = await fetch("/api/inject-setup", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         sim: params.simId,
-        car: sanitizeSlug(params.car),
-        track: normalizeTrackSlug(params.track, params.simId),
+        car: params.car,
+        track: params.track,
         filename: params.filename,
         content: params.content,
+        customCarFolder: params.customCarFolder,
       }),
     });
 
@@ -368,8 +442,65 @@ export async function injectViaLocalBridge(params: {
     if (res.ok && data.success) {
       return {
         success: true,
-        message: `Setup injected directly into simulator!`,
+        message: data.genericPath
+          ? `Injected into track folder & generic library!`
+          : `Setup injected directly into simulator!`,
         savedPath: data.savedPath,
+        genericPath: data.genericPath,
+        carFolder: data.carFolder,
+        setupsRoot: data.setupsRoot,
+      };
+    }
+    return {
+      success: false,
+      message: data.error || "Local injection API failed.",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Failed to reach local injection API.",
+    };
+  }
+}
+
+/**
+ * 2. Method A2: Inject directly via the Local Telemetry Bridge daemon
+ */
+export async function injectViaLocalBridge(params: {
+  simId: string;
+  car: string;
+  track: string;
+  filename: string;
+  content: string;
+  customCarFolder?: string;
+}): Promise<{ success: boolean; message: string; savedPath?: string; genericPath?: string; carFolder?: string }> {
+  try {
+    const resolvedCar = params.simId === "assetto-corsa" ? resolveACCarId(params.car) : sanitizeSlug(params.car);
+    const resolvedTrack = normalizeTrackSlug(params.track, params.simId);
+
+    const res = await fetch("http://localhost:9001/api/inject-setup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        sim: params.simId,
+        car: resolvedCar,
+        track: resolvedTrack,
+        filename: params.filename,
+        content: params.content,
+        customCarFolder: params.customCarFolder,
+        alsoGeneric: params.simId === "assetto-corsa",
+      }),
+    });
+
+    const data = await res.json();
+    if (res.ok && data.success) {
+      return {
+        success: true,
+        message: data.genericPath
+          ? `Injected into track folder & generic library!`
+          : `Setup injected directly into simulator!`,
+        savedPath: data.savedPath,
+        genericPath: data.genericPath,
       };
     }
     return {
@@ -423,22 +554,24 @@ export async function injectViaFileSystemAccess(params: {
     }
 
     // Traverse relative directory segments
-    // E.g. ["Documents", "Assetto Corsa Competizione", "Setups", "ferrari_296_gt3", "spa"]
-    // If user selected their Documents folder directly, skip "Documents" prefix
+    // E.g. ["Documents", "Assetto Corsa", "setups", "rss_formula_hybrid_2021", "ks_silverstone"]
     const rawSegments = params.sim.getRelativeDir(params.car, params.track);
     let targetSegments = rawSegments;
 
-    // Check if root handle name is already "Documents" or the sim name
-    if (rootHandle.name.toLowerCase() === "documents") {
-      targetSegments = rawSegments.slice(1);
-    } else if (rootHandle.name.toLowerCase().includes(params.sim.shortName.toLowerCase())) {
-      // User selected the sim folder directly (e.g. "Assetto Corsa Competizione")
-      const simIdx = rawSegments.findIndex((s) =>
-        s.toLowerCase().includes(params.sim.shortName.toLowerCase())
+    const rootLower = rootHandle.name.toLowerCase().trim();
+    // Check if root handle matches any segment in rawSegments (e.g. "Documents", "Assetto Corsa", "setups")
+    const matchIdx = rawSegments.findIndex((seg) => {
+      const segLower = seg.toLowerCase().trim();
+      return (
+        rootLower === segLower ||
+        rootLower.includes(segLower) ||
+        segLower.includes(rootLower) ||
+        (rootLower === "ac" && segLower === "assetto corsa")
       );
-      if (simIdx !== -1) {
-        targetSegments = rawSegments.slice(simIdx + 1);
-      }
+    });
+
+    if (matchIdx !== -1) {
+      targetSegments = rawSegments.slice(matchIdx + 1);
     }
 
     let currentHandle = rootHandle;
@@ -454,9 +587,30 @@ export async function injectViaFileSystemAccess(params: {
 
     const fullPathDisplay = targetSegments.join("/") + "/" + params.filename;
 
+    // For Assetto Corsa, also write to the car's "generic" folder so setup appears across all tracks/layouts
+    if (params.sim.id === "assetto-corsa" && targetSegments.length >= 2) {
+      try {
+        const carSegments = targetSegments.slice(0, targetSegments.length - 1);
+        let carHandle = rootHandle;
+        for (const seg of carSegments) {
+          carHandle = await carHandle.getDirectoryHandle(seg, { create: true });
+        }
+        const genericHandle = await carHandle.getDirectoryHandle("generic", { create: true });
+        const genFileHandle = await genericHandle.getFileHandle(params.filename, { create: true });
+        const genWritable = await genFileHandle.createWritable();
+        await genWritable.write(params.content);
+        await genWritable.close();
+      } catch (genErr) {
+        console.warn("Could not copy to AC generic folder:", genErr);
+      }
+    }
+
     return {
       success: true,
-      message: `Setup written to ${fullPathDisplay}`,
+      message:
+        params.sim.id === "assetto-corsa"
+          ? `Setup written to track folder (${targetSegments[targetSegments.length - 1]}) & generic library!`
+          : `Setup written to ${fullPathDisplay}`,
       path: fullPathDisplay,
     };
   } catch (err: any) {
@@ -484,11 +638,16 @@ export function downloadBatchAutoInstaller(params: {
   const setupFilename = `${cleanName}${params.sim.fileExtension}`;
   const winDir = params.sim.getWindowsDirString(params.car, params.track);
 
+  const secondaryDir =
+    params.sim.id === "assetto-corsa"
+      ? `Documents\\Assetto Corsa\\setups\\${resolveACCarId(params.car)}\\generic`
+      : undefined;
+
   // 1. Download setup file
   downloadFile(params.content, setupFilename, params.sim.mimeType);
 
   // 2. Generate and download corresponding batch auto-mover
-  const batScript = generateWindowsInstallBat(winDir, setupFilename, params.setupName);
+  const batScript = generateWindowsInstallBat(winDir, setupFilename, params.setupName, secondaryDir);
   setTimeout(() => {
     downloadFile(batScript, `Install_${cleanName}.bat`, "application/x-bat");
   }, 400);

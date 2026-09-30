@@ -19,10 +19,13 @@ export interface SetupExportContext {
 /**
  * Helper to extract numeric values or string values from setup sections
  */
-function findItemValue(sections: SetupSection[], labelKeywords: string[]): string {
+function findItemValue(sections: SetupSection[], labelKeywords: string[], excludeKeywords?: string[]): string {
   for (const sec of sections) {
     for (const item of sec.items || []) {
       const lower = item.label.toLowerCase();
+      if (excludeKeywords && excludeKeywords.some((ex) => lower.includes(ex.toLowerCase()))) {
+        continue;
+      }
       if (labelKeywords.some((kw) => lower.includes(kw.toLowerCase()))) {
         return item.value;
       }
@@ -42,6 +45,112 @@ export function sanitizeSlug(input: string): string {
     .trim()
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Resolves Assetto Corsa car folder ID from human-readable car name or mod title
+ */
+export function resolveACCarId(carName: string): string {
+  const raw = (carName || "").trim();
+  const lower = raw.toLowerCase();
+
+  // If already prefixed with common AC mod/kunos patterns, preserve it
+  if (
+    /^(ks_|rss_|fsr_|urd_|vrc_|ven_|yzd_|aw_|bsk_|cim_|ddm_|f1_|gue_|j8_|jvs_|mby_|pk_|rtp_|simt_|syn_|zr_)/i.test(
+      raw
+    )
+  ) {
+    return sanitizeSlug(raw);
+  }
+
+  // RSS Formula cars
+  if (lower.includes("hybrid") && (lower.includes("2021") || lower.includes("21"))) return "rss_formula_hybrid_2021";
+  if (lower.includes("hybrid") && (lower.includes("2022") || lower.includes("22"))) return "rss_formula_hybrid_2022";
+  if (lower.includes("hybrid") && (lower.includes("2023") || lower.includes("23"))) return "rss_formula_hybrid_2023";
+  if (lower.includes("formula hybrid")) return "rss_formula_hybrid_2021";
+  if (lower.includes("formula 2010")) return "rss_formula_2010";
+  if (lower.includes("formula rss supreme") || lower.includes("rss supreme")) return "rss_formula_rss_supreme";
+  if (lower.includes("callahan")) return "rss_mph_callahan_v8";
+
+  // Clio Cup
+  if (lower.includes("clio")) return "fsr_clio_cup_2023";
+
+  // Ferrari GT & Road
+  if (lower.includes("488") && lower.includes("challenge")) return "ks_ferrari_488_challenge_evo";
+  if (lower.includes("488") && lower.includes("gt3")) return "ks_ferrari_488_gt3";
+  if (lower.includes("488") && lower.includes("gtb")) return "ks_ferrari_488_gtb";
+  if (lower.includes("458") && lower.includes("gt2")) return "ferrari_458_gt2";
+  if (lower.includes("458")) return "ferrari_458";
+  if (lower.includes("fxx")) return "ks_ferrari_fxx_k";
+  if (lower.includes("sf70h")) return "ks_ferrari_sf70h";
+  if (lower.includes("sf15t")) return "ks_ferrari_sf15t";
+  if (lower.includes("f2004")) return "ks_ferrari_f2004";
+  if (lower.includes("f138")) return "ks_ferrari_f138";
+
+  // Porsche
+  if (lower.includes("911") && (lower.includes("gt3 r") || lower.includes("gt3_r") || lower.includes("gt3-r"))) return "ks_porsche_911_gt3_r_2016";
+  if (lower.includes("911") && lower.includes("cup")) return "ks_porsche_911_gt3_cup_2017";
+  if (lower.includes("911") && lower.includes("rsr")) return "ks_porsche_911_rsr_2017";
+  if (lower.includes("911") && lower.includes("gt1")) return "ks_porsche_911_gt1";
+  if (lower.includes("919") && lower.includes("hybrid")) return "ks_porsche_919_hybrid_2016";
+  if (lower.includes("cayman") && lower.includes("gt4")) return "ks_porsche_cayman_gt4_clubsport";
+  if (lower.includes("darche") || (lower.includes("992") && lower.includes("gt3"))) return "urd_darche_992_23";
+
+  // Mercedes
+  if (lower.includes("amg") && lower.includes("gt3")) return "ks_mercedes_amg_gt3";
+  if (lower.includes("sls") && lower.includes("gt3")) return "mercedes_sls_gt3";
+
+  // Audi
+  if (lower.includes("r8") && (lower.includes("lms") || lower.includes("gt3"))) return "ks_audi_r8_lms_2016";
+  if (lower.includes("tt") && lower.includes("cup")) return "ks_audi_tt_cup";
+
+  // Lamborghini
+  if (lower.includes("huracan") && lower.includes("gt3")) return "ks_lamborghini_huracan_gt3";
+  if (lower.includes("huracan") && (lower.includes("st") || lower.includes("trofeo"))) return "ks_lamborghini_huracan_st";
+
+  // McLaren
+  if (lower.includes("650") && lower.includes("gt3")) return "ks_mclaren_650_gt3";
+  if (lower.includes("mp4") && lower.includes("gt3")) return "mclaren_mp412c_gt3";
+
+  // BMW
+  if (lower.includes("m3") && lower.includes("gt2")) return "bmw_m3_gt2";
+  if (lower.includes("z4") && lower.includes("gt3")) return "bmw_z4_gt3";
+  if (lower.includes("m235i")) return "ks_bmw_m235i_racing";
+  if (lower.includes("m4") && lower.includes("akrapovic")) return "ks_bmw_m4_akrapovic";
+
+  // Nissan & Japanese
+  if (lower.includes("gtr") && lower.includes("gt3")) return "ks_nissan_gtr_gt3";
+  if (lower.includes("mx-5") || lower.includes("mx5") || lower.includes("miata")) return "ks_mazda_mx5_cup";
+  if (lower.includes("supra") && lower.includes("gt4")) return "toyota_supra_gt4_cup_2019";
+  if (lower.includes("supra")) return "ks_toyota_supra_mkiv";
+  if (lower.includes("ae86")) return "ks_toyota_ae86";
+
+  // Other prototypes & open wheel
+  if (lower.includes("tatuus")) return "tatuusfa1";
+  if (lower.includes("exos")) return "lotus_exos_125";
+  if (lower.includes("scg003") || lower.includes("glickenhaus")) return "ks_glickenhaus_scg003";
+  if (lower.includes("praga")) return "ks_praga_r1";
+  if (lower.includes("corvette") && (lower.includes("c7r") || lower.includes("c7.r"))) return "ks_corvette_c7r";
+  if (lower.includes("vantage") || lower.includes("amr gt3")) return "urd_amr_gt3_evo";
+  if (lower.includes("radical")) return "urd_radical_sr3xxr_2023";
+  if (lower.includes("oreca")) return "oreca_07";
+  if (lower.includes("ligier")) return "ven_ligierjsp325lmp3";
+  if (lower.includes("formula alpha")) return "vrc_formula_alpha_2007_mc22";
+  if (lower.includes("alpine a424")) return "yzd_alpine_a424";
+
+  return sanitizeSlug(raw);
+}
+
+/**
+ * Scales Camber to Assetto Corsa internal .ini units (tenths of a degree).
+ * In AC setup INI, -3.3° camber is stored as VALUE=-33.
+ * Storing -3.3 causes AC to display -0.3° in garage.
+ */
+export function scaleACCamber(val: number): number {
+  if (Math.abs(val) <= 12) {
+    return Math.round(val * 10);
+  }
+  return Math.round(val);
 }
 
 /**
@@ -485,144 +594,350 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
 
 /**
  * 5. Assetto Corsa (Original AC) Native Setup INI Format
+ * Fully calibrated & physics-compliant across car classes:
+ * - Formula / Open-wheel (RSS Formula Hybrid, VRC, Lotus Exos, Tatuus, F1):
+ *   15 psi cold pressures, -33 / -15 camber (tenths of deg), 100,000 N/m ARB,
+ *   +5 / +95 rod lengths (clears 20mm min floor, authentic aero high-rake),
+ *   heave springs [SPRING_RATE_HF/HR] & bumpstop packers [PACKER_RANGE_LF/LR],
+ *   wing channels [WING_0] and [WING_1], low diff power lock (15%).
+ * - GT3 / GT4 / GTE:
+ *   25-27 psi, -32 / -24 camber, 15 / 25 rod lengths (>55mm clearance),
+ *   [WING_1], [WING_2], [WING_FRONT], [WING_REAR].
+ * - Touring / Cup / FWD:
+ *   28/26 psi, -32 / -18 camber, 15 / 10 rod lengths.
  */
 export function generateAssettoCorsaINI(ctx: SetupExportContext): string {
-  const flPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf"]), 25));
-  const frPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf"]), 25));
-  const rlPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr"]), 24));
-  const rrPsi = Math.round(parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), 24));
+  const carId = resolveACCarId(ctx.car);
+  const isFormula =
+    /(formula|hybrid|exos|tatus|sf23|superformula|indycar|gp2|f1|f2|f3|f4|rss_formula|vrc_formula|ks_ferrari_sf|ks_ferrari_f)/i.test(carId) ||
+    /(formula|hybrid|f1|exos|tatuus|rss)/i.test(ctx.car);
+  const isTouringOrFWD =
+    /(clio|cup|civic|tcr|golf|btcc|fsr_clio|mini|abarth|alfa_romeo_giulietta)/i.test(carId) ||
+    /(clio|cup|fwd|tcr)/i.test(ctx.car);
 
-  const fCamber = parseNumber(findItemValue(ctx.sections, ["front camber"]), -3.2);
-  const rCamber = parseNumber(findItemValue(ctx.sections, ["rear camber"]), -2.5);
-  const fToe = Math.round(parseNumber(findItemValue(ctx.sections, ["front toe"]), -5));
-  const rToe = Math.round(parseNumber(findItemValue(ctx.sections, ["rear toe"]), 12));
+  // --- TYRE PRESSURES ---
+  const defaultPsi = isFormula ? 15 : isTouringOrFWD ? 28 : 26;
+  const rawFlPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf", "pressure fl"]), defaultPsi);
+  const rawFrPsi = parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf", "pressure fr"]), defaultPsi);
+  const rawRlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr", "pressure rl"]), isFormula ? 15 : isTouringOrFWD ? 26 : 25);
+  const rawRrPsi = parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), isFormula ? 15 : isTouringOrFWD ? 26 : 25);
 
-  const fArb = Math.round(parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb"]), 4));
-  const rArb = Math.round(parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb"]), 2));
+  // If formula car and pressure is way too high from a generic template, clamp to realistic F1 14-17 psi
+  const flPsi = isFormula && rawFlPsi > 20 ? 15 : Math.round(rawFlPsi);
+  const frPsi = isFormula && rawFrPsi > 20 ? 15 : Math.round(rawFrPsi);
+  const rlPsi = isFormula && rawRlPsi > 20 ? 15 : Math.round(rawRlPsi);
+  const rrPsi = isFormula && rawRrPsi > 20 ? 15 : Math.round(rawRrPsi);
 
-  const fWing = Math.round(parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing"]), 0));
-  const rWing = Math.round(parseNumber(findItemValue(ctx.sections, ["rear wing"]), 7));
+  // --- CAMBER (Stored in tenths of a degree in AC INI: -3.3 deg -> -33) ---
+  const rawFCamber = parseNumber(findItemValue(ctx.sections, ["front camber", "camber lf"]), isFormula ? -3.3 : -3.2);
+  const rawRCamber = parseNumber(findItemValue(ctx.sections, ["rear camber", "camber lr"]), isFormula ? -1.5 : isTouringOrFWD ? -1.8 : -2.4);
+  const fCamber = scaleACCamber(rawFCamber);
+  const rCamber = scaleACCamber(rawRCamber);
 
-  const bumpSlow = Math.round(parseNumber(findItemValue(ctx.sections, ["bump", "slow bump", "dampers"]), 14));
-  const reboundSlow = Math.round(parseNumber(findItemValue(ctx.sections, ["rebound", "slow rebound"]), 18));
+  // --- TOE (Integer clicks) ---
+  const fToe = Math.round(parseNumber(findItemValue(ctx.sections, ["front toe", "toe lf"]), isFormula ? 0 : -3));
+  const rToe = Math.round(parseNumber(findItemValue(ctx.sections, ["rear toe", "toe lr"]), isFormula ? 10 : 8));
 
-  const diffPower = Math.round(parseNumber(findItemValue(ctx.sections, ["diff power", "power lock", "differential"]), 45));
-  const diffCoast = Math.round(parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), 60));
-  const diffPreload = Math.round(parseNumber(findItemValue(ctx.sections, ["diff preload", "preload"]), 40));
+  // --- ANTI-ROLL BARS ---
+  const rawFArb = parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb", "arb front"]), isFormula ? 100000 : 4);
+  const rawRArb = parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb", "arb rear"]), isFormula ? 100000 : 2);
+  let fArb = Math.round(rawFArb);
+  let rArb = Math.round(rawRArb);
+  if (isFormula) {
+    if (fArb < 1000) fArb = Math.round(60000 + (Math.max(1, Math.min(6, fArb)) / 6) * 60000);
+    if (rArb < 1000) rArb = Math.round(40000 + (Math.max(1, Math.min(6, rArb)) / 6) * 60000);
+  }
 
-  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), 56));
-  const fuel = Math.round(parseNumber(ctx.fuelLoad || "30", 30));
+  // --- ROD LENGTHS (RIDE HEIGHT CALIBRATION) ---
+  // In AC, 0 rod length slams front ride height below legal minimum (e.g. 10.3mm min:20.0mm in red).
+  // For formula: LF=5 (safe ~25mm), LR=95 (high aerodynamic rake).
+  // For GT: LF=15, LR=25. For Touring: LF=15, LR=10.
+  const defaultRodF = isFormula ? 5 : 15;
+  const defaultRodR = isFormula ? 95 : isTouringOrFWD ? 10 : 25;
+  const rawRodF = parseNumber(findItemValue(ctx.sections, ["rod length lf", "rod length front", "front ride"]), defaultRodF);
+  const rawRodR = parseNumber(findItemValue(ctx.sections, ["rod length lr", "rod length rear", "rear ride"]), defaultRodR);
+  const rodLF = isFormula ? (rawRodF <= 0 ? 5 : Math.round(rawRodF)) : Math.round(rawRodF);
+  const rodRF = rodLF;
+  const rodLR = isFormula ? (rawRodR <= 20 ? 95 : Math.round(rawRodR)) : Math.round(rawRodR);
+  const rodRR = rodLR;
 
-  return `[HEADER]
-VERSION=1
-CAR=${ctx.car}
-TRACK=${ctx.track}
-CREATED_BY=ApexWall AI Homologated Engineering Engine v2.0
-DATE=${new Date().toISOString()}
+  // --- SPRINGS & HEAVE SPRINGS ---
+  const springLF = isFormula ? 140 : isTouringOrFWD ? 120 : 135;
+  const springLR = isFormula ? 80 : isTouringOrFWD ? 90 : 115;
+  const heaveSpringF = 100;
+  const heaveSpringR = 20;
+
+  // --- DAMPERS (AC 0-40 click range) ---
+  const rawBumpSlow = parseNumber(
+    findItemValue(ctx.sections, ["bump lf", "slow bump lf", "bump front", "bump"], ["bumpstop", "stop", "heave", "packer"]),
+    isFormula ? 11 : 12
+  );
+  const rawReboundSlow = parseNumber(
+    findItemValue(ctx.sections, ["rebound lf", "slow rebound lf", "rebound front", "rebound"], ["heave"]),
+    isFormula ? 10 : 16
+  );
+  const bumpSlow = Math.min(40, Math.max(1, Math.round(rawBumpSlow)));
+  const reboundSlow = Math.min(40, Math.max(1, Math.round(rawReboundSlow)));
+  const bumpRear = isFormula ? 4 : Math.min(40, Math.max(1, bumpSlow - 2));
+  const reboundRear = isFormula ? 4 : Math.min(40, Math.max(1, reboundSlow - 2));
+
+  // --- WINGS ---
+  const rawFWing = parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing", "wing 0"]), isFormula ? 15 : 2);
+  const rawRWing = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 1", "wing 2"]), isFormula ? 6 : 7);
+  const fWing = Math.round(rawFWing);
+  const rWing = Math.round(rawRWing);
+
+  // --- DIFFERENTIAL ---
+  const diffPower = Math.round(parseNumber(findItemValue(ctx.sections, ["diff power", "power lock", "differential"]), isFormula ? 15 : 45));
+  const diffCoast = Math.round(parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), isFormula ? 25 : 55));
+  const diffPreload = Math.round(parseNumber(findItemValue(ctx.sections, ["diff preload", "preload"]), 30));
+
+  // --- BRAKES & FUEL ---
+  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), isFormula ? 54 : 64));
+  const fuel = Math.round(parseNumber(ctx.fuelLoad || "15", isFormula ? 15 : 30));
+
+  return `; ==============================================================================
+; APEXWALL AI // ASSETTO CORSA CALIBRATED SETUP SPECIFICATION
+; Car: ${ctx.car} [${carId}]
+; Track: ${ctx.track}
+; Archetype: ${isFormula ? "Formula / Open-Wheel (Heave springs & Aero-Rake active)" : isTouringOrFWD ? "Touring / FWD" : "GT / Sports"}
+; Generated: ${new Date().toISOString()}
+; Summary: ${ctx.summary ? ctx.summary.replace(/[\r\n]+/g, " ") : "Calibrated baseline by ApexWall AI."}
+; ==============================================================================
+
+[CAR]
+MODEL=${carId}
 
 [TYRES]
 VALUE=0
-PRESSURE_LF=${flPsi}
-PRESSURE_RF=${frPsi}
-PRESSURE_LR=${rlPsi}
-PRESSURE_RR=${rrPsi}
+
+[PRESSURE_LF]
+VALUE=${flPsi}
+
+[PRESSURE_RF]
+VALUE=${frPsi}
+
+[PRESSURE_LR]
+VALUE=${rlPsi}
+
+[PRESSURE_RR]
+VALUE=${rrPsi}
 
 [CAMBER_LF]
 VALUE=${fCamber}
+
 [CAMBER_RF]
 VALUE=${fCamber}
+
 [TOE_OUT_LF]
 VALUE=${fToe}
+
 [TOE_OUT_RF]
 VALUE=${fToe}
 
 [CAMBER_LR]
 VALUE=${rCamber}
+
 [CAMBER_RR]
 VALUE=${rCamber}
+
 [TOE_OUT_LR]
 VALUE=${rToe}
+
 [TOE_OUT_RR]
 VALUE=${rToe}
 
 [ARB_FRONT]
 VALUE=${fArb}
+
 [ARB_REAR]
 VALUE=${rArb}
 
-[SPRING_RATE_LF]
-VALUE=125
-[SPRING_RATE_RF]
-VALUE=125
-[SPRING_RATE_LR]
-VALUE=95
-[SPRING_RATE_RR]
-VALUE=95
-
 [ROD_LENGTH_LF]
-VALUE=0
+VALUE=${rodLF}
+
 [ROD_LENGTH_RF]
-VALUE=0
+VALUE=${rodRF}
+
 [ROD_LENGTH_LR]
-VALUE=0
+VALUE=${rodLR}
+
 [ROD_LENGTH_RR]
-VALUE=0
+VALUE=${rodRR}
+
+[SPRING_RATE_LF]
+VALUE=${springLF}
+
+[SPRING_RATE_RF]
+VALUE=${springLF}
+
+[SPRING_RATE_LR]
+VALUE=${springLR}
+
+[SPRING_RATE_RR]
+VALUE=${springLR}
+
+[SPRING_RATE_HF]
+VALUE=${heaveSpringF}
+
+[SPRING_RATE_HR]
+VALUE=${heaveSpringR}
+
+[BUMP_STOP_RATE_HF]
+VALUE=70
+
+[BUMP_STOP_RATE_HR]
+VALUE=70
+
+[BUMP_STOP_RATE_LF]
+VALUE=70
+
+[BUMP_STOP_RATE_RF]
+VALUE=70
+
+[BUMP_STOP_RATE_LR]
+VALUE=70
+
+[BUMP_STOP_RATE_RR]
+VALUE=70
+
+[PACKER_RANGE_LF]
+VALUE=${isFormula ? 19 : 12}
+
+[PACKER_RANGE_RF]
+VALUE=${isFormula ? 19 : 12}
+
+[PACKER_RANGE_LR]
+VALUE=${isFormula ? 74 : 18}
+
+[PACKER_RANGE_RR]
+VALUE=${isFormula ? 74 : 18}
 
 [DAMP_BUMP_LF]
 VALUE=${bumpSlow}
+
 [DAMP_BUMP_RF]
 VALUE=${bumpSlow}
+
 [DAMP_BUMP_LR]
-VALUE=${bumpSlow}
+VALUE=${bumpRear}
+
 [DAMP_BUMP_RR]
-VALUE=${bumpSlow}
+VALUE=${bumpRear}
 
 [DAMP_FAST_BUMP_LF]
 VALUE=${Math.max(1, bumpSlow - 4)}
+
 [DAMP_FAST_BUMP_RF]
 VALUE=${Math.max(1, bumpSlow - 4)}
+
 [DAMP_FAST_BUMP_LR]
-VALUE=${Math.max(1, bumpSlow - 4)}
+VALUE=${Math.max(1, bumpRear - 2)}
+
 [DAMP_FAST_BUMP_RR]
-VALUE=${Math.max(1, bumpSlow - 4)}
+VALUE=${Math.max(1, bumpRear - 2)}
 
 [DAMP_REBOUND_LF]
 VALUE=${reboundSlow}
+
 [DAMP_REBOUND_RF]
 VALUE=${reboundSlow}
+
 [DAMP_REBOUND_LR]
-VALUE=${reboundSlow}
+VALUE=${reboundRear}
+
 [DAMP_REBOUND_RR]
-VALUE=${reboundSlow}
+VALUE=${reboundRear}
 
 [DAMP_FAST_REBOUND_LF]
 VALUE=${Math.max(1, reboundSlow - 5)}
+
 [DAMP_FAST_REBOUND_RF]
 VALUE=${Math.max(1, reboundSlow - 5)}
+
 [DAMP_FAST_REBOUND_LR]
-VALUE=${Math.max(1, reboundSlow - 5)}
+VALUE=${Math.max(1, reboundRear - 2)}
+
 [DAMP_FAST_REBOUND_RR]
-VALUE=${Math.max(1, reboundSlow - 5)}
+VALUE=${Math.max(1, reboundRear - 2)}
+
+[DAMP_BUMP_HF]
+VALUE=4
+
+[DAMP_BUMP_HR]
+VALUE=2
+
+[DAMP_FAST_BUMP_HF]
+VALUE=2
+
+[DAMP_FAST_BUMP_HR]
+VALUE=1
+
+[DAMP_REBOUND_HF]
+VALUE=4
+
+[DAMP_REBOUND_HR]
+VALUE=2
+
+[DAMP_FAST_REBOUND_HF]
+VALUE=2
+
+[DAMP_FAST_REBOUND_HR]
+VALUE=1
+
+[WING_0]
+VALUE=${isFormula ? fWing : 0}
+
+[WING_1]
+VALUE=${isFormula ? rWing : fWing}
+
+[WING_2]
+VALUE=${rWing}
+
+[WING_11]
+VALUE=0
 
 [WING_FRONT]
 VALUE=${fWing}
+
 [WING_REAR]
 VALUE=${rWing}
 
 [DIFF_POWER]
 VALUE=${diffPower}
+
 [DIFF_COAST]
 VALUE=${diffCoast}
+
 [DIFF_PRELOAD]
 VALUE=${diffPreload}
 
 [BRAKE_POWER_MULT]
 VALUE=100
+
+[BRAKE_ENGINE]
+VALUE=6
+
 [FRONT_BIAS]
 VALUE=${brakeBias}
 
-[GENERIC]
-FUEL=${fuel}
+[STEER_ASSIST]
+VALUE=80
+
+[MGUH_MODE]
+VALUE=0
+
+[MGUK_DELIVERY]
+VALUE=0
+
+[MGUK_RECOVERY]
+VALUE=0
+
+[FUEL]
+VALUE=${fuel}
+
+[__EXT_PATCH]
+VERSION=0.1.74
 `;
 }
 
@@ -1074,37 +1389,90 @@ export function generateForzaGTText(ctx: SetupExportContext): string {
 
 /**
  * 12. Universal 1-Click Windows Batch Auto-Installer (.bat)
+ * Dynamically resolves Windows Documents path across all PCs (OneDrive, custom drives, UserProfile)
  */
 export function generateWindowsInstallBat(
   targetDirWindows: string,
   filename: string,
-  setupName: string
+  setupName: string,
+  secondaryDirWindows?: string
 ): string {
+  // Strip leading "Documents\" if present so we can attach to dynamically resolved docs path
+  const relTarget = targetDirWindows.replace(/^Documents\\/i, "");
+  const relSecondary = secondaryDirWindows ? secondaryDirWindows.replace(/^Documents\\/i, "") : "";
+
+  const secondaryBlock = relSecondary
+    ? `
+REM Inject into generic library
+set "GEN_DIR=%USER_DOCS%\\${relSecondary}"
+if not exist "%GEN_DIR%" (
+  if exist "%USERPROFILE%\\Documents\\${relSecondary}" (
+    set "GEN_DIR=%USERPROFILE%\\Documents\\${relSecondary}"
+  ) else if exist "%USERPROFILE%\\OneDrive\\Documents\\${relSecondary}" (
+    set "GEN_DIR=%USERPROFILE%\\OneDrive\\Documents\\${relSecondary}"
+  )
+)
+if not exist "%GEN_DIR%" (
+  mkdir "%GEN_DIR%" >nul 2>&1
+)
+copy /Y "%~dp0${filename}" "%GEN_DIR%\\${filename}" >nul
+if %ERRORLEVEL% EQU 0 (
+  echo [SUCCESS] Also injected into generic library:
+  echo   "%GEN_DIR%\\${filename}"
+  echo.
+)
+`
+    : "";
+
   return `@echo off
 chcp 65001 >nul
+setlocal EnableDelayedExpansion
 title ApexWall AI - Setup Auto-Installer
 
 echo ===============================================================================
 echo   🏁 APEXWALL AI // DIRECT SIM SETUP INJECTOR
 echo ===============================================================================
 echo Installing setup: "${setupName}"
-echo Target Directory:
-echo %USERPROFILE%\\${targetDirWindows}
+echo File: "${filename}"
 echo ===============================================================================
 echo.
 
-set "FULL_DIR=%USERPROFILE%\\${targetDirWindows}"
+REM 1. Dynamically locate User's true Documents path on this PC (Registry / OneDrive / Profile)
+set "USER_DOCS="
+for /f "tokens=2*" %%a in ('reg query "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders" /v Personal 2^>nul') do set "USER_DOCS=%%b"
+if defined USER_DOCS call set "USER_DOCS=%USER_DOCS%"
+
+if not defined USER_DOCS if exist "%USERPROFILE%\\OneDrive\\Documents" set "USER_DOCS=%USERPROFILE%\\OneDrive\\Documents"
+if not defined USER_DOCS if exist "%USERPROFILE%\\Documents" set "USER_DOCS=%USERPROFILE%\\Documents"
+if not defined USER_DOCS if exist "%OneDrive%\\Documents" set "USER_DOCS=%OneDrive%\\Documents"
+if not defined USER_DOCS set "USER_DOCS=%USERPROFILE%\\Documents"
+
+echo [PC PATH] Detected Documents: "%USER_DOCS%"
+echo.
+
+REM 2. Determine target directories
+set "FULL_DIR=%USER_DOCS%\\${relTarget}"
+
+REM Fallback if directory already exists under another candidate
 if not exist "%FULL_DIR%" (
-  echo [INFO] Creating missing directory...
-  mkdir "%FULL_DIR%"
+  if exist "%USERPROFILE%\\Documents\\${relTarget}" (
+    set "FULL_DIR=%USERPROFILE%\\Documents\\${relTarget}"
+  ) else if exist "%USERPROFILE%\\OneDrive\\Documents\\${relTarget}" (
+    set "FULL_DIR=%USERPROFILE%\\OneDrive\\Documents\\${relTarget}"
+  )
 )
 
-copy /Y "%~dp0${filename}" "%FULL_DIR%\\${filename}" >nul
+if not exist "%FULL_DIR%" (
+  echo [INFO] Creating directory: "!FULL_DIR!"
+  mkdir "!FULL_DIR!" >nul 2>&1
+)
+
+copy /Y "%~dp0${filename}" "!FULL_DIR!\\${filename}" >nul
 if %ERRORLEVEL% EQU 0 (
-  echo.
   echo [SUCCESS] Setup successfully injected into:
-  echo   "%FULL_DIR%\\${filename}"
+  echo   "!FULL_DIR!\\${filename}"
   echo.
+  ${secondaryBlock}
   echo Open your simulator, go to Setup / Garage, and load "${setupName}".
   echo.
 ) else (
