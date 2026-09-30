@@ -11,6 +11,8 @@
  * ============================================================================
  */
 
+import { detectChassisArchetype } from "./chassis-archetypes";
+
 export interface SetupParamItem {
   label: string;
   value: string;
@@ -288,77 +290,87 @@ In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and phy
       };
     }
 
+    const archetype = detectChassisArchetype(p.car, "Assetto Corsa");
+    const pPsi = archetype.coldPsi;
+    const diff = archetype.differential;
+    const susp = archetype.suspension;
+    const damp = archetype.dampers;
+    const align = archetype.alignment;
+    const aero = archetype.aero;
+    const elec = archetype.electronics;
+
     return {
-      summary: `Assetto Corsa garage specification for ${p.car} at ${p.track}. Calibrated specifically for AC's physics engine: integer toe notches, 0-40 damper clicks, and differential lock percentages to eliminate ${p.handlingIssue ? `"${p.handlingIssue}"` : "cornering scrub"}.`,
+      summary: `Assetto Corsa ${archetype.displayName} specification for ${p.car} at ${p.track}. Calibrated specifically for authentic ${archetype.id} physics: cold pressures at ${pPsi.fl.recommended}/${pPsi.rl.recommended} psi (aiming for ${pPsi.hotTarget}), diff at ${diff.powerRecommended}% Power / ${diff.coastRecommended}% Coast to resolve ${p.handlingIssue ? `"${p.handlingIssue}"` : "balance"}, and compliant damper damping.`,
       sections: [
         {
           title: "TYRES",
           items: [
             { label: "Tyre Compound", value: p.tyreCompound || "Slick Medium" },
-            { label: "Front Left Pressure", value: "26 psi (aim for 32 psi hot)" },
-            { label: "Front Right Pressure", value: "27 psi (aim for 32 psi hot)" },
-            { label: "Rear Left Pressure", value: "25 psi (aim for 31 psi hot)" },
-            { label: "Rear Right Pressure", value: "26 psi (aim for 31 psi hot)" },
+            { label: "Front Left Pressure", value: `${pPsi.fl.recommended} psi (target ${pPsi.hotTarget})` },
+            { label: "Front Right Pressure", value: `${pPsi.fr.recommended} psi` },
+            { label: "Rear Left Pressure", value: `${pPsi.rl.recommended} psi` },
+            { label: "Rear Right Pressure", value: `${pPsi.rr.recommended} psi` },
           ],
         },
         {
           title: "ALIGNMENT",
           items: [
-            { label: "Camber LF / RF", value: isUndersteer ? "-3.4° / -3.4°" : "-3.0° / -3.0°" },
-            { label: "Camber LR / RR", value: "-2.2° / -2.2°" },
-            { label: "Toe LF / RF", value: isUndersteer ? "-6 clicks (-1.5mm toe-out for turn-in)" : "-2 clicks (-0.5mm toe-out)" },
-            { label: "Toe LR / RR", value: "+4 clicks (+1.0mm toe-in for high-speed stability)" },
-            { label: "Caster", value: "7.8°" },
+            { label: "Camber LF / RF", value: `${align.camberFrontDeg.recommended.toFixed(1)}° / ${align.camberFrontDeg.recommended.toFixed(1)}°` },
+            { label: "Camber LR / RR", value: `${align.camberRearDeg.recommended.toFixed(1)}° / ${align.camberRearDeg.recommended.toFixed(1)}°` },
+            { label: "Toe LF / RF", value: isUndersteer ? `${align.toeFrontClicks + 1} clicks (toe-out for turn-in)` : `${align.toeFrontClicks} clicks` },
+            { label: "Toe LR / RR", value: `${align.toeRearClicks} clicks (toe-in for tracking)` },
+            { label: "Caster", value: `${align.casterDeg.toFixed(1)}°` },
           ],
         },
         {
           title: "SUSPENSION",
           items: [
-            { label: "Antiroll Bar Front", value: isUndersteer ? "2 / 6 (Softened to bite into apex)" : "4 / 6" },
-            { label: "Antiroll Bar Rear", value: isOversteer ? "1 / 6 (Softened for traction)" : "3 / 6" },
-            { label: "Front Wheel Rate", value: "140 N/mm" },
-            { label: "Rear Wheel Rate", value: "115 N/mm" },
-            { label: "Rod Length / Height LF/RF", value: "15 mm (Clearance above 55mm min)" },
-            { label: "Rod Length / Height LR/RR", value: "25 mm (Positive aero rake)" },
+            { label: "Antiroll Bar Front", value: isUndersteer ? `${Math.max(1, susp.arbFrontStep - 1)} / ${susp.arbMaxSteps}` : `${susp.arbFrontStep} / ${susp.arbMaxSteps}` },
+            { label: "Antiroll Bar Rear", value: isOversteer ? `${Math.max(1, susp.arbRearStep - 1)} / ${susp.arbMaxSteps}` : `${susp.arbRearStep} / ${susp.arbMaxSteps}` },
+            { label: "Front Wheel Rate", value: `${susp.springRateFrontNmm} N/mm` },
+            { label: "Rear Wheel Rate", value: `${susp.springRateRearNmm} N/mm` },
+            { label: "Rod Length / Height LF/RF", value: `${susp.rodLengthFrontMm} mm` },
+            { label: "Rod Length / Height LR/RR", value: `${susp.rodLengthRearMm} mm` },
           ],
         },
         {
           title: "SUSPENSION ADV.",
           items: [
-            { label: "Front Packers Travel", value: "12 mm" },
-            { label: "Rear Packers Travel", value: "18 mm" },
+            { label: "Front Packers Travel", value: `${susp.packersFrontMm} mm` },
+            { label: "Rear Packers Travel", value: `${susp.packersRearMm} mm` },
+            { label: "Bumpstop Rate", value: "70 N/mm" },
           ],
         },
         {
           title: "DAMPERS",
           items: [
-            { label: "Bump LF/RF", value: "11 / 40 clicks" },
-            { label: "Fast Bump LF/RF", value: "7 / 40 clicks (curb compliance)" },
-            { label: "Rebound LF/RF", value: "18 / 40 clicks" },
-            { label: "Fast Rebound LF/RF", value: "12 / 40 clicks" },
-            { label: "Bump LR/RR", value: "9 / 40 clicks" },
-            { label: "Rebound LR/RR", value: "14 / 40 clicks" },
+            { label: "Bump LF/RF", value: `${damp.slowBumpFront} / ${damp.clickScaleMax} clicks` },
+            { label: "Fast Bump LF/RF", value: `${damp.fastBumpFront} / ${damp.clickScaleMax} clicks (curb compliance)` },
+            { label: "Rebound LF/RF", value: `${damp.slowReboundFront} / ${damp.clickScaleMax} clicks` },
+            { label: "Fast Rebound LF/RF", value: `${damp.fastReboundFront} / ${damp.clickScaleMax} clicks` },
+            { label: "Bump LR/RR", value: `${damp.slowBumpRear} / ${damp.clickScaleMax} clicks` },
+            { label: "Rebound LR/RR", value: `${damp.slowReboundRear} / ${damp.clickScaleMax} clicks` },
           ],
         },
         {
           title: "DRIVETRAIN",
           items: [
-            { label: "Diff Power", value: isOversteer ? "40% (Prevent snap on power)" : "55%" },
-            { label: "Diff Coast", value: isUndersteer ? "30% (Promote off-throttle rotation)" : "45%" },
-            { label: "Diff Preload", value: "50 Nm" },
+            { label: "Diff Power", value: `${diff.powerRecommended}% (${diff.behaviorNote.split('.')[0]})` },
+            { label: "Diff Coast", value: `${diff.coastRecommended}%` },
+            { label: "Diff Preload", value: `${diff.preloadNm} Nm` },
           ],
         },
         {
           title: "AERO",
           items: [
-            { label: "Rear Wing Angle", value: isHighSpeed ? "4 / 12 (Low drag for straights)" : "8 / 12 (Downforce)" },
-            { label: "Front Splitter", value: "2 / 3" },
+            ...(aero.hasFrontWing ? [{ label: "Front Wing / Splitter", value: `${aero.frontWingNotches} notch` }] : []),
+            ...(aero.hasRearWing ? [{ label: "Rear Wing Angle", value: `${aero.rearWingNotches} notches` }] : []),
           ],
         },
         {
           title: "BRAKES",
           items: [
-            { label: "Brake Bias", value: /trail/i.test(p.driverStyle || "") ? "64% Front (Shifted rearward for trail-braking)" : "68% Front" },
+            { label: "Brake Bias", value: `${elec.brakeBiasFrontPct.toFixed(1)}% Front` },
             { label: "Brake Power", value: "100%" },
           ],
         },
@@ -369,7 +381,7 @@ In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and phy
           ],
         },
       ],
-      engineerNotes: `Copy driver, in Assetto Corsa your toe has been dialed into negative clicks (-6 clicks front toe-out) to force the front end to rotate on turn-in, curing the "${p.handlingIssue || "mid-corner scrub"}". Dampers are set in standard AC 0-40 click increments with fast-bump softened to swallow kerbs.`,
+      engineerNotes: `Copy driver, in Assetto Corsa your ${archetype.displayName} setup has been calibrated to authentic ${archetype.id} physics: tyre pressures are initialized to ${pPsi.fl.recommended}/${pPsi.rl.recommended} psi cold (aiming for ${pPsi.hotTarget}), differential is set to ${diff.powerRecommended}% power / ${diff.coastRecommended}% coast, and packers/bumpstops are configured for clean kerb compliance.`,
     };
   },
 };

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGroqWithFallback } from "@/lib/groq";
 import { getGameSetupProfile } from "@/lib/game-setup-profiles";
+import { detectChassisArchetype } from "@/lib/chassis-archetypes";
 
 export async function POST(req: NextRequest) {
   let body: any = {};
@@ -85,10 +86,15 @@ Driver skill level: ${skillLevel || "Not specified"}
 ${customModBrief}
 `.trim();
 
+  const archetype = detectChassisArchetype(car, game);
+
   const systemPrompt = `You are a professional race engineer who builds game-authentic car setups for sim racing titles.
 
 CRITICAL INSTRUCTION: You must NEVER output generic setup categories or generic numbers. You must tailor the section titles, parameter labels, units, and click ranges to match the EXACT in-game garage setup menu of "${profile.displayName}".
 ${customModProfile?.sliders?.length > 0 ? "You have been provided with the user's authentic Assetto Corsa mod setup.ini parameters. Use these EXACT parameter names, units, and limits for the sections." : ""}
+
+CRITICAL VEHICLE PHYSICS ARCHETYPE CONSTRAINTS FOR "${car}" (${archetype.displayName}):
+${archetype.promptGuidance}
 
 ${profile.systemPromptGuidance}
 

@@ -1,60 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGroqWithFallback } from "@/lib/groq";
+import { detectChassisArchetype, getCalibratedAdaptiveSetup } from "@/lib/chassis-archetypes";
 
-function getDefaultAdaptiveSetup(car: string, track: string, driverStyle: string, balancePreference: string) {
-  return {
-    philosophy: `Engineered specifically for your ${driverStyle || "Heavy Trail-Braker"} technique and ${balancePreference || "Neutral Balance"} requirement on ${track}. The mechanical roll balance has been softened at the front axle to maximize contact patch grip under trail-braking, eliminating understeer while keeping the rear axle stable on power exit.`,
-    sections: [
-      {
-        title: "Tyres & Cold Pressures",
-        items: [
-          { label: "Front Left Cold Pressure", value: "26.4 psi", styleNote: "Compensates for high lateral loading" },
-          { label: "Front Right Cold Pressure", value: "26.7 psi", styleNote: "Matches circuit corner weight distribution" },
-          { label: "Rear Left Cold Pressure", value: "26.2 psi", styleNote: "Maximizes traction patch on exit drive" },
-          { label: "Rear Right Cold Pressure", value: "26.4 psi", styleNote: "Equalizes thermal spread" },
-        ],
-      },
-      {
-        title: "Suspension & Wheel Alignment",
-        items: [
-          { label: "Front Anti-Roll Bar", value: "3 / 6 (Medium-Soft)", styleNote: "Softened to cure apex scrub" },
-          { label: "Rear Anti-Roll Bar", value: "2 / 6 (Soft)", styleNote: "Keeps rear axle planted on throttle" },
-          { label: "Front Camber", value: "-3.6°", styleNote: "Optimized for maximum lateral G" },
-          { label: "Rear Camber", value: "-2.8°", styleNote: "Balanced traction vs lateral support" },
-          { label: "Front Toe", value: "-0.08° (Toe-out)", styleNote: "Sharpens turn-in response" },
-          { label: "Rear Toe", value: "+0.16° (Toe-in)", styleNote: "High-speed braking stability" },
-        ],
-      },
-      {
-        title: "Dampers (Bump & Rebound)",
-        items: [
-          { label: "Front Low-Speed Bump", value: "5 / 11", styleNote: "Absorbs pitch transitions cleanly" },
-          { label: "Rear Low-Speed Rebound", value: "7 / 11", styleNote: "Controls rear axle rise under braking" },
-        ],
-      },
-      {
-        title: "Aerodynamics & Ride Height",
-        items: [
-          { label: "Front Ride Height", value: "52 mm", styleNote: "Maximizes front underbody suction" },
-          { label: "Rear Wing Angle", value: "8 / 12", styleNote: "High-speed rear stability" },
-        ],
-      },
-      {
-        title: "Differential & Drivetrain",
-        items: [
-          { label: "Diff Preload / Coast Lock", value: "60 Nm", styleNote: "Facilitates off-throttle rotation" },
-        ],
-      },
-      {
-        title: "Brakes & Electronics",
-        items: [
-          { label: "Brake Bias", value: "54.2% (Rearward Shift)", styleNote: "Aids trail-braking rotation without front lockup" },
-          { label: "ABS Setting", value: "3 / 11", styleNote: "Permits driver pedal modulation" },
-          { label: "Traction Control (TC1)", value: "3 / 11", styleNote: "Permits optimal slip angle on exit" },
-        ],
-      },
-    ],
-  };
+function getDefaultAdaptiveSetup(car: string, track: string, driverStyle: string, balancePreference: string, game?: string) {
+  return getCalibratedAdaptiveSetup(car, track, driverStyle, balancePreference, game);
 }
 
 export async function POST(req: NextRequest) {
@@ -139,8 +88,14 @@ ${frictionCircleText}
 Telemetry Traces: ${compactTelemetrySlice}
 `.trim();
 
-    const systemPrompt = `You are a World-Class Chief Performance & Race Telemetry Engineer (F1 & GT3 vehicle dynamics expert).
+    const archetype = detectChassisArchetype(car, game);
+    const calibratedBaseline = getCalibratedAdaptiveSetup(car, track, driverStyle, balancePreference, game);
+
+    const systemPrompt = `You are a World-Class Chief Performance & Race Telemetry Engineer (F1, Prototype & GT vehicle dynamics expert).
 Analyze the telemetry metrics and synthesize an in-depth diagnosis plus a COMPLETE, CALIBRATED CAR SETUP tailored to the driver's natural driving style (${driverStyle || 'Heavy Trail-Braker'}) and balance preference (${balancePreference || 'Neutral Balance'}).
+
+CRITICAL VEHICLE PHYSICS ARCHETYPE CONSTRAINTS FOR "${car}" (${archetype.displayName}):
+${archetype.promptGuidance}
 
 Output ONLY valid JSON matching this schema:
 {
@@ -176,59 +131,7 @@ Output ONLY valid JSON matching this schema:
     { "category": "Dampers", "component": "string", "adjustment": "string", "rationale": "string" },
     { "category": "Brakes", "component": "string", "adjustment": "string", "rationale": "string" }
   ],
-  "adaptiveSetup": {
-    "philosophy": "Detailed explanation of how this setup is engineered around driver style ${driverStyle} and balance preference ${balancePreference}.",
-    "sections": [
-      {
-        "title": "Tyres & Cold Pressures",
-        "items": [
-          { "label": "Front Left Cold Pressure", "value": "26.4 psi", "styleNote": "string" },
-          { "label": "Front Right Cold Pressure", "value": "26.7 psi", "styleNote": "string" },
-          { "label": "Rear Left Cold Pressure", "value": "26.2 psi", "styleNote": "string" },
-          { "label": "Rear Right Cold Pressure", "value": "26.4 psi", "styleNote": "string" }
-        ]
-      },
-      {
-        "title": "Suspension & Wheel Alignment",
-        "items": [
-          { "label": "Front Anti-Roll Bar", "value": "3 / 6 (Medium)", "styleNote": "string" },
-          { "label": "Rear Anti-Roll Bar", "value": "2 / 6 (Soft)", "styleNote": "string" },
-          { "label": "Front Camber", "value": "-3.6°", "styleNote": "string" },
-          { "label": "Rear Camber", "value": "-2.8°", "styleNote": "string" },
-          { "label": "Front Toe", "value": "-0.08° (Toe-out)", "styleNote": "string" },
-          { "label": "Rear Toe", "value": "+0.16° (Toe-in)", "styleNote": "string" }
-        ]
-      },
-      {
-        "title": "Dampers (Bump & Rebound)",
-        "items": [
-          { "label": "Front Low-Speed Bump", "value": "6 / 11", "styleNote": "string" },
-          { "label": "Rear Low-Speed Rebound", "value": "7 / 11", "styleNote": "string" }
-        ]
-      },
-      {
-        "title": "Aerodynamics & Ride Height",
-        "items": [
-          { "label": "Front Ride Height", "value": "52 mm", "styleNote": "string" },
-          { "label": "Rear Wing Angle", "value": "8 / 12", "styleNote": "string" }
-        ]
-      },
-      {
-        "title": "Differential & Drivetrain",
-        "items": [
-          { "label": "Diff Preload / Coast Lock", "value": "60 Nm", "styleNote": "string" }
-        ]
-      },
-      {
-        "title": "Brakes & Electronics",
-        "items": [
-          { "label": "Brake Bias", "value": "54.2% (Rearward Shift)", "styleNote": "string" },
-          { "label": "ABS Setting", "value": "3 / 11", "styleNote": "string" },
-          { "label": "Traction Control (TC1)", "value": "3 / 11", "styleNote": "string" }
-        ]
-      }
-    ]
-  },
+  "adaptiveSetup": ${JSON.stringify(calibratedBaseline, null, 2)},
   "pitRadioMessage": "Radio message from Chief Race Engineer to driver."
 }`;
 
@@ -242,7 +145,7 @@ Output ONLY valid JSON matching this schema:
         0.4
       );
       if (!analysis.adaptiveSetup || !analysis.adaptiveSetup.sections || analysis.adaptiveSetup.sections.length === 0) {
-        analysis.adaptiveSetup = getDefaultAdaptiveSetup(car, track, driverStyle, balancePreference);
+        analysis.adaptiveSetup = getDefaultAdaptiveSetup(car, track, driverStyle, balancePreference, game);
       }
       if (!analysis.pitRadioMessage) {
         analysis.pitRadioMessage = `“Box this lap, telemetry confirmed. We've applied your ${driverStyle} setup calibration. Attack the entries with confidence.”`;
@@ -344,7 +247,7 @@ Output ONLY valid JSON matching this schema:
             rationale: "Improves bump compliance over apex kerbing and prevents front wash under lateral transition.",
           },
         ],
-        adaptiveSetup: getDefaultAdaptiveSetup(car, track, driverStyle, balancePreference),
+        adaptiveSetup: getDefaultAdaptiveSetup(car, track, driverStyle, balancePreference, game),
         pitRadioMessage: `“Box this lap, telemetry looks clear. We're bleeding 3 tenths on entry by dropping the brake too fast. We've dialed in 1 click softer on the front ARB and bumped rear brake bias back half a percent. Get back out there and trust the front.”`,
       };
 

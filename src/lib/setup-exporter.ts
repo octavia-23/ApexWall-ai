@@ -1,4 +1,5 @@
 import { SetupSection } from "@/types/telemetry";
+import { detectChassisArchetype } from "./chassis-archetypes";
 
 export interface SetupExportContext {
   game?: string;
@@ -608,15 +609,8 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
  */
 export function generateAssettoCorsaINI(ctx: SetupExportContext): string {
   const carId = resolveACCarId(ctx.car);
-  const isFormula =
-    /(formula|hybrid|exos|tatus|sf23|superformula|indycar|gp2|f1|f2|f3|f4|rss_formula|vrc_formula|ks_ferrari_sf|ks_ferrari_f)/i.test(carId) ||
-    /(formula|hybrid|f1|exos|tatuus|rss)/i.test(ctx.car);
-  const isGT3 =
-    /(gt3|gt2|gte|488|huracan|911_gt3|amg_gt3|r8_lms|m6_gt3|z4_gt3|sls_gt3|650s|gtr_gt3|corvette_c7r|ferrari_488)/i.test(carId) ||
-    /(gt3|gt2|gte|488 gt3|ferrari 488)/i.test(ctx.car);
-  const isTouringOrFWD =
-    /(clio|cup|civic|tcr|golf|btcc|fsr_clio|mini|abarth|alfa_romeo_giulietta)/i.test(carId) ||
-    /(clio|cup|fwd|tcr)/i.test(ctx.car);
+  const archetype = detectChassisArchetype(ctx.car, "Assetto Corsa");
+  const isGT3 = archetype.id === "gt3";
 
   // ============================================================================
   // AUTHENTIC ASSETTO CORSA GT3 CALIBRATION (Kunos Physics Grounded)
@@ -910,94 +904,200 @@ VERSION=0.3.0-preview342
 `;
   }
 
-  // --- TYRE PRESSURES ---
-  const defaultPsi = isFormula ? 15 : isTouringOrFWD ? 28 : 26;
-  const rawFlPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf", "pressure fl"]), defaultPsi);
-  const rawFrPsi = parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf", "pressure fr"]), defaultPsi);
-  const rawRlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr", "pressure rl"]), isFormula ? 15 : isTouringOrFWD ? 26 : 25);
-  const rawRrPsi = parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), isFormula ? 15 : isTouringOrFWD ? 26 : 25);
+  // ============================================================================
+  // UNIVERSAL ARCHETYPE-GROUNDED ASSETTO CORSA CALIBRATION
+  // (Formula Modern & Historic, Prototypes/Hypercar, Cup/GT4, Touring/FWD, Street)
+  // ============================================================================
+  const p = archetype.coldPsi;
+  const rawFlPsi = parseNumber(findItemValue(ctx.sections, ["front left", "fl cold", "pressure lf", "pressure fl"]), p.fl.recommended);
+  const rawFrPsi = parseNumber(findItemValue(ctx.sections, ["front right", "fr cold", "pressure rf", "pressure fr"]), p.fr.recommended);
+  const rawRlPsi = parseNumber(findItemValue(ctx.sections, ["rear left", "rl cold", "pressure lr", "pressure rl"]), p.rl.recommended);
+  const rawRrPsi = parseNumber(findItemValue(ctx.sections, ["rear right", "rr cold", "pressure rr"]), p.rr.recommended);
 
-  // If formula car and pressure is way too high from a generic template, clamp to realistic F1 14-17 psi
-  const flPsi = isFormula && rawFlPsi > 20 ? 15 : Math.round(rawFlPsi);
-  const frPsi = isFormula && rawFrPsi > 20 ? 15 : Math.round(rawFrPsi);
-  const rlPsi = isFormula && rawRlPsi > 20 ? 15 : Math.round(rawRlPsi);
-  const rrPsi = isFormula && rawRrPsi > 20 ? 15 : Math.round(rawRrPsi);
+  // Enforce authentic archetype cold tyre pressure bounds
+  const flPsi = Math.max(p.fl.min, Math.min(p.fl.max, Math.round(rawFlPsi > p.fl.max + 3 ? p.fl.recommended : rawFlPsi)));
+  const frPsi = Math.max(p.fr.min, Math.min(p.fr.max, Math.round(rawFrPsi > p.fr.max + 3 ? p.fr.recommended : rawFrPsi)));
+  const rlPsi = Math.max(p.rl.min, Math.min(p.rl.max, Math.round(rawRlPsi > p.rl.max + 3 ? p.rl.recommended : rawRlPsi)));
+  const rrPsi = Math.max(p.rr.min, Math.min(p.rr.max, Math.round(rawRrPsi > p.rr.max + 3 ? p.rr.recommended : rawRrPsi)));
 
-  // --- CAMBER (Stored in tenths of a degree in AC INI: -3.3 deg -> -33) ---
-  const rawFCamber = parseNumber(findItemValue(ctx.sections, ["front camber", "camber lf"]), isFormula ? -3.3 : -3.2);
-  const rawRCamber = parseNumber(findItemValue(ctx.sections, ["rear camber", "camber lr"]), isFormula ? -1.5 : isTouringOrFWD ? -1.8 : -2.4);
+  // Camber (Stored in tenths of a degree in AC INI: -3.3 deg -> -33)
+  const align = archetype.alignment;
+  const rawFCamber = parseNumber(findItemValue(ctx.sections, ["front camber", "camber lf"]), align.camberFrontDeg.recommended);
+  const rawRCamber = parseNumber(findItemValue(ctx.sections, ["rear camber", "camber lr"]), align.camberRearDeg.recommended);
   const fCamber = scaleACCamber(rawFCamber);
   const rCamber = scaleACCamber(rawRCamber);
 
-  // --- TOE (Integer clicks) ---
-  const fToe = Math.round(parseNumber(findItemValue(ctx.sections, ["front toe", "toe lf"]), isFormula ? 0 : -3));
-  const rToe = Math.round(parseNumber(findItemValue(ctx.sections, ["rear toe", "toe lr"]), isFormula ? 10 : 8));
+  // Toe (Integer clicks)
+  const rawFToe = parseNumber(findItemValue(ctx.sections, ["front toe", "toe lf"]), align.toeFrontClicks);
+  const rawRToe = parseNumber(findItemValue(ctx.sections, ["rear toe", "toe lr"]), align.toeRearClicks);
+  const fToe = Math.round(rawFToe);
+  const rToe = Math.round(rawRToe);
 
-  // --- ANTI-ROLL BARS ---
-  const rawFArb = parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb", "arb front"]), isFormula ? 100000 : 4);
-  const rawRArb = parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb", "arb rear"]), isFormula ? 100000 : 2);
+  // Anti-Roll Bars
+  const susp = archetype.suspension;
+  const rawFArb = parseNumber(findItemValue(ctx.sections, ["front anti-roll", "front arb", "arb front"]), susp.arbFrontStep);
+  const rawRArb = parseNumber(findItemValue(ctx.sections, ["rear anti-roll", "rear arb", "arb rear"]), susp.arbRearStep);
   let fArb = Math.round(rawFArb);
   let rArb = Math.round(rawRArb);
-  if (isFormula) {
+  if (archetype.id === "formula_modern") {
     if (fArb < 1000) fArb = Math.round(60000 + (Math.max(1, Math.min(6, fArb)) / 6) * 60000);
     if (rArb < 1000) rArb = Math.round(40000 + (Math.max(1, Math.min(6, rArb)) / 6) * 60000);
+  } else {
+    fArb = Math.max(1, Math.min(susp.arbMaxSteps, fArb > susp.arbMaxSteps ? susp.arbFrontStep : fArb));
+    rArb = Math.max(1, Math.min(susp.arbMaxSteps, rArb > susp.arbMaxSteps ? susp.arbRearStep : rArb));
   }
 
-  // --- ROD LENGTHS (RIDE HEIGHT CALIBRATION) ---
-  // In AC, 0 rod length slams front ride height below legal minimum (e.g. 10.3mm min:20.0mm in red).
-  // For formula: LF=5 (safe ~25mm), LR=95 (high aerodynamic rake).
-  // For GT: LF=15, LR=25. For Touring: LF=15, LR=10.
-  const defaultRodF = isFormula ? 5 : 15;
-  const defaultRodR = isFormula ? 95 : isTouringOrFWD ? 10 : 25;
-  const rawRodF = parseNumber(findItemValue(ctx.sections, ["rod length lf", "rod length front", "front ride"]), defaultRodF);
-  const rawRodR = parseNumber(findItemValue(ctx.sections, ["rod length lr", "rod length rear", "rear ride"]), defaultRodR);
-  const rodLF = isFormula ? (rawRodF <= 0 ? 5 : Math.round(rawRodF)) : Math.round(rawRodF);
+  // Rod Lengths (Ride Height Calibration)
+  const rawRodF = parseNumber(findItemValue(ctx.sections, ["rod length lf", "rod length front", "front ride"]), susp.rodLengthFrontMm);
+  const rawRodR = parseNumber(findItemValue(ctx.sections, ["rod length lr", "rod length rear", "rear ride"]), susp.rodLengthRearMm);
+  const rodLF = Math.round(rawRodF);
   const rodRF = rodLF;
-  const rodLR = isFormula ? (rawRodR <= 20 ? 95 : Math.round(rawRodR)) : Math.round(rawRodR);
+  const rodLR = Math.round(rawRodR);
   const rodRR = rodLR;
 
-  // --- SPRINGS & HEAVE SPRINGS ---
-  const springLF = isFormula ? 140 : isTouringOrFWD ? 120 : 135;
-  const springLR = isFormula ? 80 : isTouringOrFWD ? 90 : 115;
-  const heaveSpringF = 100;
-  const heaveSpringR = 20;
+  // Springs
+  const springLF = susp.springRateFrontNmm;
+  const springRF = springLF;
+  const springLR = susp.springRateRearNmm;
+  const springRR = springLR;
 
-  // --- DAMPERS (AC 0-40 click range) ---
+  // Packers
+  const packerLF = susp.packersFrontMm;
+  const packerRF = packerLF;
+  const packerLR = susp.packersRearMm;
+  const packerRR = packerLR;
+
+  // Dampers
+  const damp = archetype.dampers;
   const rawBumpSlow = parseNumber(
     findItemValue(ctx.sections, ["bump lf", "slow bump lf", "bump front", "bump"], ["bumpstop", "stop", "heave", "packer"]),
-    isFormula ? 11 : 12
+    damp.slowBumpFront
   );
   const rawReboundSlow = parseNumber(
     findItemValue(ctx.sections, ["rebound lf", "slow rebound lf", "rebound front", "rebound"], ["heave"]),
-    isFormula ? 10 : 16
+    damp.slowReboundFront
   );
-  const bumpSlow = Math.min(40, Math.max(1, Math.round(rawBumpSlow)));
-  const reboundSlow = Math.min(40, Math.max(1, Math.round(rawReboundSlow)));
-  const bumpRear = isFormula ? 4 : Math.min(40, Math.max(1, bumpSlow - 2));
-  const reboundRear = isFormula ? 4 : Math.min(40, Math.max(1, reboundSlow - 2));
+  const bumpSlow = Math.min(damp.clickScaleMax, Math.max(1, Math.round(rawBumpSlow)));
+  const reboundSlow = Math.min(damp.clickScaleMax, Math.max(1, Math.round(rawReboundSlow)));
+  const bumpRear = Math.min(damp.clickScaleMax, Math.max(1, damp.slowBumpRear));
+  const reboundRear = Math.min(damp.clickScaleMax, Math.max(1, damp.slowReboundRear));
 
-  // --- WINGS ---
-  const rawFWing = parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing", "wing 0"]), isFormula ? 15 : 2);
-  const rawRWing = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 1", "wing 2"]), isFormula ? 6 : 7);
+  // Differential
+  const diffRules = archetype.differential;
+  const rawDiffPower = parseNumber(findItemValue(ctx.sections, ["diff power", "power lock", "differential"]), diffRules.powerRecommended);
+  const rawDiffCoast = parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), diffRules.coastRecommended);
+  const diffPower = Math.max(diffRules.powerMin, Math.min(diffRules.powerMax, Math.round(rawDiffPower)));
+  const diffCoast = Math.max(diffRules.coastMin, Math.min(diffRules.coastMax, Math.round(rawDiffCoast)));
+  const diffPreload = diffRules.preloadNm;
+
+  // Aero / Wings
+  const aeroRules = archetype.aero;
+  const rawFWing = parseNumber(findItemValue(ctx.sections, ["front splitter", "front wing", "wing 0"]), aeroRules.frontWingNotches);
+  const rawRWing = parseNumber(findItemValue(ctx.sections, ["rear wing", "wing 1", "wing 2"]), aeroRules.rearWingNotches);
   const fWing = Math.round(rawFWing);
   const rWing = Math.round(rawRWing);
 
-  // --- DIFFERENTIAL ---
-  const diffPower = Math.round(parseNumber(findItemValue(ctx.sections, ["diff power", "power lock", "differential"]), isFormula ? 15 : 45));
-  const diffCoast = Math.round(parseNumber(findItemValue(ctx.sections, ["diff coast", "coast lock"]), isFormula ? 25 : 55));
-  const diffPreload = Math.round(parseNumber(findItemValue(ctx.sections, ["diff preload", "preload"]), 30));
+  // Brakes & Fuel
+  const elec = archetype.electronics;
+  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), elec.brakeBiasFrontPct));
+  const fuel = Math.round(parseNumber(ctx.fuelLoad || "25", 25));
 
-  // --- BRAKES & FUEL ---
-  const brakeBias = Math.round(parseNumber(findItemValue(ctx.sections, ["brake bias", "bias"]), isFormula ? 54 : 64));
-  const fuel = Math.round(parseNumber(ctx.fuelLoad || "15", isFormula ? 15 : 30));
+  // Dynamic Subsections based on Authentic Vehicle Capabilities
+  let heaveBlock = "";
+  if (susp.hasHeaveSprings) {
+    heaveBlock = `
+[SPRING_RATE_HF]
+VALUE=${susp.heaveSpringFrontNmm || 100}
+
+[SPRING_RATE_HR]
+VALUE=${susp.heaveSpringRearNmm || 20}
+
+[BUMP_STOP_RATE_HF]
+VALUE=70
+
+[BUMP_STOP_RATE_HR]
+VALUE=70
+
+[DAMP_BUMP_HF]
+VALUE=4
+
+[DAMP_BUMP_HR]
+VALUE=2
+
+[DAMP_FAST_BUMP_HF]
+VALUE=2
+
+[DAMP_FAST_BUMP_HR]
+VALUE=1
+
+[DAMP_REBOUND_HF]
+VALUE=4
+
+[DAMP_REBOUND_HR]
+VALUE=2
+
+[DAMP_FAST_REBOUND_HF]
+VALUE=2
+
+[DAMP_FAST_REBOUND_HR]
+VALUE=1
+`;
+  }
+
+  let hybridBlock = "";
+  if (elec.hasHybrid) {
+    hybridBlock = `
+[BRAKE_ENGINE]
+VALUE=6
+
+[MGUH_MODE]
+VALUE=0
+
+[MGUK_DELIVERY]
+VALUE=0
+
+[MGUK_RECOVERY]
+VALUE=0
+`;
+  }
+
+  let electronicsBlock = "";
+  if (elec.hasAbs) {
+    electronicsBlock += `
+[ABS]
+VALUE=${elec.absRecommended || 4}
+`;
+  }
+  if (elec.hasTc) {
+    electronicsBlock += `
+[TRACTION_CONTROL]
+VALUE=${elec.tcRecommended || 4}
+`;
+  }
+
+  let aeroBlock = "";
+  if (archetype.id === "formula_modern" || archetype.id === "formula_historic") {
+    aeroBlock = `
+[WING_0]
+VALUE=${fWing}
+
+[WING_1]
+VALUE=${rWing}
+`;
+  } else if (aeroRules.hasRearWing) {
+    aeroBlock = `
+[WING_1]
+VALUE=${rWing}
+`;
+  }
 
   return `; ==============================================================================
 ; APEXWALL AI // ASSETTO CORSA CALIBRATED SETUP SPECIFICATION
 ; Car: ${ctx.car} [${carId}]
 ; Track: ${ctx.track}
-; Archetype: ${isFormula ? "Formula / Open-Wheel (Heave springs & Aero-Rake active)" : isTouringOrFWD ? "Touring / FWD" : "GT / Sports"}
+; Archetype: ${archetype.displayName} (${archetype.description})
 ; Generated: ${new Date().toISOString()}
-; Summary: ${ctx.summary ? ctx.summary.replace(/[\r\n]+/g, " ") : "Calibrated baseline by ApexWall AI."}
+; Summary: ${ctx.summary ? ctx.summary.replace(/[\\r\\n]+/g, " ") : "Calibrated baseline by ApexWall AI."}
 ; ==============================================================================
 
 [CAR]
@@ -1064,25 +1164,13 @@ VALUE=${rodRR}
 VALUE=${springLF}
 
 [SPRING_RATE_RF]
-VALUE=${springLF}
+VALUE=${springRF}
 
 [SPRING_RATE_LR]
 VALUE=${springLR}
 
 [SPRING_RATE_RR]
-VALUE=${springLR}
-
-[SPRING_RATE_HF]
-VALUE=${heaveSpringF}
-
-[SPRING_RATE_HR]
-VALUE=${heaveSpringR}
-
-[BUMP_STOP_RATE_HF]
-VALUE=70
-
-[BUMP_STOP_RATE_HR]
-VALUE=70
+VALUE=${springRR}
 
 [BUMP_STOP_RATE_LF]
 VALUE=70
@@ -1097,16 +1185,16 @@ VALUE=70
 VALUE=70
 
 [PACKER_RANGE_LF]
-VALUE=${isFormula ? 19 : 12}
+VALUE=${packerLF}
 
 [PACKER_RANGE_RF]
-VALUE=${isFormula ? 19 : 12}
+VALUE=${packerRF}
 
 [PACKER_RANGE_LR]
-VALUE=${isFormula ? 74 : 18}
+VALUE=${packerLR}
 
 [PACKER_RANGE_RR]
-VALUE=${isFormula ? 74 : 18}
+VALUE=${packerRR}
 
 [DAMP_BUMP_LF]
 VALUE=${bumpSlow}
@@ -1121,10 +1209,10 @@ VALUE=${bumpRear}
 VALUE=${bumpRear}
 
 [DAMP_FAST_BUMP_LF]
-VALUE=${Math.max(1, bumpSlow - 4)}
+VALUE=${Math.max(1, bumpSlow - 3)}
 
 [DAMP_FAST_BUMP_RF]
-VALUE=${Math.max(1, bumpSlow - 4)}
+VALUE=${Math.max(1, bumpSlow - 3)}
 
 [DAMP_FAST_BUMP_LR]
 VALUE=${Math.max(1, bumpRear - 2)}
@@ -1145,59 +1233,18 @@ VALUE=${reboundRear}
 VALUE=${reboundRear}
 
 [DAMP_FAST_REBOUND_LF]
-VALUE=${Math.max(1, reboundSlow - 5)}
+VALUE=${Math.max(1, reboundSlow - 3)}
 
 [DAMP_FAST_REBOUND_RF]
-VALUE=${Math.max(1, reboundSlow - 5)}
+VALUE=${Math.max(1, reboundSlow - 3)}
 
 [DAMP_FAST_REBOUND_LR]
 VALUE=${Math.max(1, reboundRear - 2)}
 
 [DAMP_FAST_REBOUND_RR]
 VALUE=${Math.max(1, reboundRear - 2)}
-
-[DAMP_BUMP_HF]
-VALUE=4
-
-[DAMP_BUMP_HR]
-VALUE=2
-
-[DAMP_FAST_BUMP_HF]
-VALUE=2
-
-[DAMP_FAST_BUMP_HR]
-VALUE=1
-
-[DAMP_REBOUND_HF]
-VALUE=4
-
-[DAMP_REBOUND_HR]
-VALUE=2
-
-[DAMP_FAST_REBOUND_HF]
-VALUE=2
-
-[DAMP_FAST_REBOUND_HR]
-VALUE=1
-
-[WING_0]
-VALUE=${isFormula ? fWing : 0}
-
-[WING_1]
-VALUE=${isFormula ? rWing : fWing}
-
-[WING_2]
-VALUE=${rWing}
-
-[WING_11]
-VALUE=0
-
-[WING_FRONT]
-VALUE=${fWing}
-
-[WING_REAR]
-VALUE=${rWing}
-
+${heaveBlock}
+${aeroBlock}
 [DIFF_POWER]
 VALUE=${diffPower}
 
@@ -1210,29 +1257,15 @@ VALUE=${diffPreload}
 [BRAKE_POWER_MULT]
 VALUE=100
 
-[BRAKE_ENGINE]
-VALUE=6
-
 [FRONT_BIAS]
 VALUE=${brakeBias}
-
-[STEER_ASSIST]
-VALUE=80
-
-[MGUH_MODE]
-VALUE=0
-
-[MGUK_DELIVERY]
-VALUE=0
-
-[MGUK_RECOVERY]
-VALUE=0
-
+${electronicsBlock}
+${hybridBlock}
 [FUEL]
 VALUE=${fuel}
 
 [__EXT_PATCH]
-VERSION=0.1.74
+VERSION=0.3.0-preview342
 `;
 }
 
