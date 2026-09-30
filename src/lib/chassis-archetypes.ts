@@ -796,7 +796,7 @@ export function getCalibratedAdaptiveSetup(
   }
 
   return {
-    philosophy: `Championship ${archetype.displayName} baseline engineered for your ${style} technique and ${balance} requirement on ${track}. Configured for ${aeroProfile.tierName}: ${aeroProfile.rationale} Calibrated against authentic ${archetype.id.toUpperCase()} vehicle dynamics: cold tyre pressures dialed to ${flPsi}/${frPsi} psi (targeting ${p.hotTarget}), differential set to ${diff.powerRecommended}% Power / ${diff.coastRecommended}% Coast to ensure stable trail-braking entry without throttle-exit traction snap, and compliant suspension geometry to preserve the tire contact patch.`,
+    philosophy: `Championship ${archetype.displayName} baseline engineered for your ${style} technique and ${balance} requirement on ${track}. Configured for ${aeroProfile.tierName}: ${aeroProfile.rationale} Ground-effect underfloor strategy: ${aeroProfile.underfloor.philosophy} Diffuser expansion rake set to ${susp.rodLengthFrontMm}/${susp.rodLengthRearMm} mm to extract high-efficiency, non-drag suction without straight-line speed penalty. Calibrated against authentic ${archetype.id.toUpperCase()} vehicle dynamics: cold tyre pressures dialed to ${flPsi}/${frPsi} psi (targeting ${p.hotTarget}), differential set to ${diff.powerRecommended}% Power / ${diff.coastRecommended}% Coast to ensure stable trail-braking entry without throttle-exit traction snap, and compliant suspension geometry to preserve the tire contact patch.`,
     sections: [
       {
         title: "Tyres & Cold Pressures",
@@ -810,7 +810,7 @@ export function getCalibratedAdaptiveSetup(
       {
         title: "Suspension & Wheel Alignment",
         items: [
-          { label: "Front Anti-Roll Bar", value: `${susp.arbFrontStep} / ${susp.arbMaxSteps}`, styleNote: "Front mechanical roll stiffness" },
+          { label: "Front Anti-Roll Bar", value: `${susp.arbFrontStep} / ${susp.arbMaxSteps}`, styleNote: "Front mechanical roll stiffness (maintains underfloor edge vortex seal)" },
           { label: "Rear Anti-Roll Bar", value: `${susp.arbRearStep} / ${susp.arbMaxSteps}`, styleNote: "Rear axle compliance for traction" },
           { label: "Front Camber", value: `${align.camberFrontDeg.recommended.toFixed(1)}°`, styleNote: "Maximized lateral grip under cornering" },
           { label: "Rear Camber", value: `${align.camberRearDeg.recommended.toFixed(1)}°`, styleNote: "Optimal contact patch under acceleration" },
@@ -828,13 +828,16 @@ export function getCalibratedAdaptiveSetup(
         ],
       },
       {
-        title: "Aerodynamics & Ride Height",
+        title: "Aerodynamics, Floor & Ride Height",
         items: [
           { label: "Aerodynamic Trim", value: aeroProfile.tierName, styleNote: aeroProfile.rationale },
-          { label: "Front Rod Length / Ride Height", value: `${susp.rodLengthFrontMm} mm`, styleNote: "Low drag, consistent aerodynamic platform" },
-          { label: "Rear Rod Length / Ride Height", value: `${susp.rodLengthRearMm} mm`, styleNote: "Diffuser expansion ratio control" },
-          ...(aero.hasFrontWing ? [{ label: archetype.id === "gt3" ? "Front Splitter Position" : "Front Wing Angle", value: `${resolvedFrontWing} ${archetype.id === "gt3" ? "" : "notches"}`, styleNote: "Front aerodynamic balance" }] : []),
+          { label: "Front Ride Height / Splitter Clearance", value: `${susp.rodLengthFrontMm} mm`, styleNote: aeroProfile.underfloor.frontRideHeightTarget },
+          { label: "Rear Ride Height / Diffuser Rake", value: `${susp.rodLengthRearMm} mm`, styleNote: aeroProfile.underfloor.diffuserRakeTarget },
+          ...(aero.hasFrontWing ? [{ label: archetype.id === "gt3" ? "Front Splitter Position" : "Front Wing Angle", value: `${resolvedFrontWing} ${archetype.id === "gt3" ? "" : "notches"}`, styleNote: "Front aerodynamic balance & turn-in authority" }] : []),
           ...(aero.hasRearWing ? [{ label: "Rear Wing Angle", value: `${resolvedRearWing} notches`, styleNote: `Targeted for ${aeroProfile.tier.toUpperCase()} downforce circuit speed` }] : []),
+          { label: "Front Bumpstop Packers", value: `${susp.packersFrontMm} mm`, styleNote: aeroProfile.underfloor.bumpstopPackersStrategy },
+          ...(susp.hasHeaveSprings ? [{ label: "Front Heave / Third Spring", value: `${susp.heaveSpringFrontNmm || 100} N/mm`, styleNote: aeroProfile.underfloor.heaveSpringStrategy }] : []),
+          { label: "Non-Drag Downforce Recovery", value: "Underfloor Venturi & Diffuser Rake", styleNote: aeroProfile.underfloor.nonDragRecoveryNote },
         ],
       },
       {
