@@ -8,11 +8,15 @@ import { SetupMorphTool } from "./SetupMorphTool";
 interface StrategyToolsProps {
   onApplyPressuresToSetup?: (pressures: { FL: number; FR: number; RL: number; RR: number }) => void;
   onApplyFuelToSetup?: (liters: number) => void;
+  activeCar?: string;
+  activeTrack?: string;
 }
 
 export const StrategyTools: React.FC<StrategyToolsProps> = ({
   onApplyPressuresToSetup,
   onApplyFuelToSetup,
+  activeCar,
+  activeTrack,
 }) => {
   const [activeTab, setActiveTab] = useState<"morph" | "tyres" | "fuel" | "all">("all");
 
@@ -60,7 +64,7 @@ export const StrategyTools: React.FC<StrategyToolsProps> = ({
       {/* Setup Morph Studio */}
       {(activeTab === "all" || activeTab === "morph") && (
         <div className="w-full">
-          <SetupMorphTool />
+          <SetupMorphTool activeCar={activeCar} activeTrack={activeTrack} />
         </div>
       )}
 

@@ -21,6 +21,15 @@ export default function Home() {
   const [isVaultOpen, setIsVaultOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [savedSetupsCount, setSavedSetupsCount] = useState<number>(0);
+  const [sessionCar, setSessionCar] = useState<string>("");
+  const [sessionTrack, setSessionTrack] = useState<string>("");
+  const [sessionGame, setSessionGame] = useState<string>("");
+
+  const handleSessionChange = (session: { car?: string; track?: string; game?: string }) => {
+    if (session.car !== undefined) setSessionCar(session.car);
+    if (session.track !== undefined) setSessionTrack(session.track);
+    if (session.game !== undefined) setSessionGame(session.game);
+  };
 
   const [lastGeneratedSetup, setLastGeneratedSetup] = useState<SetupExportContext | null>(null);
   const [lastTelemetryResult, setLastTelemetryResult] = useState<TelemetryAnalysisResult | null>(null);
@@ -66,6 +75,9 @@ export default function Home() {
     handlingIssue: string;
   }) => {
     setSetupInitialValues(setupContext);
+    if (setupContext.car) setSessionCar(setupContext.car);
+    if (setupContext.track) setSessionTrack(setupContext.track);
+    if (setupContext.game) setSessionGame(setupContext.game);
     setMode("setup");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -108,6 +120,9 @@ export default function Home() {
       airTemp: saved.airTemp,
       handlingIssue: saved.summary || "",
     });
+    if (saved.car) setSessionCar(saved.car);
+    if (saved.track) setSessionTrack(saved.track);
+    if (saved.game) setSessionGame(saved.game);
     setMode("setup");
     if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -124,8 +139,8 @@ export default function Home() {
           onOpenAuth={() => setIsAuthModalOpen(true)}
           savedSetupsCount={savedSetupsCount}
           isLoading={isLoading}
-          activeCar={setupInitialValues?.car || "Ferrari 296 GT3"}
-          activeTrack={setupInitialValues?.track || "Spa-Francorchamps"}
+          activeCar={sessionCar || setupInitialValues?.car}
+          activeTrack={sessionTrack || setupInitialValues?.track}
         />
 
         {/* Dynamic Workspace Container */}
@@ -136,6 +151,7 @@ export default function Home() {
               onLoadingChange={setIsLoading}
               onSetupGenerated={setLastGeneratedSetup}
               onDiscussWithEngineer={() => setMode("engineer")}
+              onSessionChange={handleSessionChange}
             />
           </div>
 
@@ -148,6 +164,7 @@ export default function Home() {
                 setLastTelemetryFile(file);
               }}
               onDiscussWithEngineer={() => setMode("engineer")}
+              onSessionChange={handleSessionChange}
             />
           </div>
 
@@ -156,6 +173,8 @@ export default function Home() {
               currentSetup={lastGeneratedSetup}
               telemetryResult={lastTelemetryResult}
               parsedTelemetry={lastTelemetryFile}
+              activeCar={sessionCar || setupInitialValues?.car}
+              activeTrack={sessionTrack || setupInitialValues?.track}
               onApplyAdjustmentToSetup={(advice) => {
                 setSetupInitialValues((prev) => ({
                   ...prev,
@@ -172,6 +191,8 @@ export default function Home() {
             <StrategyTools
               onApplyPressuresToSetup={handleApplyPressures}
               onApplyFuelToSetup={handleApplyFuel}
+              activeCar={sessionCar || setupInitialValues?.car}
+              activeTrack={sessionTrack || setupInitialValues?.track}
             />
           </div>
 

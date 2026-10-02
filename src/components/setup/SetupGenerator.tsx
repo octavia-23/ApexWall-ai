@@ -25,6 +25,7 @@ interface SetupGeneratorProps {
   onLoadingChange: (loading: boolean) => void;
   onSetupGenerated?: (setup: any) => void;
   onDiscussWithEngineer?: () => void;
+  onSessionChange?: (session: { car: string; track: string; game?: string }) => void;
 }
 
 const loadingMessages = [
@@ -41,10 +42,11 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   onLoadingChange,
   onSetupGenerated,
   onDiscussWithEngineer,
+  onSessionChange,
 }) => {
   const [game, setGame] = useState("Assetto Corsa Competizione");
-  const [car, setCar] = useState("Ferrari 296 GT3");
-  const [track, setTrack] = useState("Spa-Francorchamps GP");
+  const [car, setCar] = useState(initialValues?.car || "");
+  const [track, setTrack] = useState(initialValues?.track || "");
   const [sessionType, setSessionType] = useState("Practice");
   const [weather, setWeather] = useState("Dry");
   const [trackTemp, setTrackTemp] = useState("32°C");
@@ -59,7 +61,10 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const handleModParsed = (mod: AssettoCorsaModData) => {
     setAcModData(mod);
     setGame("Assetto Corsa");
-    if (mod.name) setCar(mod.name);
+    if (mod.name) {
+      setCar(mod.name);
+      onSessionChange?.({ car: mod.name, track, game: "Assetto Corsa" });
+    }
     if (mod.fuelTankCapacity) setFuelLoad(`${Math.round(mod.fuelTankCapacity * 0.7)} L`);
   };
 
@@ -89,6 +94,14 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
       if (initialValues.fuelLoad) setFuelLoad(initialValues.fuelLoad);
       if (initialValues.handlingIssue) setHandlingIssue(initialValues.handlingIssue);
       if (initialValues.driverStyle) setDriverStyle(initialValues.driverStyle);
+
+      if (initialValues.car || initialValues.track) {
+        onSessionChange?.({
+          car: initialValues.car || car,
+          track: initialValues.track || track,
+          game: initialValues.game || game,
+        });
+      }
     }
   }, [initialValues]);
 
@@ -271,8 +284,12 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   id="car"
                   type="text"
                   value={car}
-                  onChange={(e) => setCar(e.target.value)}
-                  placeholder="e.g. Ferrari 296 GT3"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCar(v);
+                    onSessionChange?.({ car: v, track, game });
+                  }}
+                  placeholder="e.g. Ferrari 296 GT3, Porsche 992 GT3 R"
                   required
                 />
               </div>
@@ -287,8 +304,12 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   id="track"
                   type="text"
                   value={track}
-                  onChange={(e) => setTrack(e.target.value)}
-                  placeholder="e.g. Spa-Francorchamps GP"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setTrack(v);
+                    onSessionChange?.({ car, track: v, game });
+                  }}
+                  placeholder="e.g. Circuit de Spa-Francorchamps, Nordschleife"
                   required
                 />
               </div>

@@ -24,8 +24,8 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
   onOpenAuth,
   savedSetupsCount,
   isLoading,
-  activeCar = "Ferrari 296 GT3",
-  activeTrack = "Spa-Francorchamps",
+  activeCar,
+  activeTrack,
 }) => {
   const { user, signOut } = useAuth();
   const { isAmoled, toggleTheme } = useTheme();
@@ -100,11 +100,21 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
         {/* RIGHT: Active Car/Track, AMOLED Toggle, Vault & Driver Profile */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {/* Active Session Indicator */}
-          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
-            <span className="text-slate-200 font-medium">{activeCar}</span>
-            <span className="text-slate-600">•</span>
-            <span className="text-slate-400">{activeTrack}</span>
-          </div>
+          {activeCar && activeTrack ? (
+            <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
+              <span className="text-slate-200 font-medium">{activeCar}</span>
+              <span className="text-slate-600">•</span>
+              <span className="text-slate-400">{activeTrack}</span>
+            </div>
+          ) : activeCar || activeTrack ? (
+            <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
+              <span className="text-slate-200 font-medium">{activeCar || activeTrack}</span>
+            </div>
+          ) : (
+            <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.02] border border-white/[0.05] text-xs text-slate-500 font-mono text-[11px]">
+              <span>No session loaded</span>
+            </div>
+          )}
 
           {/* AMOLED Mode Switcher Toggle */}
           <button

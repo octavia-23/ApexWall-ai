@@ -35,6 +35,7 @@ interface TelemetryAnalyzerProps {
   }) => void;
   onTelemetryAnalyzed?: (result: TelemetryAnalysisResult, file: ParsedTelemetryFile | null) => void;
   onDiscussWithEngineer?: () => void;
+  onSessionChange?: (session: { car: string; track: string; game?: string }) => void;
 }
 
 const telLoadingMessages = [
@@ -50,11 +51,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   onApplyToSetup,
   onTelemetryAnalyzed,
   onDiscussWithEngineer,
+  onSessionChange,
 }) => {
   // Session & Vehicle Spec
   const [game, setGame] = useState("Assetto Corsa Competizione");
-  const [car, setCar] = useState("Ferrari 296 GT3");
-  const [track, setTrack] = useState("Spa-Francorchamps GP");
+  const [car, setCar] = useState("");
+  const [track, setTrack] = useState("");
   const [sessionType, setSessionType] = useState("Practice / Hotlap");
   const [weather, setWeather] = useState("Dry");
   const [trackTemp, setTrackTemp] = useState("30°C");
@@ -71,7 +73,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   );
 
   // Telemetry Data State
-  const [activePreset, setActivePreset] = useState("spa");
+  const [activePreset, setActivePreset] = useState("");
   const [parsedTelemetry, setParsedTelemetry] = useState<ParsedTelemetryFile | null>(null);
   const [referenceTelemetry, setReferenceTelemetry] = useState<ParsedTelemetryFile | null>(null);
   const [lapComparison, setLapComparison] = useState<LapComparisonSummary | null>(null);
@@ -252,6 +254,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     setBalancePreference(cfg.balance);
     setSetupTarget(cfg.target);
     setDriverComplaint(cfg.complaint);
+    onSessionChange?.({ car: cfg.car, track: cfg.track, game: cfg.game });
 
     try {
       const [resDriver, resRef] = await Promise.all([
@@ -288,11 +291,6 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     }
   };
 
-  // Initial load Spa preset on mount
-  useEffect(() => {
-    loadPreset("spa");
-  }, []);
-
   // Rotating loading messages
   useEffect(() => {
     if (state !== "loading") return;
@@ -317,53 +315,100 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     const authCircuit = getAuthenticTrackGeometry(lowerName, maxDist);
     if (authCircuit) {
       detectedTrack = authCircuit.name;
-      setTrack(authCircuit.name);
+    } else if (lowerName.includes("nordschleife") || lowerName.includes("nurburgring")) {
+      detectedTrack = "Nürburgring Nordschleife";
+    } else if (lowerName.includes("imola") || lowerName.includes("dino")) {
+      detectedTrack = "Autodromo Enzo e Dino Ferrari (Imola)";
+    } else if (lowerName.includes("roadatlanta") || lowerName.includes("road_atlanta") || lowerName.includes("road-atlanta")) {
+      detectedTrack = "Michelin Raceway Road Atlanta";
+    } else if (lowerName.includes("jeddah")) {
+      detectedTrack = "Jeddah Corniche Circuit";
     } else if (lowerName.includes("redbull") || lowerName.includes("red_bull") || lowerName.includes("spielberg") || lowerName.includes("rbr") || lowerName.includes("austria")) {
       detectedTrack = "Red Bull Ring (Spielberg GP)";
-      setTrack("Red Bull Ring (Spielberg GP)");
     } else if (lowerName.includes("silverstone")) {
       detectedTrack = "Silverstone Grand Prix Circuit";
-      setTrack("Silverstone Grand Prix Circuit");
     } else if (lowerName.includes("monza")) {
       detectedTrack = "Autodromo Nazionale Monza";
-      setTrack("Autodromo Nazionale Monza");
     } else if (lowerName.includes("spa") || lowerName.includes("francorchamps")) {
       detectedTrack = "Circuit de Spa-Francorchamps";
-      setTrack("Circuit de Spa-Francorchamps");
     } else if (lowerName.includes("suzuka")) {
       detectedTrack = "Suzuka International Racing Course";
-      setTrack("Suzuka International Racing Course");
     } else if (lowerName.includes("interlagos") || lowerName.includes("pace")) {
       detectedTrack = "Autódromo José Carlos Pace (Interlagos)";
-      setTrack("Autódromo José Carlos Pace (Interlagos)");
     } else if (lowerName.includes("cota") || lowerName.includes("americas")) {
       detectedTrack = "Circuit of the Americas (COTA)";
-      setTrack("Circuit of the Americas (COTA)");
     } else if (lowerName.includes("zandvoort")) {
       detectedTrack = "Circuit Zandvoort";
-      setTrack("Circuit Zandvoort");
     } else if (lowerName.includes("barcelona") || lowerName.includes("catalunya")) {
       detectedTrack = "Circuit de Barcelona-Catalunya";
-      setTrack("Circuit de Barcelona-Catalunya");
+    } else if (lowerName.includes("bathurst") || lowerName.includes("mount_panorama")) {
+      detectedTrack = "Mount Panorama Circuit (Bathurst)";
+    } else if (lowerName.includes("sebring")) {
+      detectedTrack = "Sebring International Raceway";
+    } else if (lowerName.includes("watkins") || lowerName.includes("glen")) {
+      detectedTrack = "Watkins Glen International";
+    } else if (lowerName.includes("daytona")) {
+      detectedTrack = "Daytona International Speedway";
+    } else if (lowerName.includes("lemans") || lowerName.includes("le_mans") || lowerName.includes("sarthe")) {
+      detectedTrack = "Circuit de la Sarthe (Le Mans)";
+    } else if (lowerName.includes("laguna")) {
+      detectedTrack = "WeatherTech Raceway Laguna Seca";
     }
 
+    if (detectedTrack) {
+      setTrack(detectedTrack);
+    }
+
+    let detectedCar = car;
     if (lowerName.includes("mercedes") || lowerName.includes("amg")) {
-      setCar("Mercedes-AMG GT4");
+      detectedCar = lowerName.includes("gt4") ? "Mercedes-AMG GT4" : "Mercedes-AMG GT3";
     } else if (lowerName.includes("corvette")) {
-      setCar("Corvette C7.R");
-    } else if (lowerName.includes("porsche")) {
-      setCar("Porsche 992 GT3 R");
-    } else if (lowerName.includes("ferrari")) {
-      setCar("Ferrari 296 GT3");
+      detectedCar = lowerName.includes("c8") ? "Corvette C8.R" : "Corvette C7.R";
+    } else if (lowerName.includes("porsche") || lowerName.includes("992") || lowerName.includes("911")) {
+      detectedCar = "Porsche 992 GT3 R";
+    } else if (lowerName.includes("ferrari") || lowerName.includes("296")) {
+      detectedCar = "Ferrari 296 GT3";
+    } else if (lowerName.includes("488")) {
+      detectedCar = "Ferrari 488 GT3 Evo";
+    } else if (lowerName.includes("bmw") || lowerName.includes("m4")) {
+      detectedCar = "BMW M4 GT3";
+    } else if (lowerName.includes("audi") || lowerName.includes("r8")) {
+      detectedCar = "Audi R8 LMS GT3 Evo II";
+    } else if (lowerName.includes("mclaren") || lowerName.includes("720")) {
+      detectedCar = "McLaren 720S GT3 Evo";
+    } else if (lowerName.includes("aston") || lowerName.includes("vantage")) {
+      detectedCar = "Aston Martin Vantage AMR GT3";
+    } else if (lowerName.includes("lamborghini") || lowerName.includes("huracan")) {
+      detectedCar = "Lamborghini Huracán GT3 EVO2";
+    } else if (lowerName.includes("mustang")) {
+      detectedCar = "Ford Mustang GT3";
+    } else if (lowerName.includes("redbull") || lowerName.includes("rb20") || lowerName.includes("f1")) {
+      detectedCar = "Red Bull RB20";
     }
 
-    if (lowerName.includes("iracing") || lowerName.includes(".ibt")) {
-      setGame("iRacing");
-    } else if (lowerName.includes("ace") || lowerName.includes("evo") || lowerName.includes("acevo")) {
-      setGame("Assetto Corsa Evo");
-    } else if (lowerName.includes("assetto") || lowerName.includes("acc")) {
-      setGame("Assetto Corsa Competizione");
+    if (detectedCar) {
+      setCar(detectedCar);
     }
+
+    let detectedGame = game;
+    if (lowerName.includes("iracing") || lowerName.includes(".ibt")) {
+      detectedGame = "iRacing";
+    } else if (lowerName.includes("ace") || lowerName.includes("evo") || lowerName.includes("acevo")) {
+      detectedGame = "Assetto Corsa Evo";
+    } else if (lowerName.includes("assetto") || lowerName.includes("acc")) {
+      detectedGame = "Assetto Corsa Competizione";
+    } else if (lowerName.includes("f1") || lowerName.includes("codemasters")) {
+      detectedGame = "F1 24";
+    } else if (lowerName.includes("lmu") || lowerName.includes("lemans") || lowerName.endsWith(".duckdb")) {
+      detectedGame = "Le Mans Ultimate";
+    }
+    setGame(detectedGame);
+
+    onSessionChange?.({
+      car: detectedCar || car,
+      track: detectedTrack || track,
+      game: detectedGame || game,
+    });
 
     // Reset reference comparison if it was from a different track
     setReferenceTelemetry(null);
@@ -1063,8 +1108,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   id="telCar"
                   type="text"
                   value={car}
-                  onChange={(e) => setCar(e.target.value)}
-                  placeholder="e.g. Ferrari 296 GT3"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCar(v);
+                    onSessionChange?.({ car: v, track, game });
+                  }}
+                  placeholder="e.g. Ferrari 296 GT3, Porsche 992 GT3 R"
                   required
                 />
               </div>
@@ -1079,8 +1128,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   id="telTrack"
                   type="text"
                   value={track}
-                  onChange={(e) => setTrack(e.target.value)}
-                  placeholder="e.g. Spa-Francorchamps GP"
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setTrack(v);
+                    onSessionChange?.({ car, track: v, game });
+                  }}
+                  placeholder="e.g. Spa-Francorchamps GP, Nordschleife"
                   required
                 />
               </div>
@@ -1287,7 +1340,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <button
                   type="button"
                   className="file-clear-btn"
-                  onClick={() => setParsedTelemetry(null)}
+                  onClick={() => {
+                    setParsedTelemetry(null);
+                    setActivePreset("");
+                    setCar("");
+                    setTrack("");
+                    onSessionChange?.({ car: "", track: "", game: "" });
+                  }}
+                  title="Clear telemetry file"
                 >
                   ✕
                 </button>
@@ -1798,7 +1858,10 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 benchmarkMode={benchmarkMode}
                 activeCornerId={activeCornerId}
                 onSelectCorner={(corner) => setActiveCornerId(corner ? corner.shortName || corner.id : null)}
-                onSelectCircuit={(circuitKey) => setTrack(circuitKey)}
+                onSelectCircuit={(circuitKey) => {
+                  setTrack(circuitKey);
+                  onSessionChange?.({ car, track: circuitKey, game });
+                }}
               />
             )}
 

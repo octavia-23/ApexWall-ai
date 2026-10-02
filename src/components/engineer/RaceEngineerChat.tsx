@@ -17,6 +17,8 @@ interface RaceEngineerChatProps {
   parsedTelemetry?: ParsedTelemetryFile | null;
   onApplyAdjustmentToSetup?: (note: string) => void;
   onSwitchToSetup?: () => void;
+  activeCar?: string;
+  activeTrack?: string;
 }
 
 export const RaceEngineerChat: React.FC<RaceEngineerChatProps> = ({
@@ -25,6 +27,8 @@ export const RaceEngineerChat: React.FC<RaceEngineerChatProps> = ({
   parsedTelemetry,
   onApplyAdjustmentToSetup,
   onSwitchToSetup,
+  activeCar: activeCarProp,
+  activeTrack: activeTrackProp,
 }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -43,9 +47,9 @@ I have your active session telemetry and chassis telemetry synced. How does the 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   const activeSim = currentSetup?.game || "Assetto Corsa Competizione";
-  const activeCar = currentSetup?.car || parsedTelemetry?.filename?.split(/[-_]/)[0]?.toUpperCase() || "GT3 Homologated";
-  const activeTrack = currentSetup?.track || "Circuit de Spa-Francorchamps";
-  const activeLapTime = telemetryResult?.lapComparison?.driverLapTime || parsedTelemetry?.lapTime || "2:18.420";
+  const activeCar = currentSetup?.car || activeCarProp || parsedTelemetry?.filename?.split(/[-_]/)[0]?.toUpperCase() || "GT3 Car";
+  const activeTrack = currentSetup?.track || activeTrackProp || "Current Circuit";
+  const activeLapTime = telemetryResult?.lapComparison?.driverLapTime || parsedTelemetry?.lapTime || "--:--.---";
   const gripUtil = telemetryResult?.frictionCircle?.gripUtilizationPct || 89.4;
 
   const scrollToBottom = () => {

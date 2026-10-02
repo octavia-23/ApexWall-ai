@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Thermometer, 
   Wind, 
@@ -29,10 +29,23 @@ import {
 import { saveSetupToVault, getSavedSetups } from '@/lib/setup-vault';
 import { SetupExportModal } from '../setup/SetupExportModal';
 
-export const SetupMorphTool: React.FC = () => {
-  const [car, setCar] = useState("Ferrari 296 GT3");
-  const [track, setTrack] = useState("Spa-Francorchamps");
+interface SetupMorphToolProps {
+  activeCar?: string;
+  activeTrack?: string;
+}
+
+export const SetupMorphTool: React.FC<SetupMorphToolProps> = ({
+  activeCar,
+  activeTrack,
+}) => {
+  const [car, setCar] = useState(activeCar || "GT3 Car");
+  const [track, setTrack] = useState(activeTrack || "Circuit");
   const [game, setGame] = useState("Assetto Corsa");
+
+  useEffect(() => {
+    if (activeCar) setCar(activeCar);
+    if (activeTrack) setTrack(activeTrack);
+  }, [activeCar, activeTrack]);
 
   // Baseline conditions
   const [baseTrackTemp, setBaseTrackTemp] = useState<number>(28);
