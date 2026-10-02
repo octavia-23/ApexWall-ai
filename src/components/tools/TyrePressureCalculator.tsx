@@ -75,7 +75,7 @@ export const TyrePressureCalculator: React.FC<TyrePressureCalculatorProps> = ({
             className={`calc-mode-btn ${!isEmpirical ? "active" : ""}`}
             onClick={() => setIsEmpirical(false)}
           >
-            Thermodynamic Model
+            Pressure Model
           </button>
           <button
             type="button"
@@ -90,7 +90,7 @@ export const TyrePressureCalculator: React.FC<TyrePressureCalculatorProps> = ({
       {/* Inputs Bar */}
       <div className="calc-inputs-grid">
         <div className="calc-field">
-          <label className="field-label">Sim & Compound Homologation</label>
+          <label className="field-label">Sim & Compound</label>
           <select
             className="calc-select"
             value={selectedPresetId}

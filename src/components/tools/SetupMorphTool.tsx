@@ -157,14 +157,14 @@ export const SetupMorphTool: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-sm font-semibold text-white tracking-tight">
-                Setup Morph Studio
+                Setup Adaptation
               </h2>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                Weather & Temp Adaptation
+                Conditions
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Recalibrate baseline setups for temperature shifts, wet weather, or race stint fuel loads.
+              Adapt setup for temperature changes, wet weather, and fuel loads.
             </p>
           </div>
         </div>

@@ -22,7 +22,7 @@ export const StrategyTools: React.FC<StrategyToolsProps> = ({
       <div className="tools-subnav-bar">
         <div className="tools-subnav-info">
           <span className="subnav-pill">Strategy & Planning</span>
-          <span className="subnav-text">Thermodynamics, Stint Pit Planning & Weather Adaptation</span>
+          <span className="subnav-text">Stint Fuel & Tyre Pressures</span>
         </div>
 
         <div className="segmented">

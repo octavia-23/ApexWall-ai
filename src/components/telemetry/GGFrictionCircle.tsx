@@ -282,7 +282,7 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
 
           {/* Quadrant Grip Balance */}
           <div className="gg-quadrants-card">
-            <span className="gg-quadrants-title">DYNAMIC QUADRANT GRIP BALANCE</span>
+            <span className="gg-quadrants-title">Quadrant Grip Balance</span>
             <div className="gg-quadrants-grid">
               <div className="quadrant-bar-item">
                 <div className="quadrant-bar-header">

@@ -191,10 +191,10 @@ I have your active session telemetry and chassis telemetry synced. How does the 
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold tracking-tight text-white">
-                Pit Wall Telemetry Debrief
+                Race Engineer
               </span>
               <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
-                Comms Active
+                Session synced
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 font-mono">

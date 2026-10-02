@@ -343,7 +343,7 @@ export const LiveTelemetryHUD: React.FC = () => {
               onClick={() => setActiveSim("bridge")}
               className={`px-2 py-0.5 rounded transition-colors ${activeSim === "bridge" ? "bg-cyan-500/20 text-cyan-300 font-semibold" : "text-slate-400 hover:text-slate-200"}`}
             >
-              Live Rig Bridge (AC Evo / UDP)
+              Live Telemetry (UDP Bridge)
             </button>
           </div>
         </div>
@@ -582,7 +582,7 @@ export const LiveTelemetryHUD: React.FC = () => {
           </div>
 
           <div className="mt-2 text-[10px] font-mono text-slate-500 text-center">
-            Thermodynamic pressure expansion verified
+            Pressure Model Active
           </div>
         </div>
       </div>

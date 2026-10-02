@@ -11,9 +11,7 @@ export const Footer: React.FC = () => {
           Calibrated baselines for competitive simulation. Validate tyre pressures and balance during live stints.
         </div>
         <div className="footer-meta">
-          <span>Protocol v2.5</span>
-          <span className="text-slate-600">/</span>
-          <span>MoTeC Compliant</span>
+          <span>v2.5</span>
         </div>
       </div>
     </footer>

@@ -136,11 +136,11 @@ export const SetupVaultModal: React.FC<SetupVaultModalProps> = ({
                   <path d="M4 12h16" />
                   <circle cx="12" cy="12" r="3" />
                 </svg>
-                CHASSIS SETUP VAULT & VERSION CONTROL
+                Setup Vault
               </span>
-              <span className="vault-count-pill">{setups.length} SETUPS SAVED</span>
+              <span className="vault-count-pill">{setups.length} Saved</span>
             </div>
-            <h2 className="vault-title">Setup Iteration Manager & Parameter Diff</h2>
+            <h2 className="vault-title">Setup Vault & Comparison</h2>
           </div>
 
           <div className="vault-header-actions">

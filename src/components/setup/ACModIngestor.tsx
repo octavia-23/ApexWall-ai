@@ -154,11 +154,8 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
             </div>
 
             <div>
-              <div className="text-xs font-semibold text-slate-200 flex items-center justify-center gap-1.5">
-                <span>Ingest Assetto Corsa Setup / Mod</span>
-                <span className="text-[10px] font-mono text-cyan-400 bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded">
-                  AUTHENTIC PHYSICS
-                </span>
+              <div className="text-xs font-semibold text-slate-200 flex items-center justify-center">
+                <span>Assetto Corsa Mod / Setup</span>
               </div>
               <p className="text-[11px] text-slate-400 mt-0.5">
                 {isLoading

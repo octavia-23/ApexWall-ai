@@ -1010,10 +1010,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       <section className="panel form-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
-            <span className="panel-num">01</span>
             <div className="panel-label-group">
-              <span className="panel-label">Telemetry Ingest & Configuration</span>
-              <span className="panel-sublabel">Vehicle Spec & Track Conditions</span>
+              <span className="panel-label">Telemetry Configuration</span>
+              <span className="panel-sublabel">Vehicle parameters and conditions</span>
             </div>
           </div>
           <div className="panel-telemetry-badge">
@@ -1212,7 +1211,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" y1="3" x2="12" y2="15" />
             </svg>
-            03 // TELEMETRY DATA INGEST
+            Telemetry File Ingest
           </div>
 
           {/* Dropzone */}
@@ -1400,7 +1399,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           <div className="field">
             <label>
               <span>Natural driving style profile</span>
-              <span className="field-hint">Your braking & rotation DNA</span>
+              <span className="field-hint">Braking and rotation preference</span>
             </label>
             <div className="segmented segmented-wrap">
               {[
@@ -1508,10 +1507,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       <section className="panel output-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
-            <span className="panel-num">02</span>
             <div className="panel-label-group">
-              <span className="panel-label">Telemetry Diagnostics & MoTeC HUD</span>
-              <span className="panel-sublabel">Multi-Channel Traces, 2D Circuit Map & Chassis Dynamics</span>
+              <span className="panel-label">Telemetry Diagnostics</span>
+              <span className="panel-sublabel">Multi-channel traces, circuit map, and chassis dynamics</span>
             </div>
           </div>
           {state === "result" && result && (
@@ -1571,7 +1569,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <div className="loading-data-wrap">
                 <div className="loading-status-badge">TELEMETRY DIAGNOSTICS</div>
                 <p className="loading-text">{telLoadingMessages[loadingTextIndex]}</p>
-                <div className="loading-sub">Analyzing steering scrub, trail-braking pressure decay, and chassis balance</div>
+                <div className="loading-sub">Analyzing steering, braking decay, and chassis balance</div>
               </div>
             </div>
           </div>
@@ -1657,7 +1655,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                       </span>
                     </div>
                     <p className="text-xs text-slate-300">
-                      MoTeC telemetry channels synchronized. Live crosshair scrubber, 2D circuit map, and Kamm friction circle are ready.
+                      Channels synchronized. Interactive scrubber, circuit map, and friction circle ready.
                     </p>
                   </div>
                   <button
@@ -1710,8 +1708,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             <div className="telemetry-chart-module glass-card-nested">
               <div className="chart-header">
                 <div className="chart-title-group">
-                  <span className="chart-title">MOTEC MULTI-CHANNEL TELEMETRY HUD</span>
-                  <span className="chart-sub">SYNCHRONIZED DISTANCE TRACE WITH LIVE HOVER SCRUBBER</span>
+                  <span className="chart-title">Multi-Channel Telemetry HUD</span>
+                  <span className="chart-sub">Distance trace with synchronized hover scrubber</span>
                 </div>
                 <div className="chart-channel-toggles">
                   {[
@@ -1809,8 +1807,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <div className="delta-table-module glass-card-nested">
                 <div className="module-header">
                   <div className="module-title-group">
-                    <span className="module-title">PRO BENCHMARK TURN-BY-TURN DELTA ATTRIBUTION</span>
-                    <span className="module-sub">APEX SPEED · BRAKING POINT · THROTTLE COMMITMENT · TIME DELTA</span>
+                    <span className="module-title">Turn-by-Turn Benchmark Delta</span>
+                    <span className="module-sub">Apex speed, braking point, throttle commit, and time delta</span>
                   </div>
                   <div className="benchmark-badge">
                     <span className="demo-dot"></span>
@@ -1917,8 +1915,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {parsedTelemetry?.tyreStats && (
               <div className="telemetry-tyres-module glass-card-nested">
                 <div className="module-header">
-                  <span className="module-title">4-CORNER TYRE DYNAMICS & THERMAL SPREAD</span>
-                  <span className="module-badge">HOT PRESSURES & CAMBER SPREAD</span>
+                  <span className="module-title">Tyre Pressures & Temperatures</span>
+                  <span className="module-badge">4-Corner Thermal Spread</span>
                 </div>
                 <div className="tyres-hud-grid">
                   <div className="tyre-pod tyre-fl">
@@ -1994,8 +1992,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {/* 5. Turn-by-Turn Telemetry Anomalies */}
             <div className="telemetry-corners-module">
               <div className="module-header">
-                <span className="module-title">TURN-BY-TURN TELEMETRY ANOMALIES & DELTA ANALYSIS</span>
-                <span className="module-badge">SECTOR BREAKDOWNS</span>
+                <span className="module-title">Turn-by-Turn Telemetry Analysis</span>
+                <span className="module-badge">Sector Breakdowns</span>
               </div>
               <div className="corners-list">
                 {(result.cornerBreakdowns || []).map((c, idx) => (
@@ -2026,8 +2024,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {/* 6. Driver Technique & Input Coaching */}
             <div className="driver-coaching-module glass-card-nested">
               <div className="module-header">
-                <span className="module-title">DRIVER TECHNIQUE & INPUT COACHING</span>
-                <span className="module-badge">PEDAL & WHEEL REFINEMENT</span>
+                <span className="module-title">Driver Coaching & Inputs</span>
+                <span className="module-badge">Pedal & Wheel Guidance</span>
               </div>
               <div className="coaching-grid">
                 {(result.driverCoaching || []).map((dc, idx) => (
@@ -2044,8 +2042,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {/* 7. Click-by-Click Setup Adjustments */}
             <div className="setup-adjustments-module glass-card-nested">
               <div className="module-header">
-                <span className="module-title">CLICK-BY-CLICK SETUP ADJUSTMENTS</span>
-                <span className="module-badge">DIRECTIONAL MECHANICAL & AERO FIXES</span>
+                <span className="module-title">Setup Adjustments</span>
+                <span className="module-badge">Mechanical & Aero Changes</span>
               </div>
               <div className="adjustments-grid">
                 {(result.setupAdjustments || []).map((adj, idx) => (
@@ -2065,8 +2063,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <div className="adaptive-setup-module glass-card-nested">
                 <div className="module-header">
                   <div className="module-title-group">
-                    <span className="module-title">TELEMETRY-CALIBRATED ADAPTIVE SETUP SHEET</span>
-                    <span className="module-sub">CHASSIS TUNED TO COMPLEMENT YOUR NATURAL DRIVING STYLE</span>
+                    <span className="module-title">Adaptive Setup Sheet</span>
+                    <span className="module-sub">Calibrated to your driving style</span>
                   </div>
                   <div className="adaptive-actions">
                     <button type="button" className="action-btn" onClick={handleCopyAdaptiveSetup}>
@@ -2115,8 +2113,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
                 <div className="adaptive-philosophy-card">
                   <div className="philosophy-header">
-                    <span className="philosophy-tag">CHIEF ENGINEER ADAPTIVE VERDICT</span>
-                    <span className="philosophy-status">STYLE MATCHED</span>
+                    <span className="philosophy-tag">Engineer Debrief Summary</span>
+                    <span className="philosophy-status">Calibrated</span>
                   </div>
                   <p className="philosophy-text">{result.adaptiveSetup.philosophy}</p>
                 </div>
@@ -2154,10 +2152,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <span className="radio-bar"></span>
                   <span className="radio-bar"></span>
                   <span className="radio-bar"></span>
-                  <span className="radio-pulse"></span>
                 </div>
-                <div className="notes-label">PIT WALL TEAM RADIO // CHIEF ENGINEER DEBRIEF</div>
-                <div className="notes-channel">DATA BUS CH 1 · SECURE</div>
+                <div className="notes-label">Pit Wall Team Radio: Engineer Debrief</div>
+                <div className="notes-channel font-mono text-slate-400 text-[11px]">Pit Comms</div>
               </div>
               <div className="notes-body">
                 <p>{result.pitRadioMessage}</p>
@@ -2189,7 +2186,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 Ready for Chief Race Engineer Diagnosis
               </h3>
               <p className="text-xs text-slate-300 mt-1 max-w-xl">
-                Formulate trail-braking decay scores, tyre slip angle diagnostics, apex understeer metrics, and synthesize a game-authentic adaptive setup sheet for {car}.
+                Analyze braking decay, slip angles, and chassis balance to generate a calibrated setup sheet for {car}.
               </p>
             </div>
             <button

@@ -214,10 +214,9 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
       <section className="panel form-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
-            <span className="panel-num">01</span>
             <div className="panel-label-group">
-              <span className="panel-label">SESSION BRIEF</span>
-              <span className="panel-sublabel">CHASSIS SPEC & CIRCUIT ENVIRONMENT</span>
+              <span className="panel-label">Vehicle & Track Setup</span>
+              <span className="panel-sublabel">Chassis configuration and environment</span>
             </div>
           </div>
         </div>
@@ -231,7 +230,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           <div className="field">
             <label htmlFor="game">
               <span>Sim title</span>
-              <span className="field-hint">Physics simulation platform</span>
+              <span className="field-hint">Simulation platform</span>
             </label>
             <div className="select-wrapper">
               <select id="game" value={game} onChange={(e) => setGame(e.target.value)} required>
@@ -455,7 +454,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
           <div className="field">
             <label htmlFor="handlingIssue">
-              <span>Handling issue to diagnose & correct</span>
+              <span>Handling issue</span>
               <span className="field-hint">Specific chassis complaint</span>
             </label>
             <div className="textarea-wrapper">
@@ -488,10 +487,9 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
       <section className="panel output-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
-            <span className="panel-num">02</span>
             <div className="panel-label-group">
-              <span className="panel-label">SETUP SHEET</span>
-              <span className="panel-sublabel">CALIBRATED CHASSIS SPEC</span>
+              <span className="panel-label">Setup Sheet</span>
+              <span className="panel-sublabel">Calibrated chassis parameters</span>
             </div>
           </div>
           {state === "result" && result && (
