@@ -780,7 +780,11 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
 
             {nearestCorner?.verdict && Math.abs(currentHoverPoint.dist - nearestCorner.dist) < 220 && (
               <div className="hover-card-verdict-line">
-                <span className="verdict-icon">⚡</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" className="verdict-icon text-amber-400 shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
                 <span className="verdict-text">{nearestCorner.verdict}</span>
               </div>
             )}
@@ -834,7 +838,11 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
 
             {activeCorner.verdict && (
               <div className="corner-card-verdict">
-                <span className="verdict-icon">⚡</span>
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5" className="verdict-icon text-amber-400 shrink-0">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
                 <span className="verdict-text">{activeCorner.verdict}</span>
               </div>
             )}

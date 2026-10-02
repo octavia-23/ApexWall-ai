@@ -63,19 +63,19 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
       <div className="max-w-[1780px] h-full mx-auto px-4 flex items-center justify-between gap-3">
         {/* LEFT: Brand */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 flex items-center justify-center text-white shadow-sm font-extrabold text-xs tracking-wider">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs tracking-tight">
               AW
             </div>
-            <span className="font-extrabold text-sm tracking-tight text-white font-sans">
+            <span className="font-bold text-sm tracking-tight text-white font-sans">
               ApexWall
             </span>
           </div>
         </div>
 
-        {/* CENTER: Sleek Segmented Mode Controller */}
+        {/* CENTER: Segmented Mode Controller */}
         <nav aria-label="Workspace Navigation" className="flex items-center">
-          <div className="inline-flex items-center p-1 rounded-xl bg-white/[0.04] border border-white/[0.07] gap-1">
+          <div className="inline-flex items-center p-0.5 rounded-lg bg-white/[0.03] border border-white/[0.08] gap-0.5">
             {modes.map((m) => {
               const isActive = mode === m.id;
               return (
@@ -83,10 +83,10 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
                   key={m.id}
                   type="button"
                   onClick={() => onChangeMode(m.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors ${
                     isActive
-                      ? "bg-blue-600 text-white shadow-md font-bold"
-                      : "text-slate-400 hover:text-white hover:bg-white/[0.06]"
+                      ? "bg-blue-600 text-white font-semibold"
+                      : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
                   <span className="text-[11px]">{m.icon}</span>
@@ -99,9 +99,9 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
 
         {/* RIGHT: Active Car/Track, AMOLED Toggle, Vault & Driver Profile */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          {/* Active Session Pill */}
-          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-xs text-slate-300">
-            <span className="text-blue-400 font-semibold">{activeCar}</span>
+          {/* Active Session Indicator */}
+          <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-xs text-slate-300">
+            <span className="text-slate-200 font-medium">{activeCar}</span>
             <span className="text-slate-600">•</span>
             <span className="text-slate-400">{activeTrack}</span>
           </div>
@@ -110,32 +110,27 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
           <button
             type="button"
             onClick={toggleTheme}
-            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all border ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors border ${
               isAmoled
-                ? "bg-white/10 text-white border-white/20 shadow-sm"
-                : "bg-white/[0.04] text-slate-400 hover:text-slate-200 border-white/[0.08]"
+                ? "bg-white/10 text-white border-white/20"
+                : "bg-white/[0.03] text-slate-400 hover:text-slate-200 border-white/[0.08]"
             }`}
-            title="Toggle AMOLED True Black Mode (Pure OLED pitch black vs Obsidian Slate)"
+            title="Toggle AMOLED True Black Mode"
           >
             <span
-              className={`w-2 h-2 rounded-full transition-all ${
-                isAmoled ? "bg-emerald-400 shadow-[0_0_8px_#34D399]" : "bg-slate-500"
+              className={`w-1.5 h-1.5 rounded-full transition-colors ${
+                isAmoled ? "bg-emerald-400" : "bg-slate-500"
               }`}
             ></span>
-            <span className="font-mono text-[11px] tracking-tight">AMOLED</span>
-            {isAmoled && (
-              <span className="hidden sm:inline-block text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-300 font-mono font-bold">
-                PITCH
-              </span>
-            )}
+            <span className="font-mono text-[11px]">AMOLED</span>
           </button>
 
           {/* Setup Vault Button */}
           <button
             type="button"
             onClick={onOpenVault}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:border-blue-500/40 hover:bg-blue-600/10 text-xs font-medium text-slate-300 hover:text-white transition-all"
-            title="Open Setup Vault & Parameter Diff Engine"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.08] hover:border-slate-500 hover:bg-white/[0.05] text-xs font-medium text-slate-300 hover:text-white transition-colors"
+            title="Open Setup Vault & Parameter Comparison"
           >
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v3" />
@@ -145,7 +140,7 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
             </svg>
             <span className="hidden md:inline">Vault</span>
             {savedSetupsCount > 0 && (
-              <span className="text-[10px] font-bold text-blue-300 bg-blue-600/20 border border-blue-500/30 px-1.5 rounded-full">
+              <span className="text-[10px] font-mono text-slate-300 bg-white/[0.08] px-1.5 rounded">
                 {savedSetupsCount}
               </span>
             )}
@@ -157,7 +152,7 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
               <button
                 type="button"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="flex items-center gap-1.5 py-1 px-2 rounded-lg bg-white/[0.04] border border-white/[0.08] hover:border-blue-400/40 text-xs font-medium"
+                className="flex items-center gap-1.5 py-1 px-2 rounded-md bg-white/[0.03] border border-white/[0.08] hover:border-slate-500 text-xs font-medium"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt={displayName} className="w-4 h-4 rounded-full object-cover" />
@@ -172,9 +167,9 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-52 bg-[#0C101A] border border-white/10 rounded-xl shadow-2xl py-1.5 z-50 text-xs">
+                <div className="absolute right-0 mt-1.5 w-52 bg-[#0C101A] border border-white/10 rounded-lg shadow-lg py-1.5 z-50 text-xs">
                   <div className="px-3 py-1.5 border-b border-white/10">
-                    <div className="font-semibold text-slate-100 truncate">{displayName}</div>
+                    <div className="font-medium text-slate-100 truncate">{displayName}</div>
                     <div className="text-[10.5px] text-slate-400 truncate">{user.email}</div>
                   </div>
                   <button
@@ -194,9 +189,9 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
             <button
               type="button"
               onClick={onOpenAuth}
-              className="flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-all shadow-sm"
+              className="flex items-center gap-1.5 py-1 px-2.5 rounded-md bg-blue-600 hover:bg-blue-500 text-xs font-medium text-white transition-colors"
             >
-              <span>SIGN IN</span>
+              <span>Sign In</span>
             </button>
           )}
         </div>

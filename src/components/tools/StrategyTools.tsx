@@ -21,8 +21,8 @@ export const StrategyTools: React.FC<StrategyToolsProps> = ({
       {/* Workspace Header Sub-Bar */}
       <div className="tools-subnav-bar">
         <div className="tools-subnav-info">
-          <span className="subnav-pill">STRATEGY & ADAPTATION</span>
-          <span className="subnav-text">Thermodynamics, Stint Pit Planning & Weather Morph</span>
+          <span className="subnav-pill">Strategy & Planning</span>
+          <span className="subnav-text">Thermodynamics, Stint Pit Planning & Weather Adaptation</span>
         </div>
 
         <div className="segmented">
@@ -38,7 +38,7 @@ export const StrategyTools: React.FC<StrategyToolsProps> = ({
             className={`seg-btn ${activeTab === "morph" ? "active" : ""}`}
             onClick={() => setActiveTab("morph")}
           >
-            ⚡ Setup Morph
+            Setup Morph
           </button>
           <button
             type="button"

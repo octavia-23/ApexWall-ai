@@ -127,7 +127,11 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
         onClick={() => setIsOpen(true)}
         title="Direct inject setup into sim or export native setup files"
       >
-        <span className="text-blue-400 font-bold">⚡</span>
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-400">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <polyline points="7 10 12 15 17 10" />
+          <line x1="12" y1="15" x2="12" y2="3" />
+        </svg>
         <span>{buttonLabel}</span>
       </button>
 
@@ -135,7 +139,7 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-start sm:items-center justify-center bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
           <div
-            className="relative w-full max-w-3xl my-auto bg-[#090C14] border border-blue-500/30 rounded-2xl shadow-2xl overflow-hidden text-left flex flex-col max-h-[calc(100vh-2.5rem)]"
+            className="relative w-full max-w-3xl my-auto bg-[#090C14] border border-slate-700/60 rounded-lg shadow-2xl overflow-hidden text-left flex flex-col max-h-[calc(100vh-2.5rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Scrollable Modal Body */}

@@ -382,9 +382,9 @@ export const LiveTelemetryHUD: React.FC = () => {
       </div>
 
       {/* Primary Cockpit Dash Cluster */}
-      <div className="p-6 md:p-8 rounded-2xl bg-[#090C12] border border-slate-800 shadow-2xl relative overflow-hidden">
+      <div className="p-5 md:p-6 rounded-lg bg-[#090C12] border border-slate-800 relative overflow-hidden">
         {/* Top Shift Lights (15 Sequential LEDs) */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex items-center justify-center gap-1.5 mb-6">
           {Array.from({ length: 15 }).map((_, i) => {
             const isActive = i < numActiveLeds;
             const isGreen = i < 5;
@@ -393,16 +393,16 @@ export const LiveTelemetryHUD: React.FC = () => {
 
             let colorClass = "bg-slate-800/80 border-slate-700/40";
             if (isActive) {
-              if (isShiftPoint) colorClass = "bg-blue-400 shadow-[0_0_12px_#38BDF8] border-white animate-ping";
-              else if (isBlue) colorClass = "bg-blue-500 shadow-[0_0_8px_#3B82F6] border-blue-400";
-              else if (isRed) colorClass = "bg-rose-500 shadow-[0_0_8px_#F43F5E] border-rose-400";
-              else if (isGreen) colorClass = "bg-emerald-500 shadow-[0_0_8px_#10B981] border-emerald-400";
+              if (isShiftPoint) colorClass = "bg-blue-400 border-white";
+              else if (isBlue) colorClass = "bg-blue-500 border-blue-400";
+              else if (isRed) colorClass = "bg-rose-500 border-rose-400";
+              else if (isGreen) colorClass = "bg-emerald-500 border-emerald-400";
             }
 
             return (
               <div
                 key={i}
-                className={`w-4 md:w-6 h-3 rounded-full border transition-all duration-75 ${colorClass}`}
+                className={`w-3.5 md:w-5 h-2.5 rounded-sm border transition-colors duration-75 ${colorClass}`}
               ></div>
             );
           })}
@@ -411,13 +411,13 @@ export const LiveTelemetryHUD: React.FC = () => {
         {/* Center Main Cockpit Gauge Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-center">
           {/* Left: Pedals & Steering Input */}
-          <div className="flex items-center justify-around bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+          <div className="flex items-center justify-around bg-slate-950/80 p-4 rounded-lg border border-slate-800">
             {/* Throttle Bar */}
             <div className="flex flex-col items-center">
               <span className="text-[10px] font-mono text-emerald-400 mb-1 font-bold">THR</span>
-              <div className="w-6 h-40 bg-slate-900 rounded-md overflow-hidden relative border border-slate-800 flex flex-col justify-end">
+              <div className="w-5 h-36 bg-slate-900 rounded-sm overflow-hidden relative border border-slate-800 flex flex-col justify-end">
                 <div
-                  className="w-full bg-emerald-500 transition-all duration-75 rounded-b-md shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                  className="w-full bg-emerald-500 transition-all duration-75 rounded-b-sm"
                   style={{ height: `${frame.throttle}%` }}
                 ></div>
               </div>
@@ -427,9 +427,9 @@ export const LiveTelemetryHUD: React.FC = () => {
             {/* Brake Bar */}
             <div className="flex flex-col items-center">
               <span className="text-[10px] font-mono text-rose-400 mb-1 font-bold">BRK</span>
-              <div className="w-6 h-40 bg-slate-900 rounded-md overflow-hidden relative border border-slate-800 flex flex-col justify-end">
+              <div className="w-5 h-36 bg-slate-900 rounded-sm overflow-hidden relative border border-slate-800 flex flex-col justify-end">
                 <div
-                  className="w-full bg-rose-500 transition-all duration-75 rounded-b-md shadow-[0_0_10px_rgba(244,63,94,0.5)]"
+                  className="w-full bg-rose-500 transition-all duration-75 rounded-b-sm"
                   style={{ height: `${frame.brake}%` }}
                 ></div>
               </div>
@@ -441,7 +441,7 @@ export const LiveTelemetryHUD: React.FC = () => {
               <span className="text-[10px] font-mono text-cyan-400 mb-1 font-bold">STEER</span>
               <div className="w-20 h-40 flex flex-col items-center justify-center">
                 <div
-                  className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-cyan-400 transition-transform duration-75 flex items-center justify-center relative shadow-lg"
+                  className="w-16 h-16 rounded-full border-4 border-slate-700 border-t-cyan-400 transition-transform duration-75 flex items-center justify-center relative"
                   style={{ transform: `rotate(${frame.steer}deg)` }}
                 >
                   <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
@@ -453,8 +453,8 @@ export const LiveTelemetryHUD: React.FC = () => {
             </div>
           </div>
 
-          {/* Center: Massive Digital Speed & Gear Display */}
-          <div className="lg:col-span-2 flex flex-col items-center justify-center py-4 bg-slate-950/90 rounded-xl border border-slate-800/80 shadow-inner">
+          {/* Center: Digital Speed & Gear Display */}
+          <div className="lg:col-span-2 flex flex-col items-center justify-center py-4 bg-slate-950/90 rounded-lg border border-slate-800">
             {/* Gear Indicator */}
             <div className="text-7xl md:text-9xl font-black font-mono tracking-tight text-white mb-1 select-none">
               {frame.gear}
@@ -476,10 +476,10 @@ export const LiveTelemetryHUD: React.FC = () => {
                 <span>{frame.rpm.toLocaleString()} RPM</span>
                 <span className="text-slate-500">LIMIT {frame.maxRpm.toLocaleString()}</span>
               </div>
-              <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+              <div className="w-full h-2 bg-slate-900 rounded-sm overflow-hidden border border-slate-800">
                 <div
                   className={`h-full transition-all duration-75 ${
-                    isShiftPoint ? "bg-blue-400 animate-pulse" : rpmPct > 0.8 ? "bg-rose-500" : "bg-emerald-500"
+                    isShiftPoint ? "bg-blue-400" : rpmPct > 0.8 ? "bg-rose-500" : "bg-emerald-500"
                   }`}
                   style={{ width: `${rpmPct * 100}%` }}
                 ></div>
@@ -498,7 +498,7 @@ export const LiveTelemetryHUD: React.FC = () => {
           </div>
 
           {/* Right: Live Friction Circle & G-Force Meter */}
-          <div className="flex flex-col items-center justify-center bg-slate-950/80 p-4 rounded-xl border border-slate-800">
+          <div className="flex flex-col items-center justify-center bg-slate-950/80 p-4 rounded-lg border border-slate-800">
             <span className="text-[11px] font-mono text-slate-400 mb-2 font-bold uppercase tracking-wider">
               G-G Kamm Friction Vector
             </span>

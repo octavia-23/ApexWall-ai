@@ -173,32 +173,32 @@ I have your active session telemetry and chassis telemetry synced. How does the 
   };
 
   const quickDebriefPrompts = [
-    { label: "⚡ Turn 1 Pace Deficit", prompt: "Why am I losing time in Turn 1 compared to the delta benchmark?" },
-    { label: "🛞 Tyre Temp & Pressure Check", prompt: "Check my tyre pressures and operating temperature window across the stint." },
-    { label: "🔧 Cure Mid-Corner Understeer", prompt: "I have mid-corner push and understeer. What suspension and toe clicks should I adjust?" },
-    { label: "🏎️ High-Speed Snap Oversteer", prompt: "The car snaps into oversteer under high-speed trail-braking. How do I stabilize the rear axle?" },
-    { label: "🏁 Kerb Compliance in Chicanes", prompt: "The car bounces violently over chicane kerbs. How should I tune my fast dampers and bump stops?" },
+    { label: "Turn 1 Pace Deficit", prompt: "Why am I losing time in Turn 1 compared to the delta benchmark?" },
+    { label: "Tyre Temp & Pressure Check", prompt: "Check my tyre pressures and operating temperature window across the stint." },
+    { label: "Cure Mid-Corner Understeer", prompt: "I have mid-corner push and understeer. What suspension and toe clicks should I adjust?" },
+    { label: "High-Speed Snap Oversteer", prompt: "The car snaps into oversteer under high-speed trail-braking. How do I stabilize the rear axle?" },
+    { label: "Kerb Compliance in Chicanes", prompt: "The car bounces violently over chicane kerbs. How should I tune my fast dampers and bump stops?" },
   ];
 
   return (
     <div className="race-engineer-workspace max-w-[1440px] mx-auto px-6 py-4 flex flex-col gap-4">
       {/* Session Context Bar */}
-      <div className="bg-[#0f1420] border border-cyan-500/20 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+      <div className="bg-[#0f1420] border border-white/10 rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 font-bold text-lg shadow-inner">
-            🎙️
+          <div className="w-8 h-8 rounded-md bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400 font-mono font-bold text-xs">
+            RE
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold font-mono tracking-wider text-white uppercase">
-                CHIEF RACE ENGINEER // PIT WALL TELEMETRY DEBRIEF
+              <span className="text-xs font-semibold tracking-tight text-white">
+                Pit Wall Telemetry Debrief
               </span>
-              <span className="text-[10px] font-mono bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                RADIO COMMS ACTIVE
+              <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
+                Comms Active
               </span>
             </div>
             <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
-              <span className="text-cyan-300 font-semibold">{activeCar}</span>
+              <span className="text-slate-200 font-medium">{activeCar}</span>
               <span>•</span>
               <span className="text-slate-300">{activeTrack}</span>
               <span>•</span>
@@ -209,86 +209,85 @@ I have your active session telemetry and chassis telemetry synced. How does the 
 
         {/* Live Telemetry Mini-Pills & Radio Sound Toggle */}
         <div className="flex items-center gap-3">
-          <div className="hidden md:flex items-center gap-2 text-xs font-mono bg-black/40 border border-white/5 rounded-lg px-3 py-1.5">
+          <div className="hidden md:flex items-center gap-2 text-xs font-mono bg-black/40 border border-white/5 rounded-md px-3 py-1.5">
             <span className="text-slate-400">Lap Time:</span>
-            <span className="text-white font-bold">{activeLapTime}</span>
+            <span className="text-white font-medium">{activeLapTime}</span>
             <span className="text-slate-600">|</span>
             <span className="text-slate-400">Grip Util:</span>
-            <span className="text-emerald-400 font-bold">{gripUtil}%</span>
+            <span className="text-emerald-400 font-medium">{gripUtil}%</span>
           </div>
 
           <button
             type="button"
             onClick={() => setRadioAudioEnabled(!radioAudioEnabled)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-mono border transition-all flex items-center gap-2 ${
+            className={`px-3 py-1.5 rounded-md text-xs font-mono border transition-colors flex items-center gap-1.5 ${
               radioAudioEnabled
-                ? "bg-cyan-500/20 border-cyan-500 text-cyan-300 shadow-md shadow-cyan-500/10"
-                : "bg-white/5 border-white/10 text-slate-400 hover:text-white"
+                ? "bg-blue-600/15 border-blue-500/40 text-blue-300"
+                : "bg-white/[0.03] border-white/10 text-slate-400 hover:text-white"
             }`}
-            title="Toggle authentic team radio voice synthesis"
+            title="Toggle team radio voice synthesis"
           >
-            <span>{radioAudioEnabled ? "🔊" : "🔇"}</span>
             <span>{radioAudioEnabled ? "Radio Audio: ON" : "Radio Audio: OFF"}</span>
           </button>
         </div>
       </div>
 
       {/* Main Chat Interface */}
-      <div className="bg-[#0b0e14] border border-white/10 rounded-2xl flex flex-col h-[650px] shadow-2xl overflow-hidden">
+      <div className="bg-[#0b0e14] border border-white/10 rounded-lg flex flex-col h-[650px] overflow-hidden">
         {/* Messages Feed */}
-        <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-4">
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           {messages.map((msg) => {
             const isEngineer = msg.role === "assistant";
             return (
               <div
                 key={msg.id}
-                className={`flex gap-3 max-w-[85%] ${
+                className={`flex gap-2.5 max-w-[85%] ${
                   isEngineer ? "self-start" : "self-end flex-row-reverse"
                 }`}
               >
                 {/* Avatar Icon */}
                 <div
-                  className={`w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+                  className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-mono font-bold ${
                     isEngineer
-                      ? "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30"
+                      ? "bg-slate-800 text-slate-200 border border-slate-700"
                       : "bg-blue-600 text-white"
                   }`}
                 >
-                  {isEngineer ? "⚡" : "🏎️"}
+                  {isEngineer ? "RE" : "DR"}
                 </div>
 
                 {/* Message Bubble */}
                 <div
-                  className={`rounded-2xl p-4 text-xs md:text-sm leading-relaxed ${
+                  className={`rounded-md p-3.5 text-xs md:text-sm leading-relaxed ${
                     isEngineer
-                      ? "bg-[#121824] border border-cyan-500/25 text-slate-200 shadow-lg"
-                      : "bg-blue-600/90 text-white shadow-lg"
+                      ? "bg-[#121824] border border-white/10 text-slate-200"
+                      : "bg-blue-600 text-white"
                   }`}
                 >
                   {/* Header */}
-                  <div className="flex items-center justify-between gap-4 mb-2 pb-1.5 border-b border-white/10">
+                  <div className="flex items-center justify-between gap-4 mb-1.5 pb-1 border-b border-white/10">
                     <span
-                      className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                        isEngineer ? "text-cyan-400" : "text-blue-200"
+                      className={`text-[10px] font-mono font-medium tracking-wide ${
+                        isEngineer ? "text-slate-300" : "text-blue-100"
                       }`}
                     >
-                      {isEngineer ? "CHIEF RACE ENGINEER // PIT WALL CH 1" : "DRIVER // COCKPIT"}
+                      {isEngineer ? "Race Engineer" : "Driver"}
                     </span>
-                    <span className="text-[10px] font-mono text-slate-400 opacity-70">
+                    <span className="text-[10px] font-mono text-slate-400 opacity-60">
                       {msg.timestamp}
                     </span>
                   </div>
 
                   {/* Body Content */}
-                  <div className="whitespace-pre-wrap space-y-2">
+                  <div className="whitespace-pre-wrap space-y-1.5">
                     {msg.content}
                   </div>
 
                   {/* If engineer suggests setup modifications, show quick-apply button */}
                   {isEngineer && (msg.content.includes("Anti-Roll") || msg.content.includes("Dampers") || msg.content.includes("Toe") || msg.content.includes("click")) && (
-                    <div className="mt-3 pt-2.5 border-t border-cyan-500/20 flex items-center justify-between">
-                      <span className="text-[10.5px] font-mono text-cyan-300">
-                        ⚡ Actionable garage adjustments detected
+                    <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
+                      <span className="text-[10.5px] font-mono text-slate-400">
+                        Actionable parameter adjustment suggested
                       </span>
                       <button
                         type="button"
@@ -296,7 +295,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
                           onApplyAdjustmentToSetup?.(msg.content);
                           onSwitchToSetup?.();
                         }}
-                        className="px-2.5 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 rounded text-[11px] font-mono text-cyan-300 font-semibold transition-colors"
+                        className="px-2.5 py-1 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded text-[11px] font-mono text-slate-200 font-medium transition-colors"
                       >
                         Push to Setup Generator →
                       </button>
@@ -309,12 +308,12 @@ I have your active session telemetry and chassis telemetry synced. How does the 
 
           {/* Loading Indicator */}
           {isLoading && (
-            <div className="self-start flex gap-3 max-w-[85%]">
-              <div className="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 flex items-center justify-center text-xs font-bold animate-pulse">
-                ⚡
+            <div className="self-start flex gap-2.5 max-w-[85%]">
+              <div className="w-7 h-7 rounded bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold">
+                RE
               </div>
-              <div className="bg-[#121824] border border-cyan-500/25 rounded-2xl p-4 text-xs font-mono text-cyan-300">
-                <span>Race Engineer analyzing telemetry channels & calculating setup changes...</span>
+              <div className="bg-[#121824] border border-white/10 rounded-md p-3 text-xs font-mono text-slate-400">
+                <span>Analyzing telemetry channels and evaluating setup recommendations...</span>
               </div>
             </div>
           )}
@@ -323,8 +322,8 @@ I have your active session telemetry and chassis telemetry synced. How does the 
         </div>
 
         {/* Quick Debrief Suggestions Bar */}
-        <div className="px-5 py-2.5 bg-black/40 border-t border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar">
-          <span className="text-[10.5px] font-mono uppercase tracking-wider text-slate-500 flex-shrink-0">
+        <div className="px-4 py-2 bg-black/30 border-t border-white/5 flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span className="text-[10.5px] font-mono tracking-wide text-slate-500 flex-shrink-0">
             Debrief Focus:
           </span>
           {quickDebriefPrompts.map((q, idx) => (
@@ -332,7 +331,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
               key={idx}
               type="button"
               onClick={() => handleSendMessage(q.prompt)}
-              className="flex-shrink-0 px-2.5 py-1 rounded-full bg-white/[0.04] hover:bg-cyan-500/15 border border-white/10 hover:border-cyan-500/30 text-[11px] font-mono text-slate-300 hover:text-cyan-300 transition-colors"
+              className="flex-shrink-0 px-2.5 py-1 rounded bg-white/[0.03] hover:bg-white/[0.08] border border-white/10 text-[11px] font-mono text-slate-300 hover:text-white transition-colors"
             >
               {q.label}
             </button>
@@ -340,16 +339,15 @@ I have your active session telemetry and chassis telemetry synced. How does the 
         </div>
 
         {/* Input Bar */}
-        <div className="p-4 bg-[#0d121c] border-t border-white/10 flex items-center gap-3">
-          <div className="flex-1 flex items-center bg-[#151c2a] border border-white/15 focus-within:border-cyan-500 rounded-xl px-4 py-2.5 transition-colors">
-            <span className="text-slate-500 mr-2 font-mono text-xs">🎙️ DRIVER:</span>
+        <div className="p-3 bg-[#0d121c] border-t border-white/10 flex items-center gap-2.5">
+          <div className="flex-1 flex items-center bg-[#151c2a] border border-white/10 focus-within:border-blue-500 rounded-md px-3 py-2 transition-colors">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Tell your race engineer how the car feels or ask about telemetry..."
-              className="w-full bg-transparent text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
+              placeholder="Report car behavior or ask for engineering recommendations..."
+              className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
             />
           </div>
 
@@ -357,9 +355,9 @@ I have your active session telemetry and chassis telemetry synced. How does the 
             type="button"
             disabled={!input.trim() || isLoading}
             onClick={() => handleSendMessage(input)}
-            className="px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:opacity-40 text-black font-bold text-xs font-mono rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center gap-2"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white font-medium text-xs font-mono rounded-md transition-colors flex items-center gap-1.5"
           >
-            <span>RADIO PIT WALL</span>
+            <span>Send</span>
             <span>→</span>
           </button>
         </div>

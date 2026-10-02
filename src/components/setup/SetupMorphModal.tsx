@@ -156,21 +156,21 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#090C14] border border-blue-500/30 rounded-2xl shadow-2xl overflow-hidden text-slate-100"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#090C14] border border-white/10 rounded-lg shadow-xl overflow-hidden text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
         <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between bg-[#0E1320]">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md">
-              <Zap className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 rounded-md bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+              <Zap className="w-4 h-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold tracking-tight text-white font-sans">
-                  Dynamic Setup Morph
+                <h2 className="text-sm font-semibold tracking-tight text-white font-sans">
+                  Setup Morph
                 </h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold uppercase">
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                   Weather & Temp Compensation
                 </span>
               </div>
@@ -267,29 +267,29 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
 
             {/* 3. Surface & Weather Condition Pills */}
             <div className="space-y-2 md:col-span-2">
-              <label className="block text-xs font-semibold text-slate-300">
+              <label className="block text-xs font-medium text-slate-300">
                 Track Grip & Surface State:
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                 {[
-                  { id: "optimum", label: "Optimum Dry", desc: "100% Grip Rubbered", icon: "☀️" },
-                  { id: "greasy", label: "Greasy Hot", desc: "Thermal Slide", icon: "🔥" },
-                  { id: "green", label: "Green Track", desc: "Dusty / Low Grip", icon: "🌱" },
-                  { id: "damp", label: "Damp / Mixed", desc: "Slick Kerbs", icon: "🌦️" },
-                  { id: "wet", label: "Heavy Wet", desc: "Standing Puddles", icon: "🌧️" },
+                  { id: "optimum", label: "Optimum Dry", desc: "100% Grip", dot: "bg-emerald-400" },
+                  { id: "greasy", label: "Greasy Hot", desc: "Thermal Slide", dot: "bg-amber-400" },
+                  { id: "green", label: "Green Track", desc: "Low Grip", dot: "bg-emerald-500" },
+                  { id: "damp", label: "Damp / Mixed", desc: "Slick Kerbs", dot: "bg-cyan-400" },
+                  { id: "wet", label: "Heavy Wet", desc: "Standing Water", dot: "bg-blue-400" },
                 ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setTargetWeather(item.id as any)}
-                    className={`p-2 rounded-xl text-left border transition-all ${
+                    className={`p-2 rounded-md text-left border transition-colors ${
                       targetWeather === item.id
-                        ? "bg-blue-600/20 border-blue-500 text-white shadow-sm"
+                        ? "bg-blue-600/20 border-blue-500 text-white"
                         : "bg-white/[0.02] border-white/10 text-slate-400 hover:bg-white/[0.05] hover:text-slate-200"
                     }`}
                   >
-                    <div className="text-xs font-bold flex items-center gap-1.5">
-                      <span>{item.icon}</span>
+                    <div className="text-xs font-semibold flex items-center gap-1.5">
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`}></span>
                       <span>{item.label}</span>
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">{item.desc}</div>

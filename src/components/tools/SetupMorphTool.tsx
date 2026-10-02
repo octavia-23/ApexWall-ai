@@ -151,20 +151,20 @@ export const SetupMorphTool: React.FC = () => {
       {/* Title & Philosophy */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 border-b border-white/[0.08] gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center text-white shadow-md">
-            <Zap className="w-5 h-5 text-white" />
+          <div className="w-8 h-8 rounded-md bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+            <Zap className="w-4 h-4" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-white tracking-tight">
-                Dynamic Setup Morph Studio
+              <h2 className="text-sm font-semibold text-white tracking-tight">
+                Setup Morph Studio
               </h2>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/30 font-bold uppercase">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
                 Weather & Temp Adaptation
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Instantly recalibrate your dialed-in dry setup for scorching asphalt, cold spells, rain, or heavy race fuel tanks.
+              Recalibrate baseline setups for temperature shifts, wet weather, or race stint fuel loads.
             </p>
           </div>
         </div>
@@ -261,24 +261,24 @@ export const SetupMorphTool: React.FC = () => {
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
                 {[
-                  { id: "optimum", label: "Optimum Dry", icon: "☀️" },
-                  { id: "greasy", label: "Greasy Hot", icon: "🔥" },
-                  { id: "green", label: "Green Track", icon: "🌱" },
-                  { id: "damp", label: "Damp Track", icon: "🌦️" },
-                  { id: "wet", label: "Full Wet", icon: "🌧️" },
+                  { id: "optimum", label: "Optimum Dry", dot: "bg-emerald-400" },
+                  { id: "greasy", label: "Greasy Hot", dot: "bg-amber-400" },
+                  { id: "green", label: "Green Track", dot: "bg-emerald-500" },
+                  { id: "damp", label: "Damp Track", dot: "bg-cyan-400" },
+                  { id: "wet", label: "Full Wet", dot: "bg-blue-400" },
                 ].map((item) => (
                   <button
                     key={item.id}
                     type="button"
                     onClick={() => setTargetWeather(item.id as any)}
-                    className={`p-2 rounded-lg text-left border transition-all ${
+                    className={`p-2 rounded-md text-left border transition-colors ${
                       targetWeather === item.id
-                        ? "bg-blue-600/25 border-blue-500 text-white font-bold"
+                        ? "bg-blue-600/20 border-blue-500 text-white font-medium"
                         : "bg-white/[0.02] border-white/10 text-slate-400 hover:bg-white/[0.05]"
                     }`}
                   >
                     <div className="text-xs flex items-center gap-1.5">
-                      <span>{item.icon}</span>
+                      <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`}></span>
                       <span>{item.label}</span>
                     </div>
                   </button>

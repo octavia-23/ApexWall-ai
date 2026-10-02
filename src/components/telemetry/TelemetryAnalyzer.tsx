@@ -886,7 +886,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   // Copy Handlers
   const handleCopyReport = () => {
     if (!result) return;
-    let text = `SIM SETUP AI // TELEMETRY DIAGNOSTIC REPORT\n`;
+    let text = `APEXWALL // TELEMETRY DIAGNOSTIC REPORT\n`;
     text += `${car.toUpperCase()} @ ${track.toUpperCase()} (MoTeC Ingest)\n`;
     text += `${"=".repeat(50)}\n\n`;
     text += `[VERDICT & PACE DELTA]\n`;
@@ -928,7 +928,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
   const handleCopyAdaptiveSetup = () => {
     if (!result || !result.adaptiveSetup) return;
-    let text = `APEXWALL AI // TELEMETRY-CALIBRATED ADAPTIVE SETUP SPEC\n`;
+    let text = `APEXWALL // TELEMETRY-CALIBRATED ADAPTIVE SETUP SPEC\n`;
     text += `${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
     text += `Tuned for: ${driverStyle} · ${balancePreference}\n`;
     text += `${"=".repeat(55)}\n\n`;
@@ -1500,13 +1500,11 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 </svg>
               </span>
             </div>
-            <span className="btn-badge btn-badge-cyan">ADAPTIVE CHASSIS SYNTHESIS</span>
           </button>
         </form>
       </section>
 
-      {/* RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & AI RACE ENGINEER */}
-      {/* RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & AI RACE ENGINEER */}
+      {/* RIGHT PANEL: TELEMETRY DIAGNOSTIC SUITE & RACE ENGINEER */}
       <section className="panel output-panel glass-card">
         <div className="panel-header">
           <div className="panel-tag-group">
@@ -1536,9 +1534,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   type="button"
                   className="action-btn border-blue-500/40 text-blue-300 bg-blue-500/10 hover:bg-blue-500/20"
                   onClick={onDiscussWithEngineer}
-                  title="Discuss this telemetry debrief with your AI Chief Race Engineer"
+                  title="Discuss this telemetry debrief with Race Engineer"
                 >
-                  <span>🎙️ DISCUSS WITH RACE ENGINEER →</span>
+                  <span>Discuss with Race Engineer →</span>
                 </button>
               )}
               {result.adaptiveSetup && (
@@ -1571,7 +1569,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             <div className="loading-visual">
               <div className="loading-pulse-ring" aria-hidden="true"></div>
               <div className="loading-data-wrap">
-                <div className="loading-status-badge">AI TELEMETRY COMPUTATION</div>
+                <div className="loading-status-badge">TELEMETRY DIAGNOSTICS</div>
                 <p className="loading-text">{telLoadingMessages[loadingTextIndex]}</p>
                 <div className="loading-sub">Analyzing steering scrub, trail-braking pressure decay, and chassis balance</div>
               </div>
@@ -1666,9 +1664,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     type="button"
                     onClick={handleAnalyzeSubmit}
                     disabled={state === "loading"}
-                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-tight transition-all shadow-lg flex items-center gap-2 flex-shrink-0"
+                    className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs tracking-tight transition-colors flex items-center gap-2 flex-shrink-0"
                   >
-                    <span>⚡</span>
                     <span>Analyze Chassis & Synthesize Setup</span>
                   </button>
                 </div>
@@ -2186,10 +2183,10 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             </div>
           </>
         ) : (
-          <div className="p-6 rounded-2xl border border-blue-500/25 bg-blue-600/[0.08] flex flex-col md:flex-row items-center justify-between gap-4 shadow-xl my-4">
+          <div className="p-5 rounded-lg border border-slate-700/60 bg-slate-900/40 flex flex-col md:flex-row items-center justify-between gap-4 my-4">
             <div>
-              <h3 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
-                <span>🏁</span> Ready for Chief Race Engineer Diagnosis?
+              <h3 className="text-sm font-semibold text-white tracking-tight">
+                Ready for Chief Race Engineer Diagnosis
               </h3>
               <p className="text-xs text-slate-300 mt-1 max-w-xl">
                 Formulate trail-braking decay scores, tyre slip angle diagnostics, apex understeer metrics, and synthesize a game-authentic adaptive setup sheet for {car}.
@@ -2199,10 +2196,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               type="button"
               onClick={handleAnalyzeSubmit}
               disabled={state === "loading"}
-              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs tracking-tight transition-all shadow-md flex items-center gap-2 flex-shrink-0"
+              className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-500 text-white font-medium text-xs tracking-tight transition-colors flex items-center gap-2 flex-shrink-0"
             >
-              <span>⚡</span>
-              <span>Generate AI Setup & Diagnostic Debrief</span>
+              <span>Generate Setup & Diagnostic Debrief</span>
             </button>
           </div>
         )}

@@ -240,12 +240,16 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-blue-500/15 border border-blue-500/30 flex items-center justify-center text-blue-400 font-bold text-base shadow-sm shrink-0">
-            ⚡
+          <div className="w-8 h-8 rounded-md bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
           </div>
           <div>
             <h3 className="text-sm font-semibold text-slate-100 font-mono flex items-center gap-2 tracking-wide uppercase">
-              1-Click Direct Setup Injection
+              Direct Setup Injection
               <span className="text-[10px] font-sans font-medium bg-blue-500/10 text-blue-300 border border-blue-500/20 px-2 py-0.5 rounded">
                 All Sims
               </span>
@@ -504,8 +508,10 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
             </>
           ) : (
             <>
-              <span>⚡</span>
-              <span>Inject setup into {selectedSim.shortName.toUpperCase()}</span>
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Inject into {selectedSim.shortName.toUpperCase()}</span>
             </>
           )}
         </button>
@@ -514,10 +520,12 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
           <button
             type="button"
             onClick={() => handleInject(true)}
-            className="px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/15 rounded-lg text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
+            className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
             title="Browse or select custom sim installation directory"
           >
-            <span>📁</span>
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
+            </svg>
             <span>Select Sim Folder</span>
           </button>
         )}
@@ -525,21 +533,28 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
         <button
           type="button"
           onClick={handleDownloadOnly}
-          className="px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/15 rounded-lg text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
+          className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
           title="Direct download file without disk injection"
         >
-          <span>💾</span>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
           <span>Download {selectedSim.fileExtension}</span>
         </button>
 
         <button
           type="button"
           onClick={handleDownloadBatch}
-          className="px-3 py-2.5 bg-white/5 hover:bg-white/10 border border-white/15 rounded-lg text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
+          className="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-md text-xs font-mono text-slate-300 transition-colors flex items-center gap-1.5"
           title="Download setup file and a 1-click .bat auto-mover script"
         >
-          <span>🚀</span>
-          <span>1-Click .bat</span>
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="4 17 10 11 4 5" />
+            <line x1="12" y1="19" x2="20" y2="19" />
+          </svg>
+          <span>Auto-Mover Script</span>
         </button>
       </div>
 

@@ -159,7 +159,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
   const handleCopy = () => {
     if (!result) return;
-    let text = `APEXWALL AI // ${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
+    let text = `APEXWALL // ${car.toUpperCase()} @ ${track.toUpperCase()}\n`;
     text += `${"=".repeat(45)}\n\n`;
     if (result.summary) {
       text += `[ENGINEER PHILOSOPHY]\n${result.summary}\n\n`;
@@ -220,18 +220,12 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
               <span className="panel-sublabel">CHASSIS SPEC & CIRCUIT ENVIRONMENT</span>
             </div>
           </div>
-          <div className="panel-telemetry-badge">
-            BASELINE BUILDER
-          </div>
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
           {/* Section 1: Vehicle & Circuit */}
           <div className="form-section-title">
-            <svg className="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M5 17h14M4 14l2-6h12l2 6M6 17a2 2 0 100-4 2 2 0 000 4zm12 0a2 2 0 100-4 2 2 0 000 4z" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            01 // PLATFORM & VEHICLE SPEC
+            Vehicle & Platform
           </div>
 
           <div className="field">
@@ -304,11 +298,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
           {/* Section 2: Session & Track Conditions */}
           <div className="form-section-title">
-            <svg className="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 2v2m0 16v2M4.93 4.93l1.41 1.41m11.32 11.32l1.41 1.41M2 12h2m16 0h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" strokeLinecap="round" />
-              <circle cx="12" cy="12" r="4" />
-            </svg>
-            02 // METEOROLOGY & TRACK STATE
+            Session & Environment
           </div>
 
           <div className="field">
@@ -421,11 +411,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
           {/* Section 3: Driver & Handling Feedback */}
           <div className="form-section-title">
-            <svg className="section-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M6 20v-2a4 4 0 014-4h4a4 4 0 014 4v2" strokeLinecap="round" />
-            </svg>
-            03 // CHASSIS BALANCE & DRIVER FEEDBACK
+            Handling & Balance Target
           </div>
 
           <div className="field">
@@ -485,7 +471,6 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
           {/* Primary Action Button */}
           <button type="submit" className="generate-btn" disabled={state === "loading"}>
-            <span className="btn-sheen" aria-hidden="true"></span>
             <div className="btn-content">
               <span className="btn-spinner-icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -494,14 +479,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 </svg>
               </span>
               <span className="btn-label">Generate Setup Sheet</span>
-              <span className="btn-flag" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" strokeLinecap="round" strokeLinejoin="round" />
-                  <line x1="4" y1="22" x2="4" y2="15" />
-                </svg>
-              </span>
             </div>
-            <span className="btn-badge">AI CALIBRATED</span>
           </button>
         </form>
       </section>
@@ -547,7 +525,6 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 onClick={() => setIsMorphModalOpen(true)}
                 title="Adapt this setup to higher/lower track temp or wet weather"
               >
-                <span className="text-amber-400 font-bold">⚡</span>
                 <span>SETUP MORPH</span>
               </button>
 
@@ -593,7 +570,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                     setResult((prev) => prev ? {
                       ...prev,
                       sections: newSections,
-                      summary: `${prev.summary}\n\n[DYNAMIC WEATHER MORPH]: ${summaryNote}`,
+                      summary: `${prev.summary}\n\n[WEATHER MORPH]: ${summaryNote}`,
                     } : null);
                   }}
                 />
@@ -607,21 +584,20 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           <div className="empty-state">
             <div className="chassis-schematic" aria-hidden="true">
               <svg viewBox="0 0 240 160" fill="none" stroke="currentColor" className="w-full h-auto text-slate-600">
-                <line x1="120" y1="10" x2="120" y2="150" stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-                <line x1="20" y1="80" x2="220" y2="80" stroke="rgba(255,255,255,0.1)" strokeDasharray="3 3" />
-                <path d="M100 25 L140 25 L160 45 L170 85 L160 135 L80 135 L70 85 L80 45 Z" stroke="rgba(255,255,255,0.25)" strokeWidth="1.2" fill="rgba(255,255,255,0.02)" />
-                <circle cx="120" cy="80" r="10" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-                <rect x="42" y="30" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" />
-                <rect x="184" y="30" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" />
-                <rect x="42" y="102" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" />
-                <rect x="184" y="102" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.4)" strokeWidth="1.2" />
+                <line x1="120" y1="10" x2="120" y2="150" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+                <line x1="20" y1="80" x2="220" y2="80" stroke="rgba(255,255,255,0.08)" strokeDasharray="3 3" />
+                <path d="M100 25 L140 25 L160 45 L170 85 L160 135 L80 135 L70 85 L80 45 Z" stroke="rgba(255,255,255,0.18)" strokeWidth="1" fill="transparent" />
+                <circle cx="120" cy="80" r="8" stroke="rgba(255,255,255,0.2)" strokeWidth="1" />
+                <rect x="42" y="30" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                <rect x="184" y="30" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                <rect x="42" y="102" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+                <rect x="184" y="102" width="14" height="28" rx="2" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
               </svg>
             </div>
             <div className="empty-text-wrap">
-              <h3 className="empty-title">CHASSIS SETUP ENGINE STANDBY</h3>
+              <h3 className="empty-title">Setup Configuration Standby</h3>
               <p className="empty-description">
-                Configure your car, circuit, and handling issues on the left.<br />
-                The race engineer will compute calibrated damper curves, camber, aerodynamic balance, and gear ratios.
+                Configure car, circuit conditions, and handling feedback to generate calibrated parameter deltas.
               </p>
             </div>
           </div>
@@ -633,9 +609,9 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             <div className="loading-visual">
               <div className="loading-pulse-ring" aria-hidden="true"></div>
               <div className="loading-data-wrap">
-                <div className="loading-status-badge">COMPUTING SETUP SPECIFICATION</div>
+                <div className="loading-status-badge">Computing Parameter Deltas</div>
                 <p className="loading-text">{loadingMessages[loadingTextIndex]}</p>
-                <div className="loading-sub">Calibrating chassis telemetry and mechanical balance</div>
+                <div className="loading-sub">Validating cross-parameter coherence</div>
               </div>
             </div>
           </div>
@@ -644,7 +620,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
         {/* State: Error */}
         {state === "error" && (
           <div className="error-state">
-            ⚠ {errorMessage}
+            {errorMessage}
           </div>
         )}
 
@@ -654,57 +630,51 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             <div className="result-summary-card">
               <div className="summary-header">
                 <div className="summary-header-left">
-                  <span className="summary-icon">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
-                    </svg>
-                  </span>
                   <span className="summary-title">
-                    {result.isBaseline ? "BASELINE SPECIFICATION" : "ENGINEERING PHILOSOPHY // CAUSAL DIAGNOSIS"}
+                    {result.isBaseline ? "Baseline Specification" : "Engineering Diagnosis & Philosophy"}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {result.confidence && (
-                    <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
-                      CONFIDENCE: {result.confidence}
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      Confidence: {result.confidence}
                     </span>
                   )}
                   <span className="summary-verified">
-                    {result.validationStatus?.repairedCount ? `VALIDATED (${result.validationStatus.repairedCount} REPAIRED)` : "DETERMINISTICALLY VALIDATED"}
+                    {result.validationStatus?.repairedCount ? `Validated (${result.validationStatus.repairedCount} repaired)` : "Validated"}
                   </span>
                 </div>
               </div>
               <div className="result-summary">{result.summary}</div>
               {result.primaryLimiter && (
                 <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex flex-wrap gap-2 items-center text-xs">
-                  <span className="text-slate-400 font-mono uppercase">Primary Limiter:</span>
+                  <span className="text-slate-400 font-mono">Primary Limiter:</span>
                   <span className="text-amber-300 font-medium">{result.primaryLimiter}</span>
                 </div>
               )}
             </div>
 
-            {/* TARGETED PARAMETER INTERVENTIONS (ANTI-SHOTGUN CHANGES) */}
+            {/* TARGETED PARAMETER INTERVENTIONS */}
             {result.changes && result.changes.length > 0 && (
-              <div className="setup-section p-3 rounded-lg border border-cyan-500/20 bg-cyan-950/10">
-                <div className="setup-section-title text-cyan-400">
+              <div className="setup-section p-3 rounded-md border border-slate-800 bg-slate-900/40">
+                <div className="setup-section-title text-slate-200">
                   <span className="flex items-center gap-1.5">
-                    <span>⚡ TARGETED SETUP INTERVENTIONS</span>
-                    <span className="text-xs text-slate-400">({result.changes.length} primary adjustment{result.changes.length === 1 ? "" : "s"}, non-causes locked to baseline)</span>
+                    <span>Targeted Parameter Adjustments</span>
+                    <span className="text-xs text-slate-400 font-normal">({result.changes.length} adjustment{result.changes.length === 1 ? "" : "s"}, non-causes locked to baseline)</span>
                   </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
                   {result.changes.map((ch, idx) => (
-                    <div key={idx} className="p-2.5 rounded bg-slate-900/60 border border-slate-800/80 text-xs">
+                    <div key={idx} className="p-2.5 rounded border border-slate-800 bg-slate-900/70 text-xs">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="font-semibold text-slate-200">{ch.parameter}</span>
-                        <span className="font-mono text-cyan-300 font-bold">{ch.delta}</span>
+                        <span className="font-medium text-slate-200">{ch.parameter}</span>
+                        <span className="font-mono text-cyan-300 font-semibold">{ch.delta}</span>
                       </div>
                       <div className="text-slate-400 text-[11px] mb-1">
-                        <span className="text-slate-500 font-mono">WHY:</span> {ch.rationale}
+                        <span className="text-slate-500 font-mono">Mechanism:</span> {ch.rationale}
                       </div>
-                      <div className="text-amber-400/90 text-[11px]">
-                        <span className="text-slate-500 font-mono">TRADE-OFF:</span> {ch.tradeoff}
+                      <div className="text-slate-300 text-[11px]">
+                        <span className="text-slate-500 font-mono">Trade-off:</span> {ch.tradeoff}
                       </div>
                     </div>
                   ))}
@@ -733,9 +703,9 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
             {/* TEST PROTOCOL & RECOMMENDED TEST ORDER */}
             {result.testOrder && result.testOrder.length > 0 && (
-              <div className="setup-section p-3 rounded-lg border border-slate-800 bg-slate-900/40 text-xs">
+              <div className="setup-section p-3 rounded-md border border-slate-800 bg-slate-900/40 text-xs">
                 <div className="setup-section-title text-slate-300">
-                  <span>🏁 RECOMMENDED VALIDATION TEST ORDER</span>
+                  <span>Recommended Validation Protocol</span>
                 </div>
                 <ol className="list-decimal list-inside space-y-1 mt-2 text-slate-300 font-mono text-[11px]">
                   {result.testOrder.map((step, idx) => (
@@ -747,14 +717,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
             <div className="result-notes">
               <div className="notes-header">
-                <div className="radio-signal">
-                  <span className="radio-bar"></span>
-                  <span className="radio-bar"></span>
-                  <span className="radio-bar"></span>
-                  <span className="radio-pulse"></span>
-                </div>
-                <div className="notes-label">TEAM RADIO // RACE ENGINEER BRIEFING</div>
-                <div className="notes-channel">PIT WALL CH 1 · SECURE</div>
+                <div className="notes-label">Engineer Debrief</div>
+                <div className="notes-channel font-mono text-slate-400 text-[11px]">Pit Comms</div>
               </div>
               <div className="notes-body">
                 <p>{result.engineerNotes}</p>
@@ -767,17 +731,17 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   <path d="M1 4v6h6M23 20v-6h-6" />
                   <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
                 </svg>
-                <span>Build another setup</span>
+                <span>Reset configuration</span>
               </button>
 
               {onDiscussWithEngineer && (
                 <button
                   type="button"
                   onClick={onDiscussWithEngineer}
-                  className="action-btn flex items-center gap-1.5 border-cyan-500/40 text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20"
-                  title="Discuss this setup with your AI Chief Race Engineer"
+                  className="action-btn flex items-center gap-1.5 border-slate-600 text-slate-200 bg-white/[0.04] hover:bg-white/[0.08]"
+                  title="Discuss this setup with Race Engineer"
                 >
-                  <span>🎙️ Discuss with Race Engineer →</span>
+                  <span>Discuss with Race Engineer →</span>
                 </button>
               )}
             </div>

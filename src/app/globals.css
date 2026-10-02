@@ -842,7 +842,6 @@ textarea {
 
 .generate-btn:hover:not(:disabled) {
   background: var(--accent-blue-hover);
-  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.4);
 }
 
 .generate-btn:disabled {
@@ -2784,8 +2783,6 @@ textarea {
   height: 7px;
   border-radius: 50%;
   background: var(--tel-speed);
-  box-shadow: 0 0 8px var(--tel-speed);
-  animation: pulse 1.5s infinite;
 }
 
 .hover-card-title {
@@ -2984,12 +2981,10 @@ textarea {
 
 .dot-pedals {
   background: #10B981;
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.5);
 }
 
 .dot-purple {
   background: #A855F7;
-  box-shadow: 0 0 6px rgba(168, 85, 247, 0.5);
 }
 
 .dot-slate {
