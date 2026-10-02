@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { SetupExportContext } from "@/lib/setup-exporter";
 import { TelemetryAnalysisResult, ParsedTelemetryFile } from "@/types/telemetry";
+import { EngineerMessageContent } from "./EngineerMessageFormatter";
 
 interface Message {
   id: string;
@@ -245,13 +246,13 @@ I have your active session telemetry and chassis telemetry synced. How does the 
             return (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 max-w-[85%] ${
-                  isEngineer ? "self-start" : "self-end flex-row-reverse"
+                className={`flex gap-3 w-full ${
+                  isEngineer ? "self-start max-w-[94%] md:max-w-[88%]" : "self-end max-w-[85%] md:max-w-[75%] flex-row-reverse"
                 }`}
               >
                 {/* Avatar Icon */}
                 <div
-                  className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-mono font-bold ${
+                  className={`w-7 h-7 rounded flex-shrink-0 flex items-center justify-center text-[10px] font-mono font-bold mt-1 ${
                     isEngineer
                       ? "bg-slate-800 text-slate-200 border border-slate-700"
                       : "bg-blue-600 text-white"
@@ -262,46 +263,53 @@ I have your active session telemetry and chassis telemetry synced. How does the 
 
                 {/* Message Bubble */}
                 <div
-                  className={`rounded-md p-3.5 text-xs md:text-sm leading-relaxed ${
+                  className={`rounded-lg p-4 text-xs md:text-[13px] leading-relaxed flex-1 ${
                     isEngineer
-                      ? "bg-[#121824] border border-white/10 text-slate-200"
+                      ? "bg-[#111723] border border-white/10 text-slate-200 shadow-sm"
                       : "bg-blue-600 text-white"
                   }`}
                 >
                   {/* Header */}
-                  <div className="flex items-center justify-between gap-4 mb-1.5 pb-1 border-b border-white/10">
-                    <span
-                      className={`text-[10px] font-mono font-medium tracking-wide ${
-                        isEngineer ? "text-slate-300" : "text-blue-100"
-                      }`}
-                    >
-                      {isEngineer ? "Race Engineer" : "Driver"}
-                    </span>
+                  <div className="flex items-center justify-between gap-4 mb-2.5 pb-1.5 border-b border-white/[0.08]">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-[11px] font-mono font-semibold tracking-wide ${
+                          isEngineer ? "text-slate-300" : "text-blue-100"
+                        }`}
+                      >
+                        {isEngineer ? "Race Engineer" : "Driver"}
+                      </span>
+                      {isEngineer && (
+                        <span className="text-[9.5px] font-mono bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.2 rounded">
+                          Pit Wall
+                        </span>
+                      )}
+                    </div>
                     <span className="text-[10px] font-mono text-slate-400 opacity-60">
                       {msg.timestamp}
                     </span>
                   </div>
 
                   {/* Body Content */}
-                  <div className="whitespace-pre-wrap space-y-1.5">
-                    {msg.content}
-                  </div>
+                  <EngineerMessageContent content={msg.content} role={msg.role} />
 
                   {/* If engineer suggests setup modifications, show quick-apply button */}
-                  {isEngineer && (msg.content.includes("Anti-Roll") || msg.content.includes("Dampers") || msg.content.includes("Toe") || msg.content.includes("click")) && (
-                    <div className="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between">
-                      <span className="text-[10.5px] font-mono text-slate-400">
-                        Actionable parameter adjustment suggested
-                      </span>
+                  {isEngineer && (/anti-roll|arb|dampers|bump|rebound|toe|camber|diff|power|coast|pressure|psi|wing|rake|ride height|brake bias|click/i.test(msg.content)) && (
+                    <div className="mt-3.5 pt-2.5 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-2 bg-black/20 -mx-4 -mb-4 p-3 rounded-b-lg">
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                        <span>Actionable setup parameter adjustments detected</span>
+                      </div>
                       <button
                         type="button"
                         onClick={() => {
                           onApplyAdjustmentToSetup?.(msg.content);
                           onSwitchToSetup?.();
                         }}
-                        className="px-2.5 py-1 bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 rounded text-[11px] font-mono text-slate-200 font-medium transition-colors"
+                        className="px-3 py-1.5 bg-blue-600/15 hover:bg-blue-600/25 border border-blue-500/40 rounded text-xs font-mono text-blue-300 hover:text-white font-medium transition-colors flex items-center gap-1.5"
                       >
-                        Push to Setup Generator →
+                        <span>Push to Setup Generator</span>
+                        <span>→</span>
                       </button>
                     </div>
                   )}
