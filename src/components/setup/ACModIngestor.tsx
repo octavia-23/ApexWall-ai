@@ -2,6 +2,12 @@
 
 import React, { useState, useRef } from "react";
 import { parseAssettoCorsaModZip, parseACSetupINI, AssettoCorsaModData, ACModSlider } from "@/lib/ac-mod-parser";
+import {
+  scanACFolderHandle,
+  scanACFilesList,
+  getCachedACDirectoryHandle,
+  setCachedACDirectoryHandle,
+} from "@/lib/ac-browser-scanner";
 
 interface ACModIngestorProps {
   onModParsed: (modData: AssettoCorsaModData) => void;
@@ -25,6 +31,7 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
   const [detectStatus, setDetectStatus] = useState<string | null>(null);
   const [showSlidersDrawer, setShowSlidersDrawer] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     const isZip = file.name.toLowerCase().endsWith(".zip");
@@ -69,28 +76,121 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
     }
   };
 
+  const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setIsLoading(true);
+    setError(null);
+    setDetectStatus("Reading setups from selected folder...");
+
+    try {
+      const res = await scanACFilesList(e.target.files, currentCar, currentTrack);
+      if (res.success && res.modData) {
+        onModParsed(res.modData);
+        setDetectStatus(`Detected setup from folder: ${res.matchedCar}`);
+      } else {
+        throw new Error(res.error || "Could not find valid .ini setup files in the selected folder.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to read setups from selected folder.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleAutoDetect = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsDetecting(true);
     setError(null);
-    setDetectStatus("Scanning local Assetto Corsa installation & Document setups...");
+    setDetectStatus("Searching local Assetto Corsa installation & setups...");
+
+    const targetCar = currentCar || "ferrari 488 gt3";
+    const targetTrack = currentTrack || "";
 
     try {
-      const targetCar = currentCar || "ferrari 488 gt3";
-      const targetTrack = currentTrack || "";
-      const res = await fetch(
-        `/api/sim-cars?action=inspect&car=${encodeURIComponent(targetCar)}&track=${encodeURIComponent(targetTrack)}`
-      );
-      const data = await res.json();
+      // 1. Try local server API (succeeds when running Next.js locally)
+      try {
+        const res = await fetch(
+          `/api/sim-cars?action=inspect&car=${encodeURIComponent(targetCar)}&track=${encodeURIComponent(targetTrack)}`
+        );
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.carData && data.carData.sliders?.length > 0) {
+            onModParsed(data.carData);
+            setDetectStatus(null);
+            setIsDetecting(false);
+            return;
+          }
+        }
+      } catch (_apiErr) {
+        // Continue to local bridge or browser access
+      }
 
-      if (!res.ok || !data.success || !data.carData) {
+      // 2. Try ApexWall local telemetry bridge daemon (localhost:9001)
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1000);
+        const bridgeRes = await fetch(
+          `http://localhost:9001/api/inspect-car?car=${encodeURIComponent(targetCar)}&track=${encodeURIComponent(targetTrack)}`,
+          { signal: controller.signal }
+        );
+        clearTimeout(timeoutId);
+        if (bridgeRes.ok) {
+          const bData = await bridgeRes.json();
+          if (bData.success && bData.carData && bData.carData.sliders?.length > 0) {
+            onModParsed(bData.carData);
+            setDetectStatus(null);
+            setIsDetecting(false);
+            return;
+          }
+        }
+      } catch (_bridgeErr) {
+        // Local bridge offline, proceed to browser file system access
+      }
+
+      // 3. Web File System Access API (Works on web deployments in Chrome, Edge, Brave, Opera)
+      if (typeof window !== "undefined" && typeof (window as any).showDirectoryPicker === "function") {
+        setDetectStatus("Select your Assetto Corsa setups directory (Documents/Assetto Corsa/setups)...");
+        let handle = getCachedACDirectoryHandle();
+        if (!handle) {
+          try {
+            handle = await (window as any).showDirectoryPicker({
+              id: "ac_setups_picker",
+              mode: "read",
+              startIn: "documents",
+            });
+            setCachedACDirectoryHandle(handle);
+          } catch (pickerErr: any) {
+            if (pickerErr.name === "AbortError") {
+              setDetectStatus(null);
+              setIsDetecting(false);
+              return;
+            }
+            throw pickerErr;
+          }
+        }
+
+        const scanRes = await scanACFolderHandle(handle, targetCar, targetTrack);
+        if (scanRes.success && scanRes.modData) {
+          onModParsed(scanRes.modData);
+          setDetectStatus(null);
+          setIsDetecting(false);
+          return;
+        }
+
         throw new Error(
-          data.error || `Could not find installed setups for "${targetCar}" in Documents/Assetto Corsa/setups.`
+          scanRes.error || `Could not find setups for "${targetCar}" in selected folder.`
         );
       }
 
-      onModParsed(data.carData);
-      setDetectStatus(null);
+      // 4. Fallback for browsers without showDirectoryPicker (e.g. Firefox)
+      if (folderInputRef.current) {
+        folderInputRef.current.click();
+        setDetectStatus("Please select your Assetto Corsa setups folder in the dialog.");
+        setIsDetecting(false);
+        return;
+      }
+
+      throw new Error("Local folder access is not supported in this browser. Please upload your last.ini or car mod .zip.");
     } catch (err: any) {
       console.error("Auto-detect error:", err);
       setError(err?.message || "Failed to auto-detect installed Assetto Corsa car setup.");
@@ -137,6 +237,14 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
             }}
           />
 
+          <input
+            ref={folderInputRef}
+            type="file"
+            {...({ webkitdirectory: "", directory: "" } as any)}
+            className="hidden"
+            onChange={handleFolderUpload}
+          />
+
           <div className="flex flex-col items-center gap-2">
             <div className="w-10 h-10 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center text-cyan-400">
               {isLoading || isDetecting ? (
@@ -164,18 +272,39 @@ export const ACModIngestor: React.FC<ACModIngestorProps> = ({
               </p>
             </div>
 
-            {/* Direct 1-Click Auto-Detect Button */}
-            <div className="mt-1 pt-1 flex items-center justify-center gap-2">
+            {/* Direct Auto-Detect & Folder Buttons */}
+            <div className="mt-1 pt-1 flex flex-wrap items-center justify-center gap-2">
               <button
                 type="button"
                 onClick={handleAutoDetect}
-                disabled={isDetecting}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-semibold shadow-sm transition-all"
+                disabled={isDetecting || isLoading}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-300 font-mono text-xs font-semibold shadow-sm transition-all disabled:opacity-50"
               >
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                 </svg>
                 {isDetecting ? "Scanning System..." : "Auto-Detect from Installed Assetto Corsa"}
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (typeof window !== "undefined" && typeof (window as any).showDirectoryPicker === "function") {
+                    setCachedACDirectoryHandle(null);
+                    handleAutoDetect(e);
+                  } else {
+                    folderInputRef.current?.click();
+                  }
+                }}
+                disabled={isDetecting || isLoading}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 font-mono text-[11px] transition-all"
+                title="Select Documents/Assetto Corsa/setups folder"
+              >
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                Select Setups Folder
               </button>
             </div>
           </div>

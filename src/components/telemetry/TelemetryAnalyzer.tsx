@@ -395,8 +395,15 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       detectedGame = "iRacing";
     } else if (lowerName.includes("ace") || lowerName.includes("evo") || lowerName.includes("acevo")) {
       detectedGame = "Assetto Corsa Evo";
-    } else if (lowerName.includes("assetto") || lowerName.includes("acc")) {
+    } else if (lowerName.includes("competizione") || lowerName.includes("acc")) {
       detectedGame = "Assetto Corsa Competizione";
+    } else if (
+      lowerName.includes("assetto") ||
+      lowerName.includes("acti") ||
+      lowerName.includes("ac_") ||
+      lowerName.startsWith("ac-")
+    ) {
+      detectedGame = "Assetto Corsa";
     } else if (lowerName.includes("f1") || lowerName.includes("codemasters")) {
       detectedGame = "F1 24";
     } else if (lowerName.includes("lmu") || lowerName.includes("lemans") || lowerName.endsWith(".duckdb")) {

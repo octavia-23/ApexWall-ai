@@ -204,6 +204,152 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
     return;
   }
 
+  // Inspect AC Car endpoint for authentic setup sliders and values
+  if (req.method === "GET" && req.url.startsWith("/api/inspect-car")) {
+    try {
+      const parsedUrl = new URL(req.url, `http://${req.headers.host || "localhost:9001"}`);
+      const carQuery = parsedUrl.searchParams.get("car") || "";
+      const trackQuery = parsedUrl.searchParams.get("track") || "";
+      const setupsRoot = getACSetupsRoot();
+
+      if (!fs.existsSync(setupsRoot)) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: "Assetto Corsa setups folder not found on this machine." }));
+        return;
+      }
+
+      const matchedCar = findBestMatchingCarFolder(setupsRoot, carQuery);
+      const carDir = path.join(setupsRoot, matchedCar);
+
+      if (!fs.existsSync(carDir)) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: `Car folder "${matchedCar}" not found in setups directory.` }));
+        return;
+      }
+
+      const candidateIniPaths = [];
+      if (trackQuery) {
+        const cleanTrack = trackQuery.toLowerCase().replace(/[^a-z0-9]+/g, "");
+        try {
+          const subs = fs.readdirSync(carDir);
+          for (const sub of subs) {
+            if (sub.toLowerCase().replace(/[^a-z0-9]+/g, "").includes(cleanTrack)) {
+              const trkPath = path.join(carDir, sub);
+              if (fs.statSync(trkPath).isDirectory()) {
+                candidateIniPaths.push(path.join(trkPath, "default.ini"));
+                candidateIniPaths.push(path.join(trkPath, "last.ini"));
+                fs.readdirSync(trkPath).forEach((f) => {
+                  if (f.endsWith(".ini")) candidateIniPaths.push(path.join(trkPath, f));
+                });
+              }
+            }
+          }
+        } catch (_e) {}
+      }
+
+      candidateIniPaths.push(path.join(carDir, "generic", "last.ini"));
+      candidateIniPaths.push(path.join(carDir, "generic", "default.ini"));
+      candidateIniPaths.push(path.join(carDir, "last.ini"));
+
+      try {
+        const allSubs = fs.readdirSync(carDir);
+        for (const sub of allSubs) {
+          const sPath = path.join(carDir, sub);
+          if (fs.statSync(sPath).isDirectory()) {
+            const inis = fs.readdirSync(sPath).filter((f) => f.toLowerCase().endsWith(".ini"));
+            for (const f of inis) candidateIniPaths.push(path.join(sPath, f));
+          }
+        }
+      } catch (_e) {}
+
+      let activeIniPath = null;
+      let iniContent = null;
+      for (const p of candidateIniPaths) {
+        if (fs.existsSync(p)) {
+          activeIniPath = p;
+          iniContent = fs.readFileSync(p, "utf8");
+          break;
+        }
+      }
+
+      if (!activeIniPath || !iniContent) {
+        res.writeHead(404, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: false, error: `No setup files (.ini) found for car "${matchedCar}".` }));
+        return;
+      }
+
+      // Parse simple INI
+      const parsedIni = {};
+      let curSec = "DEFAULT";
+      for (const rawLine of iniContent.split(/\r?\n/)) {
+        const line = rawLine.trim();
+        if (!line || line.startsWith(";") || line.startsWith("#") || line.startsWith("//")) continue;
+        if (line.startsWith("[") && line.endsWith("]")) {
+          curSec = line.slice(1, -1).trim().toUpperCase();
+          if (!parsedIni[curSec]) parsedIni[curSec] = {};
+          continue;
+        }
+        const eqIdx = line.indexOf("=");
+        if (eqIdx !== -1) {
+          const key = line.slice(0, eqIdx).trim().toUpperCase();
+          const val = line.slice(eqIdx + 1).trim();
+          if (!parsedIni[curSec]) parsedIni[curSec] = {};
+          parsedIni[curSec][key] = val;
+        }
+      }
+
+      function catSec(secName, name) {
+        const s = (secName + " " + name).toUpperCase();
+        if (s.includes("CAMBER") || s.includes("TOE") || s.includes("CASTER") || s.includes("ALIGNMENT")) return "Alignment";
+        if (s.includes("PRESSURE") || s.includes("TYRE") || s.includes("TIRE")) return "Tyres";
+        if (s.includes("ARB") || s.includes("ANTI-ROLL") || s.includes("ROLL_BAR")) return "Suspension / ARB";
+        if (s.includes("SPRING") || s.includes("ROD") || s.includes("PACKER") || s.includes("HEIGHT") || s.includes("BUMP")) return "Suspension / Springs";
+        if (s.includes("DAMP") || s.includes("REBOUND") || s.includes("FAST_BUMP") || s.includes("SLOW_BUMP")) return "Dampers";
+        if (s.includes("DIFF") || s.includes("POWER") || s.includes("COAST") || s.includes("GEAR") || s.includes("FINAL")) return "Drivetrain & Diff";
+        if (s.includes("WING") || s.includes("SPLITTER") || s.includes("AERO") || s.includes("DUCT")) return "Aerodynamics";
+        if (s.includes("BRAKE") || s.includes("BIAS")) return "Brakes";
+        if (s.includes("TC") || s.includes("ABS") || s.includes("ENGINE_MAP") || s.includes("ELECTRONIC")) return "Electronics";
+        return "General";
+      }
+
+      const sliders = [];
+      for (const [secName, fields] of Object.entries(parsedIni)) {
+        if (secName === "CAR" || secName === "ABOUT" || secName === "__EXT_PATCH") continue;
+        const valStr = fields["VALUE"];
+        if (valStr !== undefined) {
+          const numVal = parseFloat(valStr);
+          const isNumeric = !isNaN(numVal);
+          sliders.push({
+            key: secName,
+            name: secName.replace(/_/g, " "),
+            category: catSec(secName, secName),
+            min: isNumeric ? (numVal < 0 ? numVal * 1.5 : 0) : 0,
+            max: isNumeric ? (numVal > 0 ? Math.max(numVal * 1.5, 10) : 0) : 100,
+            step: 1,
+            defaultValue: isNumeric ? numVal : undefined,
+          });
+        }
+      }
+
+      const carData = {
+        carId: matchedCar,
+        name: matchedCar.replace(/_/g, " "),
+        brand: "Assetto Corsa",
+        sliders,
+        hasAcdOnly: true,
+        unpackedFilesFound: [activeIniPath],
+      };
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: true, source: "telemetry_bridge", carData }));
+      return;
+    } catch (err) {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, error: err.message }));
+      return;
+    }
+  }
+
   // 1-Click Setup Injection Endpoint
   if (req.method === "POST" && req.url === "/api/inject-setup") {
     let body = "";

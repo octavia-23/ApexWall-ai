@@ -248,6 +248,22 @@ export function getCarSetupDataFromSystem(
     candidateIniPaths.push(path.join(carSetupFolder, "generic", "default.ini"));
     candidateIniPaths.push(path.join(carSetupFolder, "last.ini"));
 
+    // Also scan all track subfolders if generic is missing or has no active setup
+    try {
+      const allSubdirs = fs.readdirSync(carSetupFolder);
+      for (const sub of allSubdirs) {
+        const subPath = path.join(carSetupFolder, sub);
+        try {
+          if (fs.statSync(subPath).isDirectory()) {
+            const inis = fs.readdirSync(subPath).filter((f) => f.toLowerCase().endsWith(".ini"));
+            for (const iniFile of inis) {
+              candidateIniPaths.push(path.join(subPath, iniFile));
+            }
+          }
+        } catch (_statErr) {}
+      }
+    } catch (_dirErr) {}
+
     for (const iniPath of candidateIniPaths) {
       if (fs.existsSync(iniPath)) {
         unpackedFilesFound.push(iniPath);
