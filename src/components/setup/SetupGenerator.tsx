@@ -21,7 +21,11 @@ interface SetupGeneratorProps {
     fuelLoad?: string;
     handlingIssue?: string;
     driverStyle?: string;
+    telemetryContext?: any;
+    baselineSetup?: any;
   };
+  telemetryContext?: any;
+  baselineSetup?: any;
   onLoadingChange: (loading: boolean) => void;
   onSetupGenerated?: (setup: any) => void;
   onDiscussWithEngineer?: () => void;
@@ -39,6 +43,8 @@ const loadingMessages = [
 
 export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   initialValues,
+  telemetryContext,
+  baselineSetup,
   onLoadingChange,
   onSetupGenerated,
   onDiscussWithEngineer,
@@ -57,6 +63,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [driverStyle, setDriverStyle] = useState("Heavy trail-braker, relies on throttle-steering");
   const [handlingIssue, setHandlingIssue] = useState("Snap oversteer on corner exit under power, mid-corner understeer in slow chicanes");
   const [acModData, setAcModData] = useState<AssettoCorsaModData | null>(null);
+  const [activeTelemetry, setActiveTelemetry] = useState<any>(telemetryContext || initialValues?.telemetryContext || null);
+  const [activeBaseline, setActiveBaseline] = useState<any>(baselineSetup || initialValues?.baselineSetup || null);
 
   const handleModParsed = (mod: AssettoCorsaModData) => {
     setAcModData(mod);
@@ -80,7 +88,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [savedToVault, setSavedToVault] = useState(false);
   const [isMorphModalOpen, setIsMorphModalOpen] = useState(false);
 
-  // Sync initial values when transferred from Telemetry Analyzer
+  // Sync initial values when transferred from Telemetry Analyzer or parent
   useEffect(() => {
     if (initialValues) {
       if (initialValues.game) setGame(initialValues.game);
@@ -94,6 +102,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
       if (initialValues.fuelLoad) setFuelLoad(initialValues.fuelLoad);
       if (initialValues.handlingIssue) setHandlingIssue(initialValues.handlingIssue);
       if (initialValues.driverStyle) setDriverStyle(initialValues.driverStyle);
+      if (initialValues.telemetryContext) setActiveTelemetry(initialValues.telemetryContext);
+      if (initialValues.baselineSetup) setActiveBaseline(initialValues.baselineSetup);
 
       if (initialValues.car || initialValues.track) {
         onSessionChange?.({
@@ -103,7 +113,13 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
         });
       }
     }
-  }, [initialValues]);
+    if (telemetryContext) {
+      setActiveTelemetry(telemetryContext);
+    }
+    if (baselineSetup) {
+      setActiveBaseline(baselineSetup);
+    }
+  }, [initialValues, telemetryContext, baselineSetup]);
 
   useEffect(() => {
     if (state !== "loading") return;
@@ -137,6 +153,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           handlingIssue,
           skillLevel,
           customModProfile: acModData,
+          baselineSetup: activeBaseline,
+          telemetryContext: activeTelemetry,
         }),
       });
 
@@ -235,6 +253,102 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
+          {/* Active Telemetry Link Banner */}
+          {activeTelemetry && (
+            <div className="mb-4 p-3 rounded-lg border border-cyan-500/30 bg-[#0E1524] text-xs font-mono">
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+                  <span className="font-semibold text-cyan-300 uppercase tracking-wide">
+                    Telemetry Ingest Synced
+                  </span>
+                  {activeTelemetry.lapTime && (
+                    <span className="text-slate-300 bg-slate-800/80 px-1.5 py-0.5 rounded text-[10px]">
+                      ⏱️ {activeTelemetry.lapTime}
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTelemetry(null)}
+                  className="text-slate-400 hover:text-rose-400 text-[11px] transition-colors"
+                  title="Disconnect telemetry context"
+                >
+                  Disconnect ✕
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-slate-300 mb-2">
+                {activeTelemetry.trailBrakingScore != null && (
+                  <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                    <span className="text-slate-500 block text-[9.5px]">TRAIL BRAKING</span>
+                    <span className="font-semibold text-slate-200">{activeTelemetry.trailBrakingScore}/100</span>
+                  </div>
+                )}
+                {activeTelemetry.gripUtilization != null && (
+                  <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                    <span className="text-slate-500 block text-[9.5px]">GRIP UTILIZATION</span>
+                    <span className="font-semibold text-slate-200">{activeTelemetry.gripUtilization}%</span>
+                  </div>
+                )}
+                {activeTelemetry.maxLatG != null && (
+                  <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                    <span className="text-slate-500 block text-[9.5px]">PEAK LATERAL G</span>
+                    <span className="font-semibold text-slate-200">{activeTelemetry.maxLatG}G</span>
+                  </div>
+                )}
+                {activeTelemetry.phaseBalance?.entry && (
+                  <div className="bg-slate-900/60 p-1.5 rounded border border-slate-800">
+                    <span className="text-slate-500 block text-[9.5px]">CORNER BALANCE</span>
+                    <span className="font-semibold text-cyan-300 truncate block" title={activeTelemetry.phaseBalance.verdict}>
+                      {activeTelemetry.phaseBalance.mid || activeTelemetry.phaseBalance.entry}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Dynamic Cold Tyre Recommendation with 1-click apply */}
+              {activeTelemetry.tyreOptimization?.recommendedCold && (
+                <div className="flex flex-wrap items-center justify-between gap-2 bg-cyan-950/40 border border-cyan-500/20 px-2.5 py-1.5 rounded text-[11px]">
+                  <div className="truncate mr-2">
+                    <span className="text-cyan-400 font-semibold mr-1.5">Target Cold Pressures:</span>
+                    <span className="text-slate-300 font-mono">
+                      FL {activeTelemetry.tyreOptimization.recommendedCold.FL} • FR {activeTelemetry.tyreOptimization.recommendedCold.FR} • RL {activeTelemetry.tyreOptimization.recommendedCold.RL} • RR {activeTelemetry.tyreOptimization.recommendedCold.RR} psi
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const opt = activeTelemetry.tyreOptimization;
+                      const pressNote = `Calibrated Cold Pressures: FL ${opt.recommendedCold.FL}, FR ${opt.recommendedCold.FR}, RL ${opt.recommendedCold.RL}, RR ${opt.recommendedCold.RR} psi (Target hot: ${opt.targetHot} psi).`;
+                      setHandlingIssue((prev) => (prev ? `${prev}. ${pressNote}` : pressNote));
+                    }}
+                    className="shrink-0 px-2.5 py-1 rounded bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/30 text-cyan-300 font-medium text-[10.5px] transition-colors"
+                  >
+                    Apply Pressures
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Active Baseline Status Banner */}
+          {activeBaseline && (
+            <div className="mb-4 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs font-mono flex items-center justify-between text-emerald-300">
+              <span className="flex items-center gap-1.5 truncate mr-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                <span className="truncate">Active Baseline Synced: Preserving current setup; applying surgical 1–3 parameter diff</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveBaseline(null)}
+                className="text-slate-400 hover:text-emerald-200 text-[10.5px] shrink-0"
+              >
+                Reset to Default ✕
+              </button>
+            </div>
+          )}
+
           {/* Section 1: Vehicle & Circuit */}
           <div className="form-section-title">
             Vehicle & Platform
@@ -672,6 +786,24 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 </div>
               )}
             </div>
+
+            {/* TELEMETRY EVIDENCE GROUNDING */}
+            {result.evidence && result.evidence.length > 0 && (
+              <div className="p-3 rounded-md border border-cyan-500/20 bg-cyan-950/20 text-xs my-2.5">
+                <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-semibold uppercase tracking-wider text-[10.5px] mb-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                  <span>Empirical Telemetry Evidence Ingested</span>
+                </div>
+                <ul className="space-y-1 font-mono text-[11px] text-slate-300">
+                  {result.evidence.map((ev, idx) => (
+                    <li key={idx} className="flex items-start gap-1.5">
+                      <span className="text-cyan-400 shrink-0">•</span>
+                      <span>{ev}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* TARGETED PARAMETER INTERVENTIONS */}
             {result.changes && result.changes.length > 0 && (

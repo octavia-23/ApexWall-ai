@@ -76,6 +76,28 @@ export function extractTelemetryEvidence(telemetryContext: any): TelemetryEviden
     missing.push("Dynamic tyre surface & core temperatures");
   }
 
+  // 5. Check Corner-Phase Understeer / Oversteer Balance
+  if (telemetryContext.phaseBalance) {
+    const pb = telemetryContext.phaseBalance;
+    observed.push(`Measured Corner Phase Balance: ${pb.verdict} (Entry Δ: ${pb.entryDeltaDeg}°, Apex Δ: ${pb.midDeltaDeg}°, Exit Δ: ${pb.exitDeltaDeg}°)`);
+  }
+
+  // 6. Check Empirical Tyre Pressure Optimization
+  if (telemetryContext.tyreOptimization?.recommendedCold) {
+    const opt = telemetryContext.tyreOptimization;
+    observed.push(
+      `Calibrated Cold Pressures: FL ${opt.recommendedCold.FL}, FR ${opt.recommendedCold.FR}, RL ${opt.recommendedCold.RL}, RR ${opt.recommendedCold.RR} psi (Target hot: ${opt.targetHot} psi, Δ: FL ${opt.pressureDelta.FL >= 0 ? "+" : ""}${opt.pressureDelta.FL}, FR ${opt.pressureDelta.FR >= 0 ? "+" : ""}${opt.pressureDelta.FR}, RL ${opt.pressureDelta.RL >= 0 ? "+" : ""}${opt.pressureDelta.RL}, RR ${opt.pressureDelta.RR >= 0 ? "+" : ""}${opt.pressureDelta.RR} psi)`
+    );
+  }
+
+  // 7. Check Driver vs Mechanical Separation
+  if (telemetryContext.driverVsCar?.driverTechniquePoints?.length > 0) {
+    const primaryTechnique = telemetryContext.driverVsCar.driverTechniquePoints[0];
+    if (!driverTechniqueIssue && !primaryTechnique.includes("disciplined")) {
+      driverTechniqueIssue = primaryTechnique;
+    }
+  }
+
   return {
     hasTelemetry: observed.length > 0,
     driverTechniqueIssue,
@@ -128,9 +150,28 @@ export function formulateDiagnosticPlan(
   telemetryContext?: any,
   trackProfile?: any
 ): SetupDiagnosticPlan {
+  let phase = classifyHandlingPhase(complaint);
   const raw = (complaint || "").toLowerCase();
-  const phase = classifyHandlingPhase(complaint);
   const telExtraction = extractTelemetryEvidence(telemetryContext);
+
+  // If user complaint is general or empty, but dynamic telemetry detected an understeer/oversteer gradient:
+  if (phase === "GENERAL" && telemetryContext?.phaseBalance) {
+    const pb = telemetryContext.phaseBalance;
+    const entryMag = Math.abs(pb.entryDeltaDeg || 0);
+    const midMag = Math.abs(pb.midDeltaDeg || 0);
+    const exitMag = Math.abs(pb.exitDeltaDeg || 0);
+    const maxMag = Math.max(entryMag, midMag, exitMag);
+
+    if (maxMag >= 1.0) {
+      if (maxMag === exitMag && pb.exit !== "Neutral") {
+        phase = "EXIT";
+      } else if (maxMag === midMag && pb.mid !== "Neutral") {
+        phase = "MID_CORNER";
+      } else if (maxMag === entryMag && pb.entry !== "Neutral") {
+        phase = "ENTRY";
+      }
+    }
+  }
 
   let primaryLimiter = "General balance and platform calibration";
   let primaryTargetParams: string[] = [];
@@ -324,6 +365,26 @@ export function formulateDiagnosticPlan(
       desired: "Even tyre footprint and balanced mechanical platform",
       secondaryRisk: "None (conservative baseline configuration)",
     };
+  }
+
+  // If empirical telemetry shows tyre pressure offsets, include tyre parameters for calibration
+  if (telemetryContext?.tyreOptimization?.pressureDelta) {
+    const pd = telemetryContext.tyreOptimization.pressureDelta;
+    const hasPressureDiscrepancy = Math.max(
+      Math.abs(pd.FL || 0),
+      Math.abs(pd.FR || 0),
+      Math.abs(pd.RL || 0),
+      Math.abs(pd.RR || 0)
+    ) >= 0.3;
+
+    if (hasPressureDiscrepancy) {
+      const tyreParams = ["TYRE_PRESSURE_FL", "TYRE_PRESSURE_FR", "TYRE_PRESSURE_RL", "TYRE_PRESSURE_RR"];
+      tyreParams.forEach((tp) => {
+        if (!primaryTargetParams.includes(tp) && !secondaryTargetParams.includes(tp)) {
+          secondaryTargetParams.push(tp);
+        }
+      });
+    }
   }
 
   // Filter target params to those that actually exist in the current simulator catalog

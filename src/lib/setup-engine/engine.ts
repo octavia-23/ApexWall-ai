@@ -188,6 +188,39 @@ ${telemetryBrief}
     }
   }
 
+  // If dynamic telemetry detected tyre thermal/pressure discrepancies, inject empirical tyre adjustments
+  if (!fullBaselineRequested && telemetryContext?.tyreOptimization?.recommendedCold) {
+    const to = telemetryContext.tyreOptimization;
+    const wheels = ["FL", "FR", "RL", "RR"] as const;
+    const hasDiscrepancy = wheels.some((w) => Math.abs((to.pressureDelta as any)?.[w] || 0) >= 0.3);
+    if (hasDiscrepancy) {
+      wheels.forEach((w) => {
+        const paramId = `TYRE_PRESSURE_${w}`;
+        const def = findParameterDefinition(catalog, paramId);
+        if (!def) return;
+        const alreadyProposed = proposedAdjustments.some(
+          (a) => a.parameter && a.parameter.toLowerCase().trim() === def.label.toLowerCase().trim()
+        );
+        if (!alreadyProposed) {
+          const recCold = Number((to.recommendedCold as any)[w]);
+          if (!isNaN(recCold) && recCold > 0) {
+            const delta = Number((to.pressureDelta as any)?.[w] || 0);
+            const obsHot = Number((to.observedHot as any)?.[w] || 0);
+            proposedAdjustments.push({
+              parameter: def.label,
+              newValue: def.formatDisplay ? def.formatDisplay(recCold) : `${recCold.toFixed(1)} psi`,
+              diagnosis: `Hot tyre pressure offset on ${w} (${obsHot.toFixed(1)} psi vs target ${to.targetHot?.toFixed(1) || "26.8"} psi)`,
+              rationale: `Calibrated cold pressure adjusted by ${delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} psi to bring running hot pressures into optimal contact patch window.`,
+              tradeoff: "None (thermodynamic pressure alignment).",
+              expectedEffect: "Even contact patch pressure distribution and maximum tyre grip.",
+              validationTest: "Run 3 hotlaps and verify hot pressure reaches target window.",
+            });
+          }
+        }
+      });
+    }
+  }
+
   // 5. Apply Proposed Adjustments to Baseline Sections
   const modifiedSections: SetupSection[] = baseline.sections.map((sec) => ({
     title: sec.title,

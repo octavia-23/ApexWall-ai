@@ -17,6 +17,45 @@ export interface TelemetryPoint {
   pressFR: number;
   pressRL: number;
   pressRR: number;
+  understeerAngle?: number; // Steering angle minus Ackermann angle (positive = understeer, negative = oversteer)
+}
+
+export interface CornerPhaseBalance {
+  entry: "Oversteer" | "Neutral" | "Understeer";
+  mid: "Oversteer" | "Neutral" | "Understeer";
+  exit: "Oversteer" | "Neutral" | "Understeer";
+  entryDeltaDeg: number;
+  midDeltaDeg: number;
+  exitDeltaDeg: number;
+  verdict: string;
+}
+
+export interface TyreOptimizationReport {
+  recommendedCold: {
+    FL: number;
+    FR: number;
+    RL: number;
+    RR: number;
+  };
+  observedHot: {
+    FL: number;
+    FR: number;
+    RL: number;
+    RR: number;
+  };
+  targetHot: number;
+  pressureDelta: {
+    FL: number;
+    FR: number;
+    RL: number;
+    RR: number;
+  };
+  status: string;
+}
+
+export interface DriverVsCarDiagnostics {
+  driverTechniquePoints: string[];
+  mechanicalSetupPoints: string[];
 }
 
 export interface TyreCornerData {
@@ -75,6 +114,9 @@ export interface ParsedTelemetryFile {
   detectedAnomalies: TelemetryAnomaly[];
   points: TelemetryPoint[];
   channels: string[];
+  phaseBalance?: CornerPhaseBalance;
+  tyreOptimization?: TyreOptimizationReport;
+  driverVsCar?: DriverVsCarDiagnostics;
 }
 
 export interface KpiRating {
@@ -203,6 +245,9 @@ export interface TelemetryAnalysisResult {
   pitRadioMessage?: string;
   lapComparison?: LapComparisonSummary;
   frictionCircle?: GGFrictionCircleData;
+  phaseBalance?: CornerPhaseBalance;
+  tyreOptimization?: TyreOptimizationReport;
+  driverVsCar?: DriverVsCarDiagnostics;
 }
 
 export interface GeneratedSetupResult {

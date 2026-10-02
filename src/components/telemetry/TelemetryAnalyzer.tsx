@@ -32,6 +32,7 @@ interface TelemetryAnalyzerProps {
     tyreCompound: string;
     fuelLoad: string;
     handlingIssue: string;
+    telemetryContext?: any;
   }) => void;
   onTelemetryAnalyzed?: (result: TelemetryAnalysisResult, file: ParsedTelemetryFile | null) => void;
   onDiscussWithEngineer?: () => void;
@@ -923,6 +924,15 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       if (frictionCircleData && !data.frictionCircle) {
         data.frictionCircle = frictionCircleData;
       }
+      if (parsedTelemetry?.phaseBalance && !data.phaseBalance) {
+        data.phaseBalance = parsedTelemetry.phaseBalance;
+      }
+      if (parsedTelemetry?.tyreOptimization && !data.tyreOptimization) {
+        data.tyreOptimization = parsedTelemetry.tyreOptimization;
+      }
+      if (parsedTelemetry?.driverVsCar && !data.driverVsCar) {
+        data.driverVsCar = parsedTelemetry.driverVsCar;
+      }
 
       setResult(data);
       setState("result");
@@ -1034,6 +1044,31 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       .map((a) => `${a.component}: ${a.adjustment}`)
       .join(", ");
 
+    const telContext = {
+      hasTelemetry: true,
+      trailBrakingScore: parsedTelemetry?.trailBrakingScore,
+      throttleSmoothness: parsedTelemetry?.throttleSmoothness,
+      steeringScrub: parsedTelemetry?.steeringScrub,
+      gripUtilization: frictionCircleData?.gripUtilizationPct,
+      trailBrakingTransitionEfficiency: frictionCircleData?.trailBrakingTransitionEfficiency,
+      peakCombinedG: frictionCircleData?.peakCombinedG,
+      maxLatG: parsedTelemetry?.maxLatG,
+      maxDecelG: parsedTelemetry?.maxDecelG,
+      topSpeed: parsedTelemetry?.topSpeed,
+      minSpeed: parsedTelemetry?.minSpeed,
+      lapTime: parsedTelemetry?.lapTime,
+      primaryLimiter: result.primaryLimiter,
+      phaseBalance: result.phaseBalance || parsedTelemetry?.phaseBalance,
+      tyreOptimization: result.tyreOptimization || parsedTelemetry?.tyreOptimization,
+      driverVsCar: result.driverVsCar || parsedTelemetry?.driverVsCar,
+      keyCorners: lapComparison?.cornerComparisons?.map((c) => ({
+        corner: c.corner,
+        verdict: c.verdict,
+        speedDelta: c.speedDelta,
+      })),
+      tyres: parsedTelemetry?.tyreStats,
+    };
+
     onApplyToSetup({
       game,
       car,
@@ -1043,6 +1078,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       tyreCompound,
       fuelLoad,
       handlingIssue: `Diagnosed via Telemetry: ${result.primaryLimiter || "Handling imbalance"}. Tweaks: ${adjSummary}`,
+      telemetryContext: telContext,
     });
   };
 
@@ -1981,51 +2017,193 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               <GGFrictionCircle data={frictionCircleData} hoverIndex={hoverIndex} />
             )}
 
-            {/* 3. 4-Corner Tyre Thermal HUD */}
+            {/* 2b. Corner Phase Balance & Slip Dynamics */}
+            {parsedTelemetry?.phaseBalance && (
+              <div className="telemetry-balance-module glass-card-nested">
+                <div className="module-header">
+                  <span className="module-title">Corner Phase Balance (Steering vs Ackermann Slip)</span>
+                  <span className="module-badge">Dynamic Vehicle Balance</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3">
+                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Entry Phase</div>
+                    <div className="flex items-baseline justify-between">
+                      <span className={`text-sm font-semibold ${
+                        parsedTelemetry.phaseBalance.entry === "Understeer"
+                          ? "text-amber-400"
+                          : parsedTelemetry.phaseBalance.entry === "Oversteer"
+                          ? "text-rose-400"
+                          : "text-emerald-400"
+                      }`}>
+                        {parsedTelemetry.phaseBalance.entry}
+                      </span>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {parsedTelemetry.phaseBalance.entryDeltaDeg > 0 ? "+" : ""}
+                        {parsedTelemetry.phaseBalance.entryDeltaDeg.toFixed(1)}° slip
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 mt-1">Trail-braking yaw response</div>
+                  </div>
+
+                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Mid-Corner (Apex)</div>
+                    <div className="flex items-baseline justify-between">
+                      <span className={`text-sm font-semibold ${
+                        parsedTelemetry.phaseBalance.mid === "Understeer"
+                          ? "text-amber-400"
+                          : parsedTelemetry.phaseBalance.mid === "Oversteer"
+                          ? "text-rose-400"
+                          : "text-emerald-400"
+                      }`}>
+                        {parsedTelemetry.phaseBalance.mid}
+                      </span>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {parsedTelemetry.phaseBalance.midDeltaDeg > 0 ? "+" : ""}
+                        {parsedTelemetry.phaseBalance.midDeltaDeg.toFixed(1)}° slip
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 mt-1">Mechanical roll stiffness balance</div>
+                  </div>
+
+                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Exit Phase</div>
+                    <div className="flex items-baseline justify-between">
+                      <span className={`text-sm font-semibold ${
+                        parsedTelemetry.phaseBalance.exit === "Understeer"
+                          ? "text-amber-400"
+                          : parsedTelemetry.phaseBalance.exit === "Oversteer"
+                          ? "text-rose-400"
+                          : "text-emerald-400"
+                      }`}>
+                        {parsedTelemetry.phaseBalance.exit}
+                      </span>
+                      <span className="text-xs font-mono text-zinc-400">
+                        {parsedTelemetry.phaseBalance.exitDeltaDeg > 0 ? "+" : ""}
+                        {parsedTelemetry.phaseBalance.exitDeltaDeg.toFixed(1)}° slip
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-zinc-400 mt-1">Throttle pickup & diff lock</div>
+                  </div>
+                </div>
+                <div className="px-3 pb-3 text-xs text-zinc-400 font-mono">
+                  Verdict: <span className="text-zinc-200">{parsedTelemetry.phaseBalance.verdict}</span>
+                </div>
+              </div>
+            )}
+
+            {/* 3. 4-Corner Tyre Thermal & Pressure Calibration HUD */}
             {parsedTelemetry?.tyreStats && (
               <div className="telemetry-tyres-module glass-card-nested">
                 <div className="module-header">
                   <span className="module-title">Tyre Pressures & Temperatures</span>
-                  <span className="module-badge">4-Corner Thermal Spread</span>
+                  <span className="module-badge">
+                    {parsedTelemetry.tyreOptimization ? "Empirical Cold Calibration" : "4-Corner Thermal Spread"}
+                  </span>
                 </div>
                 <div className="tyres-hud-grid">
                   <div className="tyre-pod tyre-fl">
                     <div className="tyre-header">
                       <span className="tyre-pos">FRONT LEFT</span>
-                      <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      {parsedTelemetry.tyreOptimization ? (
+                        <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.FL) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
+                          {parsedTelemetry.tyreOptimization.pressureDelta.FL >= 0 ? "+" : ""}
+                          {parsedTelemetry.tyreOptimization.pressureDelta.FL.toFixed(1)} psi
+                        </span>
+                      ) : (
+                        <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      )}
                     </div>
                     <div className="tyre-temp-val">{parsedTelemetry.tyreStats.FL.temp}</div>
-                    <div className="tyre-imo">IMO: 86° / 84° / 81°</div>
-                    <div className="tyre-press">{parsedTelemetry.tyreStats.FL.pressure} <span>(+0.2)</span></div>
+                    <div className="tyre-press">
+                      Hot: {parsedTelemetry.tyreStats.FL.pressure}
+                    </div>
+                    {parsedTelemetry.tyreOptimization && (
+                      <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
+                        Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.FL.toFixed(1)} psi
+                      </div>
+                    )}
                   </div>
+
                   <div className="tyre-pod tyre-fr">
                     <div className="tyre-header">
                       <span className="tyre-pos">FRONT RIGHT</span>
-                      <span className="tyre-status-badge badge-warm">LOAD AXIS</span>
+                      {parsedTelemetry.tyreOptimization ? (
+                        <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.FR) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
+                          {parsedTelemetry.tyreOptimization.pressureDelta.FR >= 0 ? "+" : ""}
+                          {parsedTelemetry.tyreOptimization.pressureDelta.FR.toFixed(1)} psi
+                        </span>
+                      ) : (
+                        <span className="tyre-status-badge badge-warm">LOAD AXIS</span>
+                      )}
                     </div>
                     <div className="tyre-temp-val">{parsedTelemetry.tyreStats.FR.temp}</div>
-                    <div className="tyre-imo">IMO: 89° / 86° / 83°</div>
-                    <div className="tyre-press">{parsedTelemetry.tyreStats.FR.pressure} <span>(+0.5)</span></div>
+                    <div className="tyre-press">
+                      Hot: {parsedTelemetry.tyreStats.FR.pressure}
+                    </div>
+                    {parsedTelemetry.tyreOptimization && (
+                      <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
+                        Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.FR.toFixed(1)} psi
+                      </div>
+                    )}
                   </div>
+
                   <div className="tyre-pod tyre-rl">
                     <div className="tyre-header">
                       <span className="tyre-pos">REAR LEFT</span>
-                      <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      {parsedTelemetry.tyreOptimization ? (
+                        <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.RL) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
+                          {parsedTelemetry.tyreOptimization.pressureDelta.RL >= 0 ? "+" : ""}
+                          {parsedTelemetry.tyreOptimization.pressureDelta.RL.toFixed(1)} psi
+                        </span>
+                      ) : (
+                        <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      )}
                     </div>
                     <div className="tyre-temp-val">{parsedTelemetry.tyreStats.RL.temp}</div>
-                    <div className="tyre-imo">IMO: 83° / 81° / 79°</div>
-                    <div className="tyre-press">{parsedTelemetry.tyreStats.RL.pressure} <span>(0.0)</span></div>
+                    <div className="tyre-press">
+                      Hot: {parsedTelemetry.tyreStats.RL.pressure}
+                    </div>
+                    {parsedTelemetry.tyreOptimization && (
+                      <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
+                        Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.RL.toFixed(1)} psi
+                      </div>
+                    )}
                   </div>
+
                   <div className="tyre-pod tyre-rr">
                     <div className="tyre-header">
                       <span className="tyre-pos">REAR RIGHT</span>
-                      <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      {parsedTelemetry.tyreOptimization ? (
+                        <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.RR) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
+                          {parsedTelemetry.tyreOptimization.pressureDelta.RR >= 0 ? "+" : ""}
+                          {parsedTelemetry.tyreOptimization.pressureDelta.RR.toFixed(1)} psi
+                        </span>
+                      ) : (
+                        <span className="tyre-status-badge badge-optimal">OPTIMAL</span>
+                      )}
                     </div>
                     <div className="tyre-temp-val">{parsedTelemetry.tyreStats.RR.temp}</div>
-                    <div className="tyre-imo">IMO: 85° / 83° / 81°</div>
-                    <div className="tyre-press">{parsedTelemetry.tyreStats.RR.pressure} <span>(+0.2)</span></div>
+                    <div className="tyre-press">
+                      Hot: {parsedTelemetry.tyreStats.RR.pressure}
+                    </div>
+                    {parsedTelemetry.tyreOptimization && (
+                      <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
+                        Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.RR.toFixed(1)} psi
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {parsedTelemetry.tyreOptimization && (
+                  <div className="p-3 border-t border-zinc-800/80 bg-zinc-950/40 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+                    <span className="text-zinc-400">
+                      Target Hot Operating Pressure: <strong className="text-zinc-200">{parsedTelemetry.tyreOptimization.targetHot.toFixed(1)} psi</strong>
+                    </span>
+                    <span className="text-emerald-400">
+                      {parsedTelemetry.tyreOptimization.status}
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2108,6 +2286,45 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* 6b. Driver Technique vs Mechanical Chassis Separation */}
+            {(result.driverVsCar || parsedTelemetry?.driverVsCar) && (
+              <div className="glass-card-nested border border-zinc-800/80 rounded-lg p-4 bg-zinc-950/40">
+                <div className="module-header mb-3 pb-2 border-b border-zinc-800/80 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-zinc-200">Root-Cause Separation: Driver Technique vs. Chassis Setup</span>
+                  <span className="text-[11px] font-mono text-zinc-400">Telemetry Isolation</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-zinc-900/50 rounded border border-zinc-800/60">
+                    <div className="text-xs font-mono font-semibold text-sky-400 mb-2 flex items-center gap-1.5">
+                      <span>•</span> Driver Technique Limitations (Lap Time in Pedals)
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-zinc-300">
+                      {(result.driverVsCar?.driverTechniquePoints || parsedTelemetry?.driverVsCar?.driverTechniquePoints || []).map((pt, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-zinc-500 font-mono">›</span>
+                          <span>{pt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-3 bg-zinc-900/50 rounded border border-zinc-800/60">
+                    <div className="text-xs font-mono font-semibold text-amber-400 mb-2 flex items-center gap-1.5">
+                      <span>•</span> Mechanical Chassis Limitations (Requires Setup Intervention)
+                    </div>
+                    <ul className="space-y-1.5 text-xs text-zinc-300">
+                      {(result.driverVsCar?.mechanicalSetupPoints || parsedTelemetry?.driverVsCar?.mechanicalSetupPoints || []).map((pt, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="text-zinc-500 font-mono">›</span>
+                          <span>{pt}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 7. Click-by-Click Setup Adjustments */}
             <div className="setup-adjustments-module glass-card-nested">

@@ -47,6 +47,8 @@ export default function Home() {
     fuelLoad?: string;
     handlingIssue?: string;
     driverStyle?: string;
+    telemetryContext?: any;
+    baselineSetup?: any;
   } | undefined>(undefined);
 
   // Sync count of saved setups from local storage
@@ -73,6 +75,8 @@ export default function Home() {
     tyreCompound: string;
     fuelLoad: string;
     handlingIssue: string;
+    telemetryContext?: any;
+    baselineSetup?: any;
   }) => {
     setSetupInitialValues(setupContext);
     if (setupContext.car) setSessionCar(setupContext.car);
@@ -148,6 +152,28 @@ export default function Home() {
           <div style={{ display: mode === "setup" ? "block" : "none" }}>
             <SetupGenerator
               initialValues={setupInitialValues}
+              telemetryContext={
+                setupInitialValues?.telemetryContext ||
+                (lastTelemetryFile
+                  ? {
+                      hasTelemetry: true,
+                      trailBrakingScore: lastTelemetryFile.trailBrakingScore,
+                      throttleSmoothness: lastTelemetryFile.throttleSmoothness,
+                      steeringScrub: lastTelemetryFile.steeringScrub,
+                      maxLatG: lastTelemetryFile.maxLatG,
+                      maxDecelG: lastTelemetryFile.maxDecelG,
+                      topSpeed: lastTelemetryFile.topSpeed,
+                      minSpeed: lastTelemetryFile.minSpeed,
+                      lapTime: lastTelemetryFile.lapTime,
+                      tyres: lastTelemetryFile.tyreStats,
+                      phaseBalance: lastTelemetryFile.phaseBalance,
+                      tyreOptimization: lastTelemetryFile.tyreOptimization,
+                      driverVsCar: lastTelemetryFile.driverVsCar,
+                      gripUtilization: lastTelemetryResult?.frictionCircle?.gripUtilizationPct,
+                    }
+                  : undefined)
+              }
+              baselineSetup={lastGeneratedSetup ? { sections: lastGeneratedSetup.sections } : undefined}
               onLoadingChange={setIsLoading}
               onSetupGenerated={setLastGeneratedSetup}
               onDiscussWithEngineer={() => setMode("engineer")}
