@@ -1403,44 +1403,88 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             </div>
           )}
 
-          {/* Optional Reference Laps (Secondary) */}
+          {/* 1-Click Sample Telemetry Presets */}
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="text-[11px] text-slate-400 font-medium mb-2 flex items-center justify-between">
-              <span>Quick reference runs:</span>
-              <span className="text-[10px] text-slate-500 font-mono">OPTIONAL</span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                <span>Sample Telemetry Runs (1-Click Instant Demo):</span>
+              </span>
+              <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded">
+                NO FILE NEEDED
+              </span>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               <button
                 type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
-                  activePreset === "acevo"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "spa"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
                     : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
                 }`}
-                onClick={() => loadPreset("acevo")}
+                onClick={() => loadPreset("spa")}
               >
-                <div className="font-semibold truncate">Imola (AC Evo)</div>
-                <div className="text-[10px] text-slate-400 truncate">Ferrari 296 · MoTeC</div>
+                <div className="font-semibold truncate">Spa-Francorchamps</div>
+                <div className="text-[10px] text-slate-400 truncate">Ferrari 296 · ACC</div>
               </button>
 
               <button
                 type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
-                  activePreset === "nordschleife"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "monza"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
                     : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
                 }`}
-                onClick={() => loadPreset("nordschleife")}
+                onClick={() => loadPreset("monza")}
               >
-                <div className="font-semibold truncate">Nordschleife</div>
+                <div className="font-semibold truncate">Monza GP</div>
                 <div className="text-[10px] text-slate-400 truncate">992 GT3 R · ACC</div>
               </button>
 
               <button
                 type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "silverstone"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("silverstone")}
+              >
+                <div className="font-semibold truncate">Silverstone GP</div>
+                <div className="text-[10px] text-slate-400 truncate">Red Bull RB20 · F1</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "redbullring"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("redbullring")}
+              >
+                <div className="font-semibold truncate">Red Bull Ring</div>
+                <div className="text-[10px] text-slate-400 truncate">AMG GT4 · iRacing</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "acevo"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("acevo")}
+              >
+                <div className="font-semibold truncate">Imola (AC Evo)</div>
+                <div className="text-[10px] text-slate-400 truncate">Ferrari 296 · AC Evo</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
                   activePreset === "roadatlanta"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
                     : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
                 }`}
                 onClick={() => loadPreset("roadatlanta")}
@@ -1451,41 +1495,28 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
               <button
                 type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
+                  activePreset === "nordschleife"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
+                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
+                }`}
+                onClick={() => loadPreset("nordschleife")}
+              >
+                <div className="font-semibold truncate">Nordschleife (20km)</div>
+                <div className="text-[10px] text-slate-400 truncate">992 GT3 R · ACC</div>
+              </button>
+
+              <button
+                type="button"
+                className={`px-2.5 py-2 rounded-lg border text-left text-xs transition-all ${
                   activePreset === "jeddah"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
+                    ? "border-cyan-500/50 bg-cyan-500/10 text-white shadow-sm"
                     : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
                 }`}
                 onClick={() => loadPreset("jeddah")}
               >
                 <div className="font-semibold truncate">Jeddah Corniche</div>
-                <div className="text-[10px] text-slate-400 truncate">RB20 · F1 24</div>
-              </button>
-
-              <button
-                type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
-                  activePreset === "spa"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
-                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
-                }`}
-                onClick={() => loadPreset("spa")}
-              >
-                <div className="font-semibold truncate">Spa-Francorchamps</div>
-                <div className="text-[10px] text-slate-400 truncate">296 GT3 · ACC</div>
-              </button>
-
-              <button
-                type="button"
-                className={`px-2.5 py-1.5 rounded-lg border text-left text-xs transition-all ${
-                  activePreset === "redbullring"
-                    ? "border-blue-500/50 bg-blue-500/10 text-white"
-                    : "border-white/10 bg-white/[0.02] text-slate-300 hover:border-white/20"
-                }`}
-                onClick={() => loadPreset("redbullring")}
-              >
-                <div className="font-semibold truncate">Red Bull Ring</div>
-                <div className="text-[10px] text-slate-400 truncate">AMG GT4 · iRacing</div>
+                <div className="text-[10px] text-slate-400 truncate">Red Bull RB20 · F1</div>
               </button>
             </div>
           </div>
