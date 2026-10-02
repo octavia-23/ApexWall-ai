@@ -660,12 +660,57 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                       <path d="M12 16v-4M12 8h.01" strokeLinecap="round" />
                     </svg>
                   </span>
-                  <span className="summary-title">ENGINEERING PHILOSOPHY // BASELINE OBJECTIVE</span>
+                  <span className="summary-title">
+                    {result.isBaseline ? "BASELINE SPECIFICATION" : "ENGINEERING PHILOSOPHY // CAUSAL DIAGNOSIS"}
+                  </span>
                 </div>
-                <span className="summary-verified">TELEMETRY VERIFIED</span>
+                <div className="flex items-center gap-2">
+                  {result.confidence && (
+                    <span className="text-[10px] font-mono tracking-wider px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                      CONFIDENCE: {result.confidence}
+                    </span>
+                  )}
+                  <span className="summary-verified">
+                    {result.validationStatus?.repairedCount ? `VALIDATED (${result.validationStatus.repairedCount} REPAIRED)` : "DETERMINISTICALLY VALIDATED"}
+                  </span>
+                </div>
               </div>
               <div className="result-summary">{result.summary}</div>
+              {result.primaryLimiter && (
+                <div className="mt-2.5 pt-2 border-t border-slate-700/50 flex flex-wrap gap-2 items-center text-xs">
+                  <span className="text-slate-400 font-mono uppercase">Primary Limiter:</span>
+                  <span className="text-amber-300 font-medium">{result.primaryLimiter}</span>
+                </div>
+              )}
             </div>
+
+            {/* TARGETED PARAMETER INTERVENTIONS (ANTI-SHOTGUN CHANGES) */}
+            {result.changes && result.changes.length > 0 && (
+              <div className="setup-section p-3 rounded-lg border border-cyan-500/20 bg-cyan-950/10">
+                <div className="setup-section-title text-cyan-400">
+                  <span className="flex items-center gap-1.5">
+                    <span>⚡ TARGETED SETUP INTERVENTIONS</span>
+                    <span className="text-xs text-slate-400">({result.changes.length} primary adjustment{result.changes.length === 1 ? "" : "s"}, non-causes locked to baseline)</span>
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-2">
+                  {result.changes.map((ch, idx) => (
+                    <div key={idx} className="p-2.5 rounded bg-slate-900/60 border border-slate-800/80 text-xs">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-semibold text-slate-200">{ch.parameter}</span>
+                        <span className="font-mono text-cyan-300 font-bold">{ch.delta}</span>
+                      </div>
+                      <div className="text-slate-400 text-[11px] mb-1">
+                        <span className="text-slate-500 font-mono">WHY:</span> {ch.rationale}
+                      </div>
+                      <div className="text-amber-400/90 text-[11px]">
+                        <span className="text-slate-500 font-mono">TRADE-OFF:</span> {ch.tradeoff}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="result-sections">
               {(result.sections || []).map((sec, i) => (
@@ -685,6 +730,20 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* TEST PROTOCOL & RECOMMENDED TEST ORDER */}
+            {result.testOrder && result.testOrder.length > 0 && (
+              <div className="setup-section p-3 rounded-lg border border-slate-800 bg-slate-900/40 text-xs">
+                <div className="setup-section-title text-slate-300">
+                  <span>🏁 RECOMMENDED VALIDATION TEST ORDER</span>
+                </div>
+                <ol className="list-decimal list-inside space-y-1 mt-2 text-slate-300 font-mono text-[11px]">
+                  {result.testOrder.map((step, idx) => (
+                    <li key={idx} className="leading-relaxed">{step}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
 
             <div className="result-notes">
               <div className="notes-header">

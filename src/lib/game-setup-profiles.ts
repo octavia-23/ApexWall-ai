@@ -200,7 +200,7 @@ In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and phy
 
     if (isFormula) {
       return {
-        summary: `Assetto Corsa race-ready specification for ${p.car} at ${p.track}. Calibrated specifically for high-downforce open-wheel physics: 15.0 psi cold pressures, 100,000 N/m ARB, safe +5 rod length (clears 20mm scrutineering limit), +95 rear rake, 3rd-element heave springs, and 15% diff power to eliminate traction snap.`,
+        summary: `Assetto Corsa race-ready specification for ${p.car} at ${p.track}. Calibrated specifically for high-downforce open-wheel physics: 15.0 psi cold pressures, 100,000 N/m ARB, safe +6 rod length (clears floor limit without scraping), +24 rear rod length (controlled 18mm aero rake without diffuser stall), 3rd-element heave springs, and 15% diff power to eliminate traction snap.`,
         sections: [
           {
             title: "TYRES",
@@ -231,15 +231,15 @@ In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and phy
               { label: "Rear Wheel Rate", value: "80 N/mm" },
               { label: "Front Heave Spring (3rd Element)", value: "100 N/mm (Aero platform support)" },
               { label: "Rear Heave Spring (3rd Element)", value: "20 N/mm" },
-              { label: "Rod Length / Height LF/RF", value: "+5 mm (25.3mm ground clearance, scraper eliminated)" },
-              { label: "Rod Length / Height LR/RR", value: "+95 mm (High aerodynamic rake)" },
+              { label: "Rod Length / Height LF/RF", value: "+6 mm (26mm ground clearance, scraper eliminated)" },
+              { label: "Rod Length / Height LR/RR", value: "+24 mm (Optimized aerodynamic rake without diffuser stall)" },
             ],
           },
           {
             title: "SUSPENSION ADV.",
             items: [
-              { label: "Front Packers Travel", value: "19 mm" },
-              { label: "Rear Packers Travel", value: "74 mm" },
+              { label: "Front Packers Travel", value: "16 mm" },
+              { label: "Rear Packers Travel", value: "26 mm" },
               { label: "Bumpstop Rate", value: "70 N/mm" },
             ],
           },
@@ -286,7 +286,7 @@ In Assetto Corsa, the garage setup menu has specific tabs, click ranges, and phy
             ],
           },
         ],
-        engineerNotes: `Copy driver, in Assetto Corsa your Formula Hybrid setup has been calibrated to authentic open-wheel physics: front rod length is raised to +5 (clearing the 20mm floor limit and eliminating chassis scraping), while rear rod length is dialed to +95 for high aero-rake. Heave springs are active to support aerodynamic downforce at speed, ARB is set to 100,000 N/m, and diff power is lowered to 15% to stop the rear axle snapping on throttle application.`,
+        engineerNotes: `Copy driver, in Assetto Corsa your Formula setup has been calibrated to authentic open-wheel physics: front rod length is set to +6 (clearing the floor limit without scraping), while rear rod length is dialed to +24 for a stable 18mm aero rake delta. Heave springs are active to support aerodynamic downforce at speed, ARB is set to 100,000 N/m, and diff power is lowered to 15% to stop the rear axle snapping on throttle application.`,
       };
     }
 
@@ -434,10 +434,23 @@ The setup menu in the F1 series has EXACTLY these 6 screens and ranges:
   generateProceduralSetup: (p) => {
     const isMonzaOrSpa = /monza|spa|las vegas|jeddah|baku/i.test(p.track);
     const isMonacoOrHungary = /monaco|hungaroring|singapore|zandvoort/i.test(p.track);
+    const isSepangOrEfficiency = /sepang|malaysia|shanghai|bahrain/i.test(p.track);
     const isUndersteer = /understeer|push|wash/i.test(p.handlingIssue || "");
 
-    const frontWing = isMonzaOrSpa ? "18 / 50" : isMonacoOrHungary ? "48 / 50" : "34 / 50";
-    const rearWing = isMonzaOrSpa ? "14 / 50" : isMonacoOrHungary ? "44 / 50" : "28 / 50";
+    const frontWing = isMonzaOrSpa
+      ? "18 / 50"
+      : isMonacoOrHungary
+      ? "48 / 50"
+      : isSepangOrEfficiency
+      ? (isUndersteer ? "31 / 50" : "30 / 50")
+      : "34 / 50";
+    const rearWing = isMonzaOrSpa
+      ? "14 / 50"
+      : isMonacoOrHungary
+      ? "44 / 50"
+      : isSepangOrEfficiency
+      ? "26 / 50"
+      : "28 / 50";
     const onThrottleDiff = isUndersteer ? "55%" : "60%";
     const offThrottleDiff = "51%";
     const frontSusp = isUndersteer ? "33 / 41" : "36 / 41";

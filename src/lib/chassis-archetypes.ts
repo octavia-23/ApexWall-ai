@@ -222,10 +222,10 @@ export const CHASSIS_ARCHETYPES: Record<ChassisArchetypeId, ChassisArchetypeRule
       arbFrontStep: 100000,
       arbRearStep: 60000,
       arbMaxSteps: 150000,
-      rodLengthFrontMm: 5,
-      rodLengthRearMm: 95,
-      packersFrontMm: 19,
-      packersRearMm: 74,
+      rodLengthFrontMm: 6,
+      rodLengthRearMm: 24,
+      packersFrontMm: 16,
+      packersRearMm: 26,
       hasHeaveSprings: true,
       heaveSpringFrontNmm: 100,
       heaveSpringRearNmm: 20,
@@ -259,7 +259,7 @@ export const CHASSIS_ARCHETYPES: Record<ChassisArchetypeId, ChassisArchetypeRule
     },
     promptGuidance: `CAR CLASS: Modern Formula / Open-Wheel.
 - TYRE PRESSURES: Cold pressures 14.5 - 16.5 psi targeting 21.0 - 22.5 psi HOT.
-- AERODYNAMIC RAKE: Front rod length 5mm (clears 20mm plank step), Rear rod length 85-95mm (extreme diffuser rake generating underbody downforce).
+- AERODYNAMIC RAKE & RIDE HEIGHT: Front rod length 5-8mm (ensures 25-28mm floor clearance over plank step), Rear rod length 20-26mm (stable 14-18mm aero rake delta). NEVER prescribe extreme rear rake (>35mm rear rod or >6 clicks delta in F1 games): excessive rake detaches diffuser airflow, causes violent pitch instability under heavy braking, and induces excessive straight-line drag.
 - SUSPENSION: Active 3rd element heave springs (Front 100 N/mm, Rear 20 N/mm). Front suspension much stiffer than rear.
 - DIFFERENTIAL: Low lock 15-25% Power, 20-30% Coast.
 - ELECTRONICS: Active ERS/MGU-K delivery & recovery, MGU-H mode. Brake Bias 53-56%. ABS & TC are prohibited.`,
@@ -300,8 +300,8 @@ export const CHASSIS_ARCHETYPES: Record<ChassisArchetypeId, ChassisArchetypeRule
       arbFrontStep: 80000,
       arbRearStep: 40000,
       arbMaxSteps: 120000,
-      rodLengthFrontMm: 12,
-      rodLengthRearMm: 45,
+      rodLengthFrontMm: 10,
+      rodLengthRearMm: 24,
       packersFrontMm: 15,
       packersRearMm: 25,
       hasHeaveSprings: false,

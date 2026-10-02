@@ -87,7 +87,8 @@ Guidelines:
 3. Enforce authentic physics: Never recommend tyre pressures outside this archetype's operating window, never invert diff lock logic, and only mention components actually present on this vehicle.
 4. If recommending setup changes, format them cleanly with bullet points:
    • Component: [Setting Change] (Brief technical rationale)
-5. Be concise and high-signal. Avoid fluff or generic motivational padding. Keep answers practical and driver-focused.`;
+5. Be concise and high-signal. Avoid fluff or generic motivational padding. Keep answers practical and driver-focused.
+6. Proportionality & Balance: Never recommend wild, polar extreme adjustments (e.g., maxing wings, stripping all aero, or jacking up extreme rake). Recommend measured, incremental changes (1-2 clicks, 2-4% diff, 2-3mm ride height) to maintain vehicle balance without introducing new handling hazards.`;
 
   try {
     const formattedMessages = [

@@ -599,7 +599,7 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
  * Fully calibrated & physics-compliant across car classes:
  * - Formula / Open-wheel (RSS Formula Hybrid, VRC, Lotus Exos, Tatuus, F1):
  *   15 psi cold pressures, -33 / -15 camber (tenths of deg), 100,000 N/m ARB,
- *   +5 / +95 rod lengths (clears 20mm min floor, authentic aero high-rake),
+ *   +6 / +24 rod lengths (clears min floor, stable 18mm aero rake delta without diffuser stall),
  *   heave springs [SPRING_RATE_HF/HR] & bumpstop packers [PACKER_RANGE_LF/LR],
  *   wing channels [WING_0] and [WING_1], low diff power lock (15%).
  * - GT3 / GT4 / GTE:

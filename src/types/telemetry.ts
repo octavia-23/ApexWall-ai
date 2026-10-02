@@ -209,6 +209,36 @@ export interface GeneratedSetupResult {
   summary: string;
   sections: SetupSection[];
   engineerNotes: string;
+  setupPhilosophy?: string;
+  primaryLimiter?: string;
+  isBaseline?: boolean;
+  changes?: Array<{
+    parameter: string;
+    oldValue: string | number;
+    newValue: string | number;
+    delta: string | number;
+    evidence: string[];
+    diagnosis: string;
+    rationale: string;
+    tradeoff: string;
+    expectedEffect: string;
+    confidence: "HIGH" | "MEDIUM" | "LOW";
+    validationTest: string;
+  }>;
+  evidence?: string[];
+  rationale?: string;
+  tradeoff?: string;
+  expectedEffect?: string;
+  confidence?: "HIGH" | "MEDIUM" | "LOW";
+  testOrder?: string[];
+  knownLimitations?: string[];
+  validationStatus?: {
+    isValid: boolean;
+    repairedCount: number;
+    repairs: Array<{ param: string; original: string; repaired: string; reason: string }>;
+    rejected: Array<{ param: string; reason: string }>;
+    coherenceWarnings: string[];
+  };
 }
 
 export interface TrackCorner {
