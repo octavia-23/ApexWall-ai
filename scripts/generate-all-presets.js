@@ -159,7 +159,7 @@ const imolaCorners = [
   { name: "Rivazza 2", brakeDist: 4360, apexDist: 4460, exitDist: 4580, apexSpeed: 124, maxBrake: 30, dir: -1, radius: 48, peakSteer: 54 },
 ];
 
-console.log("Generating Imola (AC Evo)...");
+console.log("Generating Imola (AC Evo) Driver & Pro...");
 const imolaDriver = generateTrackTelemetry({
   trackLength: 4909,
   isF1: false,
@@ -170,6 +170,17 @@ const imolaDriver = generateTrackTelemetry({
   topSpeedKmh: 274,
 });
 fs.writeFileSync(path.join(outDir, "acevo-imola-gt3.csv"), pointsToCSV(imolaDriver));
+
+const imolaPro = generateTrackTelemetry({
+  trackLength: 4909,
+  isF1: false,
+  isPro: true,
+  corners: imolaCorners,
+  baselineTemps: { FL: 84.2, FR: 87.5, RL: 81.8, RR: 84.6 },
+  baselinePress: { FL: 26.9, FR: 27.3, RL: 26.7, RR: 27.1 },
+  topSpeedKmh: 276,
+});
+fs.writeFileSync(path.join(outDir, "acevo-imola-gt3-pro-reference.csv"), pointsToCSV(imolaPro));
 
 // ----------------------------------------------------------------------------
 // 5. ROAD ATLANTA (4,088m) - PORSCHE 992 GT3 R
@@ -183,7 +194,7 @@ const roadAtlantaCorners = [
   { name: "Turn 12", brakeDist: 3780, apexDist: 3920, exitDist: 4050, apexSpeed: 198, maxBrake: 25, dir: 1, radius: 105, peakSteer: 35 },
 ];
 
-console.log("Generating Road Atlanta...");
+console.log("Generating Road Atlanta Driver & Pro...");
 const roadAtlantaDriver = generateTrackTelemetry({
   trackLength: 4088,
   isF1: false,
@@ -194,6 +205,17 @@ const roadAtlantaDriver = generateTrackTelemetry({
   topSpeedKmh: 278,
 });
 fs.writeFileSync(path.join(outDir, "roadatlanta-imsa-gt3.csv"), pointsToCSV(roadAtlantaDriver));
+
+const roadAtlantaPro = generateTrackTelemetry({
+  trackLength: 4088,
+  isF1: false,
+  isPro: true,
+  corners: roadAtlantaCorners,
+  baselineTemps: { FL: 84.8, FR: 88.0, RL: 83.0, RR: 85.5 },
+  baselinePress: { FL: 26.95, FR: 27.35, RL: 26.75, RR: 27.15 },
+  topSpeedKmh: 280,
+});
+fs.writeFileSync(path.join(outDir, "roadatlanta-imsa-gt3-pro-reference.csv"), pointsToCSV(roadAtlantaPro));
 
 // ----------------------------------------------------------------------------
 // 6. JEDDAH CORNICHE (6,174m) - RED BULL RB20 F1
@@ -208,7 +230,7 @@ const jeddahCorners = [
   { name: "T27 Hairpin", brakeDist: 5820, apexDist: 5980, exitDist: 6120, apexSpeed: 110, maxBrake: 98, dir: -1, radius: 38, peakSteer: 65 },
 ];
 
-console.log("Generating Jeddah F1...");
+console.log("Generating Jeddah F1 Driver & Pro...");
 const jeddahDriver = generateTrackTelemetry({
   trackLength: 6174,
   isF1: true,
@@ -219,6 +241,17 @@ const jeddahDriver = generateTrackTelemetry({
   topSpeedKmh: 336,
 });
 fs.writeFileSync(path.join(outDir, "jeddah-f1.csv"), pointsToCSV(jeddahDriver));
+
+const jeddahPro = generateTrackTelemetry({
+  trackLength: 6174,
+  isF1: true,
+  isPro: true,
+  corners: jeddahCorners,
+  baselineTemps: { FL: 97.0, FR: 100.0, RL: 93.0, RR: 96.0 },
+  baselinePress: { FL: 23.1, FR: 23.5, RL: 21.1, RR: 21.5 },
+  topSpeedKmh: 340,
+});
+fs.writeFileSync(path.join(outDir, "jeddah-f1-pro-reference.csv"), pointsToCSV(jeddahPro));
 
 // ----------------------------------------------------------------------------
 // 7. NÜRBURGRING NORDSCHLEIFE (20,832m) - PORSCHE 992 GT3 R
@@ -244,10 +277,9 @@ const nordschleifeCorners = [
   { name: "Schwalbenschwanz", brakeDist: 18450, apexDist: 18620, exitDist: 18800, apexSpeed: 145, maxBrake: 80, dir: 1, radius: 60, peakSteer: 48 },
   { name: "Mini-Karussell", brakeDist: 18950, apexDist: 19080, exitDist: 19200, apexSpeed: 90, maxBrake: 95, dir: -1, radius: 30, peakSteer: 70 },
   { name: "Galgenkopf", brakeDist: 19350, apexDist: 19550, exitDist: 19800, apexSpeed: 165, maxBrake: 60, dir: 1, radius: 78, peakSteer: 42 },
-  // Döttinger Höhe straight (accelerating to 285 km/h for 2.2 km)
 ];
 
-console.log("Generating Nordschleife (~10,000 points)...");
+console.log("Generating Nordschleife Driver & Pro Reference (~10,000 points each)...");
 const nordschleifeDriver = generateTrackTelemetry({
   trackLength: 20832,
   isF1: false,
@@ -259,4 +291,52 @@ const nordschleifeDriver = generateTrackTelemetry({
 });
 fs.writeFileSync(path.join(outDir, "nordschleife-gt3.csv"), pointsToCSV(nordschleifeDriver));
 
+const nordschleifePro = generateTrackTelemetry({
+  trackLength: 20832,
+  isF1: false,
+  isPro: true,
+  corners: nordschleifeCorners,
+  baselineTemps: { FL: 83.8, FR: 86.2, RL: 81.6, RR: 84.0 },
+  baselinePress: { FL: 26.85, FR: 27.15, RL: 26.65, RR: 26.95 },
+  topSpeedKmh: 290,
+});
+fs.writeFileSync(path.join(outDir, "nordschleife-gt3-pro-reference.csv"), pointsToCSV(nordschleifePro));
+
+// ----------------------------------------------------------------------------
+// 8. RED BULL RING (4,318m) - MERCEDES-AMG GT4
+// ----------------------------------------------------------------------------
+const redbullringCorners = [
+  { name: "Niki Lauda Kurve (T1)", brakeDist: 340, apexDist: 480, exitDist: 600, apexSpeed: 96, maxBrake: 92, dir: 1, radius: 38, peakSteer: 65 },
+  { name: "Remus (T3)", brakeDist: 1220, apexDist: 1380, exitDist: 1520, apexSpeed: 64, maxBrake: 98, dir: 1, radius: 24, peakSteer: 78 },
+  { name: "Schlossgold (T4)", brakeDist: 1940, apexDist: 2100, exitDist: 2260, apexSpeed: 92, maxBrake: 88, dir: 1, radius: 44, peakSteer: 60 },
+  { name: "Rauch (T6)", brakeDist: 2620, apexDist: 2760, exitDist: 2900, apexSpeed: 118, maxBrake: 65, dir: -1, radius: 64, peakSteer: 48 },
+  { name: "Würth (T7)", brakeDist: 3080, apexDist: 3200, exitDist: 3340, apexSpeed: 130, maxBrake: 45, dir: -1, radius: 74, peakSteer: 44 },
+  { name: "Rindt (T9)", brakeDist: 3660, apexDist: 3800, exitDist: 3940, apexSpeed: 122, maxBrake: 72, dir: 1, radius: 68, peakSteer: 48 },
+  { name: "Red Bull Mobile (T10)", brakeDist: 4020, apexDist: 4140, exitDist: 4280, apexSpeed: 116, maxBrake: 58, dir: 1, radius: 64, peakSteer: 50 },
+];
+
+console.log("Generating Red Bull Ring AMG GT4 Driver & Pro Reference...");
+const rbrDriver = generateTrackTelemetry({
+  trackLength: 4318,
+  isF1: false,
+  isPro: false,
+  corners: redbullringCorners,
+  baselineTemps: { FL: 80.5, FR: 83.2, RL: 79.0, RR: 81.5 },
+  baselinePress: { FL: 26.5, FR: 26.8, RL: 26.3, RR: 26.6 },
+  topSpeedKmh: 252,
+});
+fs.writeFileSync(path.join(outDir, "redbullring-amg-gt4.csv"), pointsToCSV(rbrDriver));
+
+const rbrPro = generateTrackTelemetry({
+  trackLength: 4318,
+  isF1: false,
+  isPro: true,
+  corners: redbullringCorners,
+  baselineTemps: { FL: 81.0, FR: 83.8, RL: 79.5, RR: 82.0 },
+  baselinePress: { FL: 26.55, FR: 26.85, RL: 26.35, RR: 26.65 },
+  topSpeedKmh: 255,
+});
+fs.writeFileSync(path.join(outDir, "redbullring-amg-gt4-pro-reference.csv"), pointsToCSV(rbrPro));
+
 console.log("All realistic telemetry presets generated successfully!");
+

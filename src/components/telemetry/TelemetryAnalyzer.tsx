@@ -172,7 +172,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         target: "Sprint Race (Tyre Life & Agility)",
         complaint: "Understeer on entry into Turn 3 Remus hairpin, snap oversteer across Turn 6 exit kerb",
         file: "/sample-telemetry/redbullring-amg-gt4.csv",
-        refFile: "",
+        refFile: "/sample-telemetry/redbullring-amg-gt4-pro-reference.csv",
       },
       acevo: {
         game: "Assetto Corsa Evo",
@@ -188,7 +188,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         target: "Qualifying Hotlap (Peak Grip)",
         complaint: "Bottoming out on Variante Alta kerbs, understeer through Tamburello entry",
         file: "/sample-telemetry/acevo-imola-gt3.csv",
-        refFile: "/sample-telemetry/spa-gt3-pro-reference.csv",
+        refFile: "/sample-telemetry/acevo-imola-gt3-pro-reference.csv",
       },
       roadatlanta: {
         game: "iRacing",
@@ -204,7 +204,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         target: "Sprint Race (Tyre Life & Agility)",
         complaint: "Bottoming out through Turn 12 downhill compression, oversteer on Turn 3 crest",
         file: "/sample-telemetry/roadatlanta-imsa-gt3.csv",
-        refFile: "",
+        refFile: "/sample-telemetry/roadatlanta-imsa-gt3-pro-reference.csv",
       },
       nordschleife: {
         game: "Assetto Corsa Competizione",
@@ -220,7 +220,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         target: "Endurance Race (Pace & Stability)",
         complaint: "Instability through Flugplatz crest, high kerb harshness at Karussell entry",
         file: "/sample-telemetry/nordschleife-gt3.csv",
-        refFile: "",
+        refFile: "/sample-telemetry/nordschleife-gt3-pro-reference.csv",
       },
       jeddah: {
         game: "F1 24",
@@ -236,7 +236,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         target: "Qualifying Hotlap (Peak Grip)",
         complaint: "Front wing wash through high-speed sweeps (Turns 8-10), snap oversteer on Turn 27 exit",
         file: "/sample-telemetry/jeddah-f1.csv",
-        refFile: "",
+        refFile: "/sample-telemetry/jeddah-f1-pro-reference.csv",
       },
     };
 
@@ -277,7 +277,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         setLapComparison(comp);
       } else {
         setReferenceTelemetry(null);
-        setLapComparison(null);
+        const comp = computeLapComparison(parsedDriver, null, cfg.track);
+        setLapComparison(comp);
       }
 
       // Compute G-G Friction Circle
@@ -418,9 +419,15 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       game: detectedGame || game,
     });
 
-    // Reset reference comparison if it was from a different track
+    // Reset reference comparison but compute autonomous corner-by-corner analysis immediately
     setReferenceTelemetry(null);
-    setLapComparison(null);
+    try {
+      const comp = computeLapComparison(parsed, null, detectedTrack || track);
+      setLapComparison(comp);
+    } catch (errComp) {
+      console.warn("Could not compute autonomous lap comparison:", errComp);
+      setLapComparison(null);
+    }
 
     try {
       const gg = computeGGFrictionCircle(parsed, null);
@@ -893,7 +900,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         },
         sampledPoints: parsedTelemetry.points.slice(0, 45),
         anomalies: parsedTelemetry.detectedAnomalies,
-        lapComparison: benchmarkMode === "pro" && lapComparison ? lapComparison : undefined,
+        lapComparison: lapComparison ? lapComparison : undefined,
         frictionCircle: frictionCircleData
           ? {
               gripUtilizationPct: frictionCircleData.gripUtilizationPct,
@@ -1804,7 +1811,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </div>
             )}
 
-            {/* Pro Benchmark Comparison Strip */}
+            {/* Pro Benchmark / Autonomous Corner Analysis Strip */}
             {lapComparison && (
               <div className="benchmark-strip">
                 <div className="benchmark-info">
@@ -1813,10 +1820,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    PRO BENCHMARK OVERLAY
+                    {referenceTelemetry ? "PRO BENCHMARK OVERLAY" : "CORNER TELEMETRY ENGINE"}
                   </span>
                   <span className="benchmark-metric">
-                    Driver: <strong>{result?.lapTimeObserved || parsedTelemetry?.lapTime}</strong> vs Pro: <strong>{lapComparison.refLapTime}</strong>
+                    {referenceTelemetry ? (
+                      <>Driver: <strong>{result?.lapTimeObserved || parsedTelemetry?.lapTime}</strong> vs Pro: <strong>{lapComparison.refLapTime}</strong></>
+                    ) : (
+                      <>Observed: <strong>{result?.lapTimeObserved || parsedTelemetry?.lapTime}</strong> &bull; <strong>{lapComparison.cornerComparisons.length} Corners Analyzed</strong></>
+                    )}
                   </span>
                   <span className={`benchmark-delta-pill ${lapComparison.totalTimeDeltaSeconds > 0 ? "loss" : "gain"}`}>
                     Δt: {lapComparison.totalTimeDeltaSeconds > 0 ? `+${lapComparison.totalTimeDeltaSeconds}s` : `${lapComparison.totalTimeDeltaSeconds}s`}
@@ -1825,16 +1836,18 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     Δv Top: {lapComparison.topSpeedDeltaKmh > 0 ? `+${lapComparison.topSpeedDeltaKmh}` : lapComparison.topSpeedDeltaKmh} km/h
                   </span>
                 </div>
-                <div className="benchmark-toggle-group">
-                  <button
-                    type="button"
-                    className={`benchmark-toggle-btn ${benchmarkMode === "pro" ? "active" : ""}`}
-                    onClick={() => setBenchmarkMode(benchmarkMode === "pro" ? "off" : "pro")}
-                  >
-                    <span className="toggle-dot dot-dualspeed"></span>
-                    {benchmarkMode === "pro" ? "Overlay Active" : "Overlay Muted"}
-                  </button>
-                </div>
+                {referenceTelemetry && (
+                  <div className="benchmark-toggle-group">
+                    <button
+                      type="button"
+                      className={`benchmark-toggle-btn ${benchmarkMode === "pro" ? "active" : ""}`}
+                      onClick={() => setBenchmarkMode(benchmarkMode === "pro" ? "off" : "pro")}
+                    >
+                      <span className="toggle-dot dot-dualspeed"></span>
+                      {benchmarkMode === "pro" ? "Overlay Active" : "Overlay Muted"}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1939,17 +1952,21 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               />
             )}
 
-            {/* Turn-by-Turn Pro Benchmark Delta Attribution Table */}
-            {benchmarkMode === "pro" && lapComparison && (
+            {/* Turn-by-Turn Benchmark / Autonomous Corner Analysis Table */}
+            {lapComparison && lapComparison.cornerComparisons && lapComparison.cornerComparisons.length > 0 && (
               <div className="delta-table-module glass-card-nested">
                 <div className="module-header">
                   <div className="module-title-group">
-                    <span className="module-title">Turn-by-Turn Benchmark Delta</span>
+                    <span className="module-title">
+                      {referenceTelemetry ? "Turn-by-Turn Benchmark Delta" : "Turn-by-Turn Corner Analysis"}
+                    </span>
                     <span className="module-sub">Apex speed, braking point, throttle commit, and time delta</span>
                   </div>
                   <div className="benchmark-badge">
                     <span className="demo-dot"></span>
-                    GHOST REF: {lapComparison.refLapTime} ({lapComparison.totalTimeDeltaSeconds > 0 ? `+${lapComparison.totalTimeDeltaSeconds}s` : `${lapComparison.totalTimeDeltaSeconds}s`})
+                    {referenceTelemetry
+                      ? `GHOST REF: ${lapComparison.refLapTime} (${lapComparison.totalTimeDeltaSeconds > 0 ? `+${lapComparison.totalTimeDeltaSeconds}s` : `${lapComparison.totalTimeDeltaSeconds}s`})`
+                      : `AUTONOMOUS ANALYSIS: ${lapComparison.cornerComparisons.length} CORNERS DETECTED`}
                   </div>
                 </div>
                 <div className="delta-table-wrapper">
@@ -1958,7 +1975,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                       <tr>
                         <th>Corner / Apex</th>
                         <th>Driver Apex</th>
-                        <th>Benchmark Apex</th>
+                        <th>{referenceTelemetry ? "Benchmark Apex" : "Target Apex"}</th>
                         <th>Apex Speed Δ</th>
                         <th>Braking Point</th>
                         <th>Throttle Commit</th>

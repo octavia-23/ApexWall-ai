@@ -10,6 +10,7 @@ export interface RealCircuitCorner {
   dist: number;
   x: number;
   y: number;
+  radius?: number;
 }
 
 export interface TrackDrsZone {
