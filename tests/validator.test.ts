@@ -207,9 +207,9 @@ describe("src/lib/setup-engine/validator characterization tests", () => {
     );
   });
 
-  it("characterizes CURRENT GT3 diff repair and coherence warning", () => {
+  it("characterizes GT3 diff repair and coherence warning with dynamic lock equalization", () => {
     // In GT3 cars with adjustable power/coast diff (e.g. Assetto Corsa GT3 using AC catalog):
-    // If diffPower > diffCoast, power lock is equalized to "30%"
+    // When diffPower > diffCoast, power lock is equalized to min(power, coast) snapped to grid
     const acCatalog = AC_FORMULA_PARAMETERS;
     const baseline = createMockBaseline([
       { label: "Diff Power", value: "30%" },
@@ -220,7 +220,7 @@ describe("src/lib/setup-engine/validator characterization tests", () => {
       {
         title: "DRIVETRAIN",
         items: [
-          { label: "Diff Power", value: "60%" }, // 60 > 40
+          { label: "Diff Power", value: "60%" }, // 60 > 40; clamped to 50% max, then equalized to coast 40%
           { label: "Diff Coast", value: "40%" },
         ],
       },
@@ -235,17 +235,119 @@ describe("src/lib/setup-engine/validator characterization tests", () => {
 
     const { repairedSections, report } = validateAndRepairSetup(rawSections, ctx);
 
-    // Diff power should be repaired to "30%"
+    // Diff power should be repaired to "40%"
     const diffPowerItem = repairedSections[0].items.find((it) => /diff power/i.test(it.label));
-    expect(diffPowerItem?.value).toBe("30%");
+    expect(diffPowerItem?.value).toBe("40%");
 
     // Coherence warning and repair reason
     expect(report.coherenceWarnings).toContain(
-      "GT3 diff power lock was higher than coast lock, causing extreme exit understeer and entry instability. Equalized power lock to 30%."
+      "GT3 diff power lock was higher than coast lock, causing extreme exit understeer and entry instability. Equalized power lock to 40%."
     );
     expect(report.repairs.some((r) => r.reason === "Corrected inverted GT3 differential lock ratio.")).toBe(true);
 
-    // Because no item was rejected, isValid remains true
+    // Because no item was rejected, isValid remains true and wasRepaired is true
     expect(report.isValid).toBe(true);
+    expect(report.wasRepaired).toBe(true);
+  });
+
+  it("characterizes coast=25/power=40 case asserting power becomes <=25 snapped to grid (catches old 30% bug)", () => {
+    const acCatalog = AC_FORMULA_PARAMETERS;
+    const baseline = createMockBaseline([
+      { label: "Diff Power", value: "15%" },
+      { label: "Diff Coast", value: "25%" },
+    ]);
+
+    const rawSections: SetupSection[] = [
+      {
+        title: "DRIVETRAIN",
+        items: [
+          { label: "Diff Power", value: "40%" }, // 40 > 25
+          { label: "Diff Coast", value: "25%" },
+        ],
+      },
+    ];
+
+    const ctx: ValidationContext = {
+      game: "Assetto Corsa",
+      car: "Porsche 911 GT3 R",
+      catalog: acCatalog,
+      baseline,
+    };
+
+    const { repairedSections, report } = validateAndRepairSetup(rawSections, ctx);
+
+    const diffPowerItem = repairedSections[0].items.find((it) => /diff power/i.test(it.label));
+    expect(diffPowerItem?.value).toBe("25%");
+    const powerNumeric = parseFloat(diffPowerItem?.value || "0");
+    expect(powerNumeric).toBeLessThanOrEqual(25);
+
+    expect(report.coherenceWarnings).toContain(
+      "GT3 diff power lock was higher than coast lock, causing extreme exit understeer and entry instability. Equalized power lock to 25%."
+    );
+    expect(report.repairs.some((r) => r.reason === "Corrected inverted GT3 differential lock ratio.")).toBe(true);
+    expect(report.wasRepaired).toBe(true);
+    expect(report.isValid).toBe(true);
+  });
+
+  it("characterizes wasRepaired false on pristine valid setup with no repairs", () => {
+    const baseline = createMockBaseline([
+      { label: "Tyre Pressure FL", value: "26.0 psi" },
+      { label: "Tyre Pressure FR", value: "26.0 psi" },
+    ]);
+
+    const rawSections: SetupSection[] = [
+      {
+        title: "TYRES",
+        items: [
+          { label: "Tyre Pressure FL", value: "26.0 psi" },
+          { label: "Tyre Pressure FR", value: "26.0 psi" },
+        ],
+      },
+    ];
+
+    const ctx: ValidationContext = {
+      game: "Assetto Corsa Competizione",
+      car: "Porsche 992 GT3 R",
+      catalog,
+      baseline,
+    };
+
+    const { report } = validateAndRepairSetup(rawSections, ctx);
+    expect(report.repairs).toHaveLength(0);
+    expect(report.wasRepaired).toBe(false);
+    expect(report.isValid).toBe(true);
+  });
+
+  it("characterizes catalog-driven rake repairs producing byte-identical strings", () => {
+    // Assetto Corsa Formula: Rod Length Front vs Rear (delta > 26)
+    const acFormulaCatalog = AC_FORMULA_PARAMETERS;
+    const acBaseline = createMockBaseline([
+      { label: "Rod Length Front", value: "+0 mm" },
+      { label: "Rod Length Rear", value: "+30 mm" },
+    ]);
+
+    const acSections: SetupSection[] = [
+      {
+        title: "SUSPENSION",
+        items: [
+          { label: "Rod Length Front", value: "+0 mm" },
+          { label: "Rod Length Rear", value: "+30 mm" }, // delta 30 > 26 -> clamped to safeR (0 + 18) = +18 mm
+        ],
+      },
+    ];
+
+    const acCtx: ValidationContext = {
+      game: "Assetto Corsa",
+      car: "Lotus Exos 125 (Formula)", // isFormula = true
+      catalog: acFormulaCatalog,
+      baseline: acBaseline,
+    };
+
+    const acResult = validateAndRepairSetup(acSections, acCtx);
+    const rearRodItem = acResult.repairedSections[0].items.find((it) => it.label === "Rod Length / Height LR/RR");
+    expect(rearRodItem?.value).toBe("+18 mm");
+    expect(acResult.report.repairs.some((r) => r.repaired === "+18 mm")).toBe(true);
+    expect(acResult.report.wasRepaired).toBe(true);
+    expect(acResult.report.isValid).toBe(true);
   });
 });

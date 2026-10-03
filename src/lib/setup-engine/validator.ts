@@ -3,6 +3,12 @@ import { ParameterDefinition, SetupValidationReport } from "./types";
 import { snapToStep, findParameterDefinition, parseNumericValue } from "./parameter-catalog";
 import { BaselineContext } from "./baseline-generator";
 
+declare module "./types" {
+  interface SetupValidationReport {
+    wasRepaired?: boolean;
+  }
+}
+
 /**
  * ============================================================================
  * DETERMINISTIC SETUP VALIDATOR & PROGRAMMATIC REPAIR ENGINE
@@ -207,14 +213,18 @@ export function validateAndRepairSetup(
         // Apply repair to sections
         repairedSections.forEach((s) => {
           s.items.forEach((it) => {
-            if (/rod length.*r/i.test(it.label)) {
-              repairs.push({
-                param: it.label,
-                original: it.value,
-                repaired: `+${safeR} mm`,
-                reason: "Clamped extreme rear rake to stable 18mm delta to prevent diffuser stall.",
-              });
-              it.value = `+${safeR} mm`;
+            const itemDef = findParameterDefinition(catalog, it.label);
+            if (itemDef?.id === "ROD_LENGTH_R" || /rod length.*r/i.test(it.label)) {
+              const repairedStr = `+${safeR} mm`;
+              if (it.value !== repairedStr) {
+                repairs.push({
+                  param: it.label,
+                  original: it.value,
+                  repaired: repairedStr,
+                  reason: "Clamped extreme rear rake to stable 18mm delta to prevent diffuser stall.",
+                });
+                it.value = repairedStr;
+              }
             }
           });
         });
@@ -232,14 +242,18 @@ export function validateAndRepairSetup(
         valuesByParamId.set("REAR_RIDE_HEIGHT", safeR);
         repairedSections.forEach((s) => {
           s.items.forEach((it) => {
-            if (/rear ride height/i.test(it.label)) {
-              repairs.push({
-                param: it.label,
-                original: it.value,
-                repaired: `${safeR} / 60`,
-                reason: "Clamped F1 rear ride height to stable 4-click delta over front.",
-              });
-              it.value = `${safeR} / 60`;
+            const itemDef = findParameterDefinition(catalog, it.label);
+            if (itemDef?.id === "REAR_RIDE_HEIGHT" || /rear ride height/i.test(it.label)) {
+              const repairedStr = `${safeR} / 60`;
+              if (it.value !== repairedStr) {
+                repairs.push({
+                  param: it.label,
+                  original: it.value,
+                  repaired: repairedStr,
+                  reason: "Clamped F1 rear ride height to stable 4-click delta over front.",
+                });
+                it.value = repairedStr;
+              }
             }
           });
         });
@@ -252,17 +266,30 @@ export function validateAndRepairSetup(
     const diffPower = valuesByParamId.get("DIFF_POWER");
     const diffCoast = valuesByParamId.get("DIFF_COAST");
     if (diffPower !== undefined && diffCoast !== undefined && diffPower > diffCoast) {
-      coherenceWarnings.push("GT3 diff power lock was higher than coast lock, causing extreme exit understeer and entry instability. Equalized power lock to 30%.");
+      const powerDef = catalog.find((c) => c.id === "DIFF_POWER") || findParameterDefinition(catalog, "Diff Power");
+      const targetPower = Math.min(diffPower, diffCoast);
+      const snappedPower = powerDef ? snapToStep(targetPower, powerDef.min, powerDef.max, powerDef.step) : targetPower;
+      const formattedPower = powerDef?.formatDisplay
+        ? powerDef.formatDisplay(snappedPower)
+        : `${snappedPower}${powerDef?.unit ? ` ${powerDef.unit}` : ""}`;
+
+      valuesByParamId.set("DIFF_POWER", snappedPower);
+      coherenceWarnings.push(
+        `GT3 diff power lock was higher than coast lock, causing extreme exit understeer and entry instability. Equalized power lock to ${formattedPower}.`
+      );
       repairedSections.forEach((s) => {
         s.items.forEach((it) => {
-          if (/diff power/i.test(it.label)) {
-            repairs.push({
-              param: it.label,
-              original: it.value,
-              repaired: "30%",
-              reason: "Corrected inverted GT3 differential lock ratio.",
-            });
-            it.value = "30%";
+          const itemDef = findParameterDefinition(catalog, it.label);
+          if (itemDef?.id === "DIFF_POWER" || /diff power/i.test(it.label)) {
+            if (it.value !== formattedPower) {
+              repairs.push({
+                param: it.label,
+                original: it.value,
+                repaired: formattedPower,
+                reason: "Corrected inverted GT3 differential lock ratio.",
+              });
+              it.value = formattedPower;
+            }
           }
         });
       });
@@ -296,6 +323,7 @@ export function validateAndRepairSetup(
     repairedSections,
     report: {
       isValid: rejected.length === 0,
+      wasRepaired: repairs.length > 0,
       repairedCount: repairs.length,
       repairs,
       rejected,
