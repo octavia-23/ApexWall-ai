@@ -16,7 +16,9 @@
     "telemetry-bridge:acc": "node scripts/telemetry-bridge.js --game acc",
     "telemetry-bridge:acevo": "node scripts/telemetry-bridge.js --game acevo",
     "build:bridge-exe": "esbuild scripts/telemetry-bridge.js --bundle --platform=node --outfile=scripts/bridge-bundle.js && node --experimental-sea-config sea-config.json && node -e \"require('fs').copyFileSync(process.execPath, 'public/downloads/ApexWall-Bridge.exe')\" && postject public/downloads/ApexWall-Bridge.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2",
-    "serve:legacy": "node server.js"
+    "serve:legacy": "node server.js",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
@@ -46,6 +48,7 @@
     "autoprefixer": "^10.6.1",
     "postcss": "^8.5.28",
     "tailwindcss": "^3.4.17",
-    "typescript": "^5.4.5"
+    "typescript": "^5.4.5",
+    "vitest": "^5.0.3"
   }
 }
