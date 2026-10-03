@@ -115,6 +115,35 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     pointsCount: number;
   } | null>(null);
   const [isLoadingLiveLap, setIsLoadingLiveLap] = useState(false);
+  const [showBridgeHelp, setShowBridgeHelp] = useState(false);
+  const [isCheckingRig, setIsCheckingRig] = useState(false);
+
+  const checkRigStatusManual = async () => {
+    setIsCheckingRig(true);
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 1500);
+      const res = await fetch("http://localhost:9001/api/status", { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        const data = await res.json();
+        setLiveRigStatus({
+          connected: true,
+          game: data.activeGame || "Unknown Sim",
+          isReceiving: data.isReceiving,
+          totalPackets: data.totalPackets || 0,
+          lapCounter: data.lapCounter || 0,
+          pointsCount: data.currentLapPointsCount || 0,
+        });
+      } else {
+        setLiveRigStatus(null);
+      }
+    } catch {
+      setLiveRigStatus(null);
+    } finally {
+      setIsCheckingRig(false);
+    }
+  };
 
   // Poll Local Telemetry Bridge for active live rig connection
   useEffect(() => {
@@ -1390,47 +1419,105 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             Telemetry File Ingest
           </div>
 
-          {/* Live Rig Bridge Auto-Detector Banner */}
-          {liveRigStatus?.connected && (
-            <div className="mb-3.5 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shadow-lg shadow-emerald-950/20">
+          {/* Live Rig Bridge Controller Card (Persistent) */}
+          <div className={`mb-4 p-3.5 rounded-xl border backdrop-blur-md shadow-lg transition-all ${
+            liveRigStatus?.connected
+              ? "border-emerald-500/40 bg-emerald-950/25 shadow-emerald-950/20"
+              : "border-slate-800 bg-slate-900/50"
+          }`}>
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 <div className="relative flex items-center justify-center">
-                  <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
-                  <span className="absolute w-3 h-3 rounded-full bg-emerald-400 animate-ping opacity-75"></span>
+                  <span className={`w-3 h-3 rounded-full ${liveRigStatus?.connected ? "bg-emerald-400" : "bg-amber-400/80"}`} />
+                  {liveRigStatus?.connected && (
+                    <span className="absolute w-3 h-3 rounded-full bg-emerald-400 animate-ping opacity-75" />
+                  )}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Live Rig Stream Active</span>
-                    <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-semibold border border-emerald-500/30">
-                      {liveRigStatus.game}
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
+                      {liveRigStatus?.connected ? "Live Sim Rig Connected" : "Universal Sim Rig Bridge (UDP)"}
+                    </span>
+                    <span className={`text-[11px] px-2 py-0.5 rounded font-mono font-semibold border ${
+                      liveRigStatus?.connected
+                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
+                        : "bg-slate-800/80 text-slate-400 border-slate-700/60"
+                    }`}>
+                      {liveRigStatus?.connected ? liveRigStatus.game : "Standby • Port 5606 / 5300 / 20777"}
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400 mt-0.5">
-                    {liveRigStatus.pointsCount > 0
-                      ? `Telemetry buffer: ${liveRigStatus.pointsCount.toLocaleString()} live points recording at 60Hz. Zero manual exports needed.`
-                      : "Ready to capture live telemetry directly from your game."}
+                    {liveRigStatus?.connected
+                      ? `Telemetry stream active: ${liveRigStatus.pointsCount.toLocaleString()} live points recording at 60Hz. Zero manual exports needed.`
+                      : "Direct real-time telemetry from Automobilista 2, Forza, F1 & ACC without manual CSV exporting."}
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={fetchLatestLiveLapFromRig}
-                disabled={isLoadingLiveLap}
-                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg text-xs shadow-md shadow-emerald-900/30 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-              >
-                {isLoadingLiveLap ? (
-                  <span>Importing Lap Data...</span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBridgeHelp(!showBridgeHelp)}
+                  className="px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg transition cursor-pointer"
+                >
+                  {showBridgeHelp ? "Hide Guide" : "Setup Guide"}
+                </button>
+                {liveRigStatus?.connected ? (
+                  <button
+                    type="button"
+                    onClick={fetchLatestLiveLapFromRig}
+                    disabled={isLoadingLiveLap}
+                    className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg text-xs shadow-md shadow-emerald-900/30 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+                  >
+                    {isLoadingLiveLap ? (
+                      <span>Importing Lap Data...</span>
+                    ) : (
+                      <>
+                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
+                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                        </svg>
+                        <span>⚡ Import Live Lap from Rig</span>
+                      </>
+                    )}
+                  </button>
                 ) : (
-                  <>
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  <button
+                    type="button"
+                    onClick={checkRigStatusManual}
+                    disabled={isCheckingRig}
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-xs border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <svg className={isCheckingRig ? "animate-spin" : ""} viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="23 4 23 10 17 10" />
+                      <polyline points="1 20 1 14 7 14" />
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
                     </svg>
-                    <span>⚡ Import Live Lap from Rig</span>
-                  </>
+                    <span>Check Rig</span>
+                  </button>
                 )}
-              </button>
+              </div>
             </div>
-          )}
+
+            {/* Expandable 2-step instructions */}
+            {showBridgeHelp && (
+              <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300 grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                  <div className="font-semibold text-sky-400 mb-1">Step 1: Start Bridge on your PC</div>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    Double-click <code className="text-amber-300 font-mono">Launch_ApexWall_Bridge.bat</code> in the project folder (or run <code className="text-amber-300 font-mono">npm run bridge</code>). This opens port 5606 for AMS2, 5300 for Forza, 20777 for F1, and 9000 for ACC.
+                  </p>
+                </div>
+                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                  <div className="font-semibold text-sky-400 mb-1">Step 2: Enable Telemetry In-Game</div>
+                  <p className="text-slate-400 text-[11px] leading-relaxed">
+                    • <strong>AMS2</strong>: Options &gt; System &gt; Shared Memory: <em>Project CARS 2</em><br />
+                    • <strong>Forza</strong>: Options &gt; Gameplay &gt; Data Out: <em>ON (127.0.0.1:5300)</em><br />
+                    • <strong>F1</strong>: Settings &gt; Telemetry &gt; UDP Broadcast: <em>ON (Port 20777)</em>
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Dropzone */}
           <div
