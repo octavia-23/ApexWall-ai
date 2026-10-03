@@ -30,3 +30,6 @@ Thumbs.db
 .vercel
 .env*
 scratch/
+sea-prep.blob
+scripts/bridge-bundle.js
+public/downloads/*.exe

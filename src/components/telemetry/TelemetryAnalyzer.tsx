@@ -1455,6 +1455,19 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
+                <a
+                  href="/downloads/ApexWall-Bridge.zip"
+                  download="ApexWall-Bridge.zip"
+                  className="px-3 py-1.5 bg-sky-600/90 hover:bg-sky-500 text-white font-medium rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
+                  title="Download the standalone Windows bridge to stream live telemetry from your PC rig"
+                >
+                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 10 12 15 17 10" />
+                    <line x1="12" y1="15" x2="12" y2="3" />
+                  </svg>
+                  <span>Download Bridge (.exe)</span>
+                </a>
                 <button
                   type="button"
                   onClick={() => setShowBridgeHelp(!showBridgeHelp)}
@@ -1502,9 +1515,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {showBridgeHelp && (
               <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300 grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="font-semibold text-sky-400 mb-1">Step 1: Start Bridge on your PC</div>
+                  <div className="font-semibold text-sky-400 mb-1 flex items-center justify-between">
+                    <span>Step 1: Download & Run on your PC</span>
+                    <a href="/downloads/ApexWall-Bridge.zip" download="ApexWall-Bridge.zip" className="text-amber-400 underline hover:text-amber-300 font-normal text-[11px]">
+                      Download .zip
+                    </a>
+                  </div>
                   <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Double-click <code className="text-amber-300 font-mono">Launch_ApexWall_Bridge.bat</code> in the project folder (or run <code className="text-amber-300 font-mono">npm run bridge</code>). This opens port 5606 for AMS2, 5300 for Forza, 20777 for F1, and 9000 for ACC.
+                    Download and extract the bridge. Double-click <code className="text-amber-300 font-mono">Launch_ApexWall_Bridge.bat</code> or <code className="text-amber-300 font-mono">ApexWall-Bridge.exe</code>. It immediately opens UDP ports 5606 (AMS2), 5300 (Forza), 20777 (F1), and 9000 (ACC).
                   </p>
                 </div>
                 <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
