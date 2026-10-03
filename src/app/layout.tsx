@@ -7,7 +7,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "ApexWall AI — Autonomous Sim Racing Telemetry & Chassis Engineering",
-  description: "Professional sim racing engineering platform: MoTeC-grade telemetry diagnostics, game-authentic car setups with 1-click injection, and AI race engineer debriefs for ACC, iRacing, AC, and F1.",
+  description: "Sim racing telemetry analysis and chassis setup engineering workbench: multi-channel telemetry diagnostics, simulator-specific car setups, and AI race engineer debriefs.",
 };
 
 export default function RootLayout({

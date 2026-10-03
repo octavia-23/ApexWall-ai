@@ -107,7 +107,7 @@ export function parseTelemetryCSV(csvText: string, filename: string = "telemetry
   const seconds = (totalDuration % 60).toFixed(3);
   const lapTimeFormatted = `${minutes}:${seconds.padStart(6, "0")}`;
 
-  // Extract statistical metrics across full raw dataset for 100% accuracy
+  // Extract statistical metrics across full raw dataset
   let topSpeed = 0;
   let minSpeed = 999;
   let maxLatG = 0;

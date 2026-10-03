@@ -2,7 +2,7 @@
 
 ApexWall AI is an open telemetry analysis workbench and chassis setup engineering tool for sim racing.
 
-The platform processes telemetry logs from MoTeC CSV, Popometer CSV, and Le Mans Ultimate DuckDB exports, renders multi-channel synchronized graphs and circuit heatmaps, and diagnoses handling anomalies. For vehicle setup adjustments, it pairs deterministic vehicle dynamics rules and simulator parameter constraints with bounded LLM reasoning to generate actionable setup sheets, pit strategies, and driver coaching. A local bridge utility provides real-time UDP and shared memory telemetry streaming to an in-browser cockpit HUD.
+The platform processes telemetry logs from MoTeC CSV, Popometer CSV, and Le Mans Ultimate DuckDB exports, renders multi-channel synchronized graphs and circuit heatmaps, and diagnoses handling anomalies. For vehicle setup recommendations, it pairs deterministic vehicle dynamics rules and simulator parameter constraints with bounded LLM reasoning to generate actionable setup sheets, pit strategies, and driver coaching. A local bridge utility provides UDP and shared memory telemetry streaming to an in-browser cockpit HUD.
 
 [Live Demo](https://pitwall-ai-one.vercel.app/) · [GitHub Repository](https://github.com/octavia-23/ApexWall-ai)
 
@@ -13,11 +13,11 @@ The platform processes telemetry logs from MoTeC CSV, Popometer CSV, and Le Mans
 Sim racing setups often suffer from two extremes: generic "one-size-fits-all" spreadsheets that ignore individual driving telemetry, or unconstrained generative AI tools that hallucinate invalid damper clicks and non-existent anti-roll bar settings.
 
 ApexWall was built to bridge deterministic engineering calculations with contextual reasoning:
-- **Telemetry Analysis**: Parses CSV and DuckDB session data to evaluate pedal application, steering scrub, corner apex speeds, time deltas, and friction circle grip utilization.
-- **Setup Generation**: Combines simulator-specific parameter catalogs, chassis archetypes, and aero profiles with bounded AI reasoning to suggest adjustments that adhere strictly to legal click ranges and step increments.
+- **Telemetry Analysis**: Parses CSV and DuckDB session data to evaluate pedal application, steering scrub, corner apex speeds, time deltas, Ackermann understeer angle, and friction circle grip utilization.
+- **Setup Generation**: Combines simulator-specific parameter catalogs, chassis archetypes, and aero profiles with bounded AI reasoning to suggest adjustments that adhere strictly to parameter ranges and step increments.
 - **Race Engineer Debrief**: Provides a conversational interface grounded in loaded session telemetry and chassis settings to discuss handling balance and propose targeted fixes.
 - **Live Bridge & Cockpit HUD**: Ingests UDP packets and Windows shared memory from supported simulators and broadcasts 60 Hz frames over WebSockets to an interactive browser HUD.
-- **Strategy & Utility Tools**: Includes thermodynamic tyre pressure compensation, endurance fuel stint planning with lift-and-coast analysis, and a versioned setup vault with parameter diffing.
+- **Strategy & Utility Tools**: Includes temperature-based tyre pressure compensation with documented simulator presets, endurance fuel stint planning with lift-and-coast analysis, and a versioned setup vault with parameter diffing.
 
 ---
 
@@ -30,9 +30,9 @@ Telemetry File / Live Bridge
          ↓
 1. Telemetry Ingestion (CSV / DuckDB-WASM)
          ↓
-2. Deterministic Calculation (Friction circle hull, deltas, apex speeds, heuristics)
+2. Deterministic Calculation (Friction circle hull, deltas, apex speeds, Ackermann angle)
          ↓
-3. Causal Diagnosis (Driver input check → Mechanical balance → Aero balance → Damping)
+3. Causal Diagnosis (Driver input check → Tyre state → Balance → Aero/Mechanical → Drivetrain → Dampers)
          ↓
 4. Setup Baseline & Constraint Resolution (Catalog limits, step grids, archetype rules)
          ↓
@@ -40,10 +40,14 @@ Telemetry File / Live Bridge
          ↓
 6. Deterministic Validation & Repair (Boundary clamping, step-snapping, parameter verification)
          ↓
-7. Export & On-Track Testing (.json, .ini, .svm, .pc, .xml, run sheets, or local injection)
+7. Export & On-Track Testing (Formatted .json, .ini, .svm, .pc, .xml, run sheets, or local injection)
 ```
 
-The system does not ask a language model to compute raw telemetry mathematics or guess vehicle physics. Numerical statistics, coordinate projections, distance-based interpolations, and simulator constraint grids are handled programmatically in TypeScript and WebAssembly. The model is used strictly for interpreting qualitative driver feedback against structured metrics and explaining physical trade-offs in natural language.
+The system does not ask a language model to compute raw telemetry mathematics or guess vehicle physics:
+- **Deterministic**: Numerical statistics, coordinate projections, distance-based interpolations, heuristic event thresholds, tyre temperature compensation formulas, setup step-snapping, and export file serialization are handled programmatically in TypeScript and WebAssembly.
+- **AI Reasoning**: Handling complaint interpretation, mapping symptoms to vehicle dynamics subsystems, proposing targeted 1–3 parameter setup adjustments, explaining physical trade-offs in natural language, and conducting active debriefs with the driver are handled via bounded LLM reasoning.
+
+The model is neither restricted to cosmetic prose nor entrusted with unverified floating-point physics calculations.
 
 ---
 
@@ -52,11 +56,12 @@ The system does not ask a language model to compute raw telemetry mathematics or
 The telemetry workspace provides an interactive environment for inspecting session data:
 
 - **Multi-Format Ingestion**:
-  - **CSV Parser**: Ingests MoTeC i2, Popometer, and generic CSV exports containing speed, throttle, brake, steer, RPM, gear, lateral G, longitudinal G, and 4-corner tyre temperatures/pressures.
+  - **CSV Parser**: Ingests MoTeC i2, Popometer, and generic CSV exports containing speed, throttle, brake, steer, RPM, gear, lateral G, longitudinal G, and 4-corner tyre temperatures/pressures. When optional channels (such as tyre surface temperatures or pressures) are omitted in the export, fallback baselines are used to preserve visualization continuity while missing channel notices are surfaced in the diagnostic brief.
   - **DuckDB-WASM Parser**: Mounts and queries Le Mans Ultimate (and generic sim) `.duckdb` SQLite/DuckDB binary database files entirely client-side in the browser using WebAssembly.
-- **Synchronized Canvas Graphs**: High-DPI canvas scrubber displaying speed ($km/h$), throttle (%), brake (%), steering angle ($^\circ$), gear, RPM, lateral/longitudinal G, and running time delta. Moving the cursor updates the track position marker and friction circle crosshair simultaneously.
+- **Synchronized Canvas Graphs**: High-DPI canvas scrubber displaying speed ($km/h$), throttle (%), brake (%), steering angle ($^\circ$), gear, RPM, lateral/longitudinal G, Ackermann understeer angle, and running time delta. Moving the cursor updates the track position marker and friction circle crosshair simultaneously.
 - **G-G Friction Circle (Kamm's Circle)**:
   - Constructs a 36-bin radial hull at the 90th percentile to establish the vehicle's grip envelope while filtering out single-frame kerb spikes.
+  - Peak scalar normalization references the 95th percentile G-force threshold to prevent aberrant sensor spikes from distorting chart scaling.
   - Computes peak combined acceleration ($G$), peak deceleration ($G$), and peak lateral acceleration ($G$).
   - Evaluates overall grip utilization percentage and trail-braking transition efficiency across four distinct corner phases: entry-left, entry-right, exit-left, and exit-right.
 - **2D Circuit Track Visualization**:
@@ -67,43 +72,51 @@ The telemetry workspace provides an interactive environment for inspecting sessi
   - Interpolates driver laps against reference laps across normalized lap distance using binary search and linear interpolation.
   - Calculates running time delta ($\Delta t$), speed delta ($\Delta v$), apex minimum speed, and braking point distance offset in meters.
 - **Heuristic Driver Technique Diagnostics**:
-  - Flags abrupt brake releases where brake pressure drops from >60% to 0% with low steering angle rather than trailing off into the apex.
-  - Identifies steering scrub where steering input exceeds 35° at low-to-medium speeds while vehicle yaw and lateral acceleration stall.
+  - Flags abrupt brake releases where brake pressure drops from >60% to 0% with steering angle under 10° rather than trailing off smoothly into the apex.
+  - Identifies steering scrub where steering input exceeds 35° at speeds below 120 km/h while lateral acceleration remains below 1.6 G.
   - Detects throttle hesitation and micro-lifts on corner exit indicating rear axle instability.
+  - Computes geometric Ackermann angle versus actual steering angle to measure phase-specific understeer and oversteer gradients on corner entry, apex, and exit.
 - **4-Corner Thermal & Pressure Monitoring**: Visualizes Front-Left, Front-Right, Rear-Left, and Rear-Right core/surface temperatures, hot operating pressures, and camber-induced temperature gradients.
 
 ---
 
 ## Setup Generation
 
-The setup engine generates or adjusts vehicle setups using a hybrid model: deterministic engineering constraints enforce physical legality, while the AI explores trade-offs based on driver complaints and telemetry evidence.
+The setup engine generates or adjusts vehicle setups using a hybrid model: deterministic engineering constraints enforce parameter validity, while the AI explores trade-offs based on driver complaints and telemetry evidence.
 
-- **Authoritative Simulator Parameter Catalogs**:
-  - Models actual in-game setup menus, tabs, parameter names, legal ranges, and click increments for each supported title (e.g. Assetto Corsa integer notches, ACC 0.1 psi pressures and milliradian toe, F1 1–50 aerodynamic wings).
+- **Telemetry-Informed vs. Context-Based Operation**:
+  - **When dynamic telemetry is loaded**: Recommendations are informed by measured session data (wheel slip, Ackermann understeer angle, trail-braking score, tyre hot pressure offsets).
+  - **When telemetry is not provided**: The engine falls back to context-based reasoning, validated defaults, and vehicle dynamics priors, explicitly logging that recommendations are derived without dynamic slip evidence.
+- **Simulator Parameter Catalogs**:
+  - Simulator-specific parameter catalogs define known parameter names, ranges, units, and step grids for supported titles (ACC GT3, EA Sports F1, Assetto Corsa Formula).
+  - Custom Assetto Corsa mods can provide exact slider definitions directly from `setup.ini` via in-browser JSZip archive ingestion.
 - **Chassis & Aerodynamic Archetypes**:
   - Classifies cars into physical layouts: Front-Engine RWD, Mid-Engine GT3, Rear-Engine (e.g., 911 platform), High-Downforce Formula/Prototype, and FWD Touring.
   - Applies track aero profiles (e.g., Monza low-drag vs. Monaco / Hungaroring high-downforce).
 - **Causal Diagnostic Ordering**:
   - Enforces vehicle dynamics hierarchy to prevent "shotgun" changes: checks driver input technique first, followed by tyre state, mechanical balance (anti-roll bars and springs), aerodynamic rake, drivetrain (differential locks), and damper transitions.
+  - Restricts primary modifications to 1–3 target parameters with conservative delta limits, preventing destabilizing secondary reactions.
 - **Deterministic Validation & Step-Snapping**:
   - Every model output passes through `validateAndRepairSetup()`.
   - Values outside legal limits are clamped to simulator minimums and maximums.
   - Continuous float values are snapped to the nearest valid simulator increment (step grid).
   - Parameters non-existent in the target game are rejected or preserved from the baseline.
   - Cross-parameter sanity rules ensure aerodynamic rake remains positive and differential coast lock remains below power lock where applicable.
-- **Custom Assetto Corsa Mod Ingestion**:
-  - Ingests `.zip` archives or unpacked mod folders directly in the browser via JSZip.
-  - Parses `setup.ini`, `car.ini`, and `tyres.ini` to extract authentic car sliders, weight distribution, and fuel tank capacity for custom mod vehicles.
+- **Heuristic Engineering Confidence**:
+  - Diagnostic plans assign heuristic confidence ratings (`HIGH`, `MEDIUM`, `LOW`) based on presence of active telemetry evidence, channel availability, and symptom specificity. These represent heuristic engineering confidence, not statistically calibrated probabilities.
+- **Structured Parameter Diff & Testing Protocol**:
+  - Generates a structured diff (`oldValue → newValue`, delta, evidence, rationale, and trade-off) comparing the validated output against the baseline.
+  - Generates a sequential 2–3 lap test procedure for on-track validation of each adjusted subsystem.
 - **Setup Exporters**:
-  - **Assetto Corsa**: `.ini` setup file
-  - **Assetto Corsa Competizione**: `.json` setup payload
-  - **Assetto Corsa Evo**: `.ini` setup file
-  - **rFactor 2 / Le Mans Ultimate**: `.svm` setup file
-  - **Automobilista 2**: `.svm` setup file
-  - **EA Sports F1**: `.json` and text tuning summary
-  - **BeamNG.drive**: `.pc` configuration file
-  - **RaceRoom**: `.xml` setup file
-  - **iRacing & Forza GT**: Parameter run sheet guides
+  - **Assetto Corsa**: Formatted `.ini` setup file (scales camber to tenths, standard AC sections)
+  - **Assetto Corsa Competizione**: `.json` setup payload formatted for ACC garage structure
+  - **Assetto Corsa Evo**: Formatted `.ini` setup file
+  - **rFactor 2 / Le Mans Ultimate**: Formatted `.svm` setup script
+  - **Automobilista 2**: Formatted `.svm` setup script
+  - **EA Sports F1 (23 / 24)**: Formatted `.json` setup structure and readable text run sheet
+  - **BeamNG.drive**: Formatted `.pc` part configuration file
+  - **RaceRoom**: Formatted `.xml` setup file
+  - **iRacing & Forza GT**: Parameter run sheet guides / text specifications
   - **Printable HTML Run Sheet**: Formatted for tablet and pit-bench viewing
 
 ---
@@ -116,7 +129,7 @@ The Race Engineer is a conversational interface grounded directly in the user's 
   - Automatically incorporates the currently loaded car, track, parameter settings, lap time, top speed, trail-braking score, grip utilization, tyre thermals, and corner delta summary into the conversation context.
 - **Physical Reasoning**:
   - Evaluates driver complaints (e.g., high-speed rear instability, low-speed apex push, power-oversteer on exit) against vehicle archetype rules.
-  - Distinguishes driving technique issues (such as brake dumping) from mechanical or aerodynamic setup issues before recommending hardware changes.
+  - Distinguishes driving technique issues (such as abrupt brake release) from mechanical or aerodynamic setup issues before recommending hardware changes.
 - **Measured Recommendations**:
   - Constrained to advise incremental changes (e.g., 1–2 clicks of anti-roll bar, 2–4% differential ramp adjustments, 2–3 mm ride height changes) rather than polar extremes, avoiding destabilizing secondary characteristics.
 
@@ -127,7 +140,7 @@ The Race Engineer is a conversational interface grounded directly in the user's 
 ApexWall includes a local bridge service for streaming live telemetry from active racing simulators to the web dashboard.
 
 - **Local Telemetry Bridge (`scripts/telemetry-bridge.js`)**:
-  - **F1 23 / F1 24**: Listens on UDP port 20777, decoding native `CarTelemetryData` binary packets (speed, throttle, brake, steer, gear, engine RPM, and tyre pressures).
+  - **F1 23 / F1 24**: Listens on UDP port 20777, decoding `CarTelemetryData` binary packets (speed, throttle, brake, steer, gear, engine RPM, and tyre pressures).
   - **Assetto Corsa Competizione**: Listens on UDP port 9000 for ACC telemetry broadcast packets.
   - **Assetto Corsa Evo (`scripts/acevo-bridge.py`)**: Uses Python `mmap` and `ctypes` to read Kunos Windows shared memory mappings (`Local\acevo_pmf_physics` and `Local\acevo_pmf_graphics`), piping normalized JSON frames to the bridge.
   - **WebSocket Server**: Normalizes telemetry into standard frames and broadcasts to connected web clients over `ws://localhost:9001` at ~60 Hz.
@@ -144,11 +157,18 @@ ApexWall includes a local bridge service for streaming live telemetry from activ
 
 ## Engineering Tools
 
-- **Tyre Pressure & Thermodynamic Compensator**:
+- **Tyre Pressure & Temperature Compensator**:
   - Calculates cold starting tyre pressures required to reach target hot operating pressures.
-  - Incorporates ambient air and asphalt temperature deltas using thermodynamic compensation (~0.1 psi per °C).
+  - Incorporates ambient air and asphalt temperature deltas using empirical temperature compensation (~0.10 psi per °C).
   - Adjusts for asymmetric circuit loading based on clockwise vs. counter-clockwise track layouts.
-  - Includes calibrated tyre presets for ACC GT3 (Pirelli DHE), ACC GT4, iRacing GT3 (Michelin), F1 23/24, Le Mans Ultimate Hypercar, and Automobilista 2.
+  - **Empirical Stint Calibration**: When observed hot pressures and cold starting pressures from a previous run are provided, calibrates cold offsets directly from measured telemetry (`Delta Cold = Target Hot - Observed Hot`).
+  - **Supported Simulator Presets with Technical Provenance**:
+    - **Assetto Corsa Competizione**: GT3 Slick (Pirelli DHE: 26.85 psi target, 26.6–27.0 psi window), GT3 Wet (Pirelli Rain: 30.0 psi target), GT4 Slick (Medium Slick: 27.0 psi target).
+    - **Automobilista 2**: GT3 / GTE Dry Slick (25.4 psi target hot, 24.0–26.8 psi window; models Madness Engine carcass flex and IMO temperature spread), Formula Ultimate Gen2 Slick (23.5 psi target hot, 22.0–25.0 psi window), Stock Car Brasil V8 Slick (26.0 psi target hot, 24.5–27.5 psi window).
+    - **iRacing**: GT3 / IMSA Slick (Michelin: 22.5 psi target hot, 21.8–23.2 psi window).
+    - **EA Sports F1 (24 / 25)**: Dry Slick (Pirelli C3: 23.5 psi target hot, 22.5–24.5 psi window).
+    - **Le Mans Ultimate**: Hypercar / GTP Slick (Medium Slick: 26.5 psi target hot, 26.0–27.0 psi window).
+    - **Assetto Corsa Evo**: Semi-Slick / Sport (32.0 psi target hot, 31.0–33.0 psi window).
 - **Fuel & Pit Strategy Calculator**:
   - Supports timed endurance formats (with formation lap and safety margin allowances) and lap-count sprint races.
   - Computes stint lengths, required pit stops, optimal pit lap windows, and fuel volume to add.
@@ -178,7 +198,7 @@ ApexWall includes a local bridge service for streaming live telemetry from activ
                                 │ WebSockets (ws://9001) / CSV / DuckDB
                                 ▼
 ┌────────────────────────────────────────────────────────────────────────┐
-│ ApexWall Web Client (Next.js 14 App Router)                           │
+│ ApexWall Web Client (Next.js 16 App Router)                           │
 │                                                                        │
 │  ┌─────────────────────────┐         ┌──────────────────────────────┐  │
 │  │   Telemetry Ingestion   │         │      Engineering Tools       │  │
@@ -191,7 +211,7 @@ ApexWall includes a local bridge service for streaming live telemetry from activ
 │  │  - G-G Friction Circle  │         │ - Game profiles & tab schemas│  │
 │  │  - Distance Interp / Δt │         │ - Chassis archetypes         │  │
 │  │  - Canvas Track Map     │         │ - Circuit aero demands       │  │
-│  │  - Heuristic Diagnosis  │         │                              │  │
+│  │  - Ackermann & Scrub    │         │                              │  │
 │  └────────────┬────────────┘         └──────────────┬───────────────┘  │
 │               │                                     │                  │
 │               └──────────────────┬──────────────────┘                  │
@@ -222,7 +242,7 @@ ApexWall includes a local bridge service for streaming live telemetry from activ
 ### Major Layers
 
 1. **Ingestion Layer**: Reads telemetry files in the browser (CSV via text tokenizer; DuckDB via in-memory WebAssembly worker) or ingests live UDP/shared-memory frames via the local Node.js bridge.
-2. **Deterministic Analytics Layer**: Computes mathematical values (running lap delta, friction circle hull, apex speeds, tyre thermodynamic adjustments, pit window arithmetic) without model dependency.
+2. **Deterministic Analytics Layer**: Computes mathematical values (running lap delta, 90th percentile friction circle hull, apex speeds, Ackermann angle, tyre temperature adjustments, pit window arithmetic) without model dependency.
 3. **Knowledge Base & Catalog Layer**: Contains simulator-specific parameter definitions, unit systems, slider limits, chassis layouts, and track geometries.
 4. **AI Reasoning Layer**: Groq-hosted open LLMs receive the structured diagnostic brief, driver handling complaints, and telemetry metrics to formulate targeted setup adjustments and conversational debriefs.
 5. **Validation Layer**: Deterministically post-processes all model proposals against the game's parameter catalog, snapping values to legal step increments and enforcing boundary safety.
@@ -238,12 +258,13 @@ To ensure technical validity, ApexWall maintains a strict boundary between progr
 | :--- | :--- | :--- |
 | **Telemetry Parsing** | Deterministic | Regex tokenizer & `@duckdb/duckdb-wasm` |
 | **Lap Time & Speed Deltas** | Deterministic | Distance-based linear interpolation |
-| **Grip Envelope (G-G Hull)** | Deterministic | 36-bin radial percentile hull calculation |
+| **Grip Envelope (G-G Hull)** | Deterministic | 36-bin radial 90th percentile hull calculation |
 | **Circuit Geometry & Heatmaps** | Deterministic | Coordinate projection & HTML5 Canvas drawing |
+| **Understeer / Ackermann Angle** | Deterministic | Geometric Ackermann equation ($L \cdot a_y / v^2$) vs steering angle |
 | **Fuel & Pit Window Math** | Deterministic | Stint consumption arithmetic & lap time modeling |
-| **Tyre Pressure Adjustments** | Deterministic | Thermodynamic temp coefficients (~0.1 psi/°C) |
-| **Setup Constraints & Snapping**| Deterministic | Min/max bounds, legal step grid, catalog validation |
-| **Setup File Serialization** | Deterministic | Game-specific syntax formatters (`.json`, `.ini`, `.svm`) |
+| **Tyre Pressure Adjustments** | Deterministic | Empirical temp coefficients (~0.10 psi/°C) & stint delta calibration |
+| **Setup Constraints & Snapping** | Deterministic | Min/max bounds, legal step grid, catalog validation |
+| **Setup File Serialization** | Deterministic | Game-specific syntax formatters (`.json`, `.ini`, `.svm`, `.pc`, `.xml`) |
 | **Handling Complaint Analysis** | AI Reasoning | Maps driver symptoms to vehicle dynamics systems |
 | **Setup Adjustment Proposals** | AI Reasoning | Proposes deltas for 1–3 target parameters based on balance |
 | **Trade-Off Explanations** | AI Reasoning | Explains mechanical vs. aerodynamic impacts in plain text |
@@ -254,24 +275,24 @@ To ensure technical validity, ApexWall maintains a strict boundary between progr
 ## Supported Simulators & Formats
 
 ### Telemetry Inputs
-- **CSV**: MoTeC i2 CSV export, Popometer CSV export, AiM CSV export, and generic delimited telemetry.
+- **CSV**: MoTeC i2 CSV export, Popometer CSV export, and generic delimited telemetry.
 - **DuckDB**: Le Mans Ultimate `.duckdb` binary telemetry databases parsed via DuckDB WebAssembly.
 - **Live Stream**: UDP packets (F1, ACC) and Windows Shared Memory (Assetto Corsa Evo).
 
 ### Setup Outputs
-- **Assetto Corsa**: Native `.ini` setup file
-- **Assetto Corsa Competizione**: Native `.json` setup payload
-- **Assetto Corsa Evo**: Native `.ini` setup file
-- **rFactor 2 / Le Mans Ultimate**: Native `.svm` setup script
-- **Automobilista 2**: Native `.svm` setup script
-- **EA Sports F1 (23 / 24)**: Native `.json` setup structure and readable text run sheet
-- **BeamNG.drive**: Native `.pc` part configuration file
-- **RaceRoom Racing Experience**: Native `.xml` setup file
-- **iRacing & Forza GT**: Parameter run sheet guides
+- **Assetto Corsa**: Formatted `.ini` setup file (scales camber to tenths, matches standard AC sections)
+- **Assetto Corsa Competizione**: `.json` setup payload formatted for ACC garage structure
+- **Assetto Corsa Evo**: Formatted `.ini` setup file
+- **rFactor 2 / Le Mans Ultimate**: Formatted `.svm` setup script
+- **Automobilista 2**: Formatted `.svm` setup script
+- **EA Sports F1 (23 / 24)**: Formatted `.json` setup structure and readable text run sheet
+- **BeamNG.drive**: Formatted `.pc` part configuration file
+- **RaceRoom Racing Experience**: Formatted `.xml` setup file
+- **iRacing & Forza GT**: Parameter run sheet guides / text specifications
 - **Generic**: Formatted printable HTML setup sheet
 
 ### Live Telemetry Sources
-- **EA Sports F1 (23 / 24)**: UDP port 20777 (native `CarTelemetryData` packet parsing)
+- **EA Sports F1 (23 / 24)**: UDP port 20777 (`CarTelemetryData` packet parsing)
 - **Assetto Corsa Competizione**: UDP port 9000
 - **Assetto Corsa Evo**: Windows Shared Memory (`Local\acevo_pmf_physics` and `Local\acevo_pmf_graphics`) via `acevo-bridge.py`
 - **Synthetic Test Stream**: Built-in 60 Hz test generator (`node scripts/telemetry-bridge.js --test`)
@@ -280,13 +301,13 @@ To ensure technical validity, ApexWall maintains a strict boundary between progr
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons
+- **Frontend**: Next.js 16 (App Router), React 18, TypeScript, Tailwind CSS, Lucide Icons
 - **Visualization**: HTML5 Canvas (high-DPI multi-channel graph scrubber, 2D track map, friction circle)
 - **In-Browser Analytics**: `@duckdb/duckdb-wasm` (client-side database queries), `jszip` (mod archive inspection)
 - **Realtime Networking**: Node.js `dgram` (UDP socket listener), `ws` (WebSocket server), native WebSockets
 - **Shared Memory Bridge**: Python 3 (`ctypes`, `mmap`, `socket`)
 - **Database & Auth**: Supabase (PostgreSQL with Row-Level Security, Auth, `@supabase/ssr`), browser `localStorage`
-- **AI Inference**: Groq SDK (`groq-sdk`) calling open models (e.g. LLaMA 3.3 70B, GPT-OSS) with JSON response formatting
+- **AI Inference**: Groq SDK (`groq-sdk`) calling open models (e.g. LLaMA 3.3 70B) with structured JSON response formatting
 
 ---
 
@@ -300,7 +321,7 @@ ApexWall-ai/
 │   ├── acevo-bridge.py           # Assetto Corsa Evo Windows shared memory reader
 │   └── telemetry-bridge.js       # Local UDP & WebSocket bridge server (port 9001)
 ├── src/
-│   ├── app/                      # Next.js 14 App Router
+│   ├── app/                      # Next.js 16 App Router
 │   │   ├── api/
 │   │   │   ├── analyze-telemetry # Telemetry summary evaluation & setup endpoint
 │   │   │   ├── generate-setup    # Setup generation & causal diagnostic endpoint
@@ -310,6 +331,7 @@ ApexWall-ai/
 │   │   ├── auth/callback         # Supabase OAuth redirect handler
 │   │   ├── setup/[id]/           # Public shared setup view
 │   │   ├── globals.css           # Global layout & cockpit theme styling
+│   │   ├── layout.tsx            # Root layout & providers
 │   │   └── page.tsx              # Main workspace mode controller
 │   ├── components/
 │   │   ├── auth/                 # Supabase authentication modal
@@ -324,9 +346,9 @@ ApexWall-ai/
 │   │   ├── duckdb-parser.ts      # Client-side DuckDB-WASM binary telemetry parser
 │   │   ├── telemetry-parser.ts   # CSV telemetry parser and heuristic analyzers
 │   │   ├── telemetry-comparison.ts # Distance interpolation & lap delta comparison
-│   │   ├── telemetry-friction-circle.ts # G-G 36-bin hull & quadrant calculations
+│   │   ├── telemetry-friction-circle.ts # G-G 90th percentile hull & quadrant calculations
 │   │   ├── fuel-calculator.ts    # Stint range, pit windows & lift-and-coast math
-│   │   ├── tyre-calculator.ts    # Thermodynamic pressure compensator
+│   │   ├── tyre-calculator.ts    # Temperature-based pressure compensator & presets
 │   │   ├── setup-exporter.ts     # Game-specific setup file formatters
 │   │   └── setup-vault.ts        # Setup storage, diffing, and version tracking
 │   └── types/                    # TypeScript interfaces for telemetry and setups
@@ -402,12 +424,13 @@ node scripts/telemetry-bridge.js --test
 
 ## Limitations
 
-- **Telemetry Data Completeness**: Analysis accuracy is limited by the channels recorded in the telemetry export. For instance, if damper velocity or tyre surface temperatures are omitted by the recording tool, those specific diagnostic checks will gracefully degrade or remain uncalculated.
-- **Heuristic Technique Diagnostics**: Anomaly detection rules (such as steering scrub or abrupt brake release thresholds) are based on empirical vehicle dynamics heuristics rather than vehicle-specific multi-body tire models. They serve as actionable guidance rather than absolute mathematical truths.
-- **Setup Verification Requirement**: While generated setups are programmatically clamped to valid simulator ranges and step increments, handling balance must always be verified on track by the driver under actual session conditions.
-- **Simulator Implementation Differences**: Simulators implement vehicle dynamics, setup terminology, and parameter effects differently. A change that aids turn-in in Assetto Corsa might behave differently in iRacing or F1 due to tire model architecture differences.
+- **Telemetry Completeness & Synthetic Fallbacks**: Analysis quality is directly constrained by the channels present in the telemetry export. When non-critical channels (such as tyre surface temperatures or dynamic pressures) are absent from a generic CSV, the parser populates static baseline values (e.g. 84.0°C / 27.2 psi) to allow charting without crash. These fallback values do not represent physical sensor readings, and the diagnostic plan flags missing channels in its limitations brief.
+- **Heuristic Diagnostic Rules**: Technique diagnostics (such as steering scrub when steering exceeds 35° under 120 km/h with low lateral G, or abrupt brake releases) are based on empirical vehicle dynamics heuristics rather than vehicle-specific multi-body tire models. They provide actionable engineering direction rather than absolute mathematical truths.
+- **Project-Authored Simulator Catalogs**: While custom Assetto Corsa mods can ingest exact slider definitions directly from `setup.ini`, built-in simulator parameter catalogs are project-authored schemas reflecting known game menus, units, and click grids. They are engineering approximations, not official game source code.
+- **Title-Specific Physics Differences**: Simulators implement tire models, suspension geometry, and setup effects differently. An adjustment that resolves mid-corner push in Assetto Corsa Competizione may behave differently in Automobilista 2 or iRacing due to carcass flex and contact patch modeling differences.
+- **On-Track Driver Verification Required**: While generated setup proposals are clamped to legal ranges, snapped to valid step increments, and checked for positive aerodynamic rake, all setup changes must be verified on track by the driver under live stint conditions.
 - **Reference Lap Availability**: Turn-by-turn delta attribution requires providing a reference lap or selecting a session that contains benchmark telemetry data.
-- **Direct File Injection**: The 1-click setup injection feature requires the Node.js bridge running locally with write permissions to your user `Documents` folder; browser security prevents web applications from writing directly to local disk without this bridge.
+- **Local File Injection**: The 1-click setup injection feature requires the Node.js bridge running locally with write permissions to your user `Documents` folder; browser security prevents web applications from writing directly to local disk without this bridge.
 
 ---
 

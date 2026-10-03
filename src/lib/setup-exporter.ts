@@ -264,7 +264,7 @@ export function generateACCJson(ctx: SetupExportContext): string {
       },
     },
     trackBsdName: trackSlug,
-    _generatedBy: "ApexWall AI — Homologated Race Engineering Engine v2.0",
+    _generatedBy: "ApexWall AI — Chassis Engineering Engine v2.0",
     _exportedAt: new Date().toISOString(),
     _summary: ctx.summary || "",
   };
@@ -553,7 +553,7 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
           </div>
         </div>
         <div style="text-align: right;">
-          <span class="meta-pill">HOMOLOGATED BASELINE</span>
+          <span class="meta-pill">ENGINEERED BASELINE</span>
           <div style="font-size: 10.5px; color: #6b7280; margin-top: 4px;">
             Date: ${new Date().toLocaleDateString()} · Sim: ${ctx.game || "ACC / iRacing"}
           </div>
@@ -1358,7 +1358,7 @@ VERSION=2
 CAR=${ctx.car}
 TRACK=${ctx.track}
 SIM=Assetto Corsa Evo
-CREATED_BY=ApexWall AI Homologated Engineering Engine v2.0
+CREATED_BY=ApexWall AI Chassis Engineering Engine v2.0
 DATE=${new Date().toISOString()}
 
 [TYRES]

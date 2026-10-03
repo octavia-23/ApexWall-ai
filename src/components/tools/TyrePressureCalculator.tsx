@@ -59,7 +59,7 @@ export const TyrePressureCalculator: React.FC<TyrePressureCalculatorProps> = ({
               TYRE PRESSURE & THERMAL COMPENSATOR
             </span>
             <span className="calc-target-pill">
-              TARGET: <strong>{result.targetHot} PSI HOT</strong>
+              TARGET: <strong>{result.targetHot} PSI HOT</strong> ({result.preset.minHotPressure}–{result.preset.maxHotPressure} PSI window)
             </span>
           </div>
           <h3 className="calc-title">Optimal Cold Starting Pressure Calculator</h3>
