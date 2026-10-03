@@ -141,7 +141,7 @@ ApexWall includes a local bridge service for streaming live telemetry from activ
 
 - **Local Telemetry Bridge (`scripts/telemetry-bridge.js`)**:
   - **F1 23 / F1 24**: Listens on UDP port 20777, decoding `CarTelemetryData` binary packets (speed, throttle, brake, steer, gear, engine RPM, and tyre pressures).
-  - **Assetto Corsa Competizione**: Listens on UDP port 9000 for ACC telemetry broadcast packets.
+  - **Assetto Corsa Competizione**: Windows shared memory via scripts/acc-bridge.py (requires the local bridge running on the same PC as ACC).
   - **Assetto Corsa Evo (`scripts/acevo-bridge.py`)**: Uses Python `mmap` and `ctypes` to read Kunos Windows shared memory mappings (`Local\acevo_pmf_physics` and `Local\acevo_pmf_graphics`), piping normalized JSON frames to the bridge.
   - **WebSocket Server**: Normalizes telemetry into standard frames and broadcasts to connected web clients over `ws://localhost:9001` at ~60 Hz.
   - **Local Setup Injection API**: Exposes `http://localhost:9001/api/inject-setup` to write generated setup files directly into the correct Windows Documents directory on the local machine.
@@ -293,7 +293,7 @@ To ensure technical validity, ApexWall maintains a strict boundary between progr
 
 ### Live Telemetry Sources
 - **EA Sports F1 (23 / 24)**: UDP port 20777 (`CarTelemetryData` packet parsing)
-- **Assetto Corsa Competizione**: UDP port 9000
+- **Assetto Corsa Competizione**: Windows shared memory via scripts/acc-bridge.py (requires the local bridge running on the same PC as ACC)
 - **Assetto Corsa Evo**: Windows Shared Memory (`Local\acevo_pmf_physics` and `Local\acevo_pmf_graphics`) via `acevo-bridge.py`
 - **Synthetic Test Stream**: Built-in 60 Hz test generator (`node scripts/telemetry-bridge.js --test`)
 
@@ -410,7 +410,7 @@ To stream live telemetry from your simulator into the Live Cockpit HUD:
 # EA Sports F1 23 / F1 24 (Listening on UDP port 20777)
 npm run telemetry-bridge -- --game f1
 
-# Assetto Corsa Competizione (Listening on UDP port 9000)
+# Assetto Corsa Competizione (Windows shared memory bridge via scripts/acc-bridge.py)
 npm run telemetry-bridge -- --game acc
 
 # Assetto Corsa Evo (Shared Memory bridge via Python)
@@ -425,6 +425,7 @@ node scripts/telemetry-bridge.js --test
 ## Limitations
 
 - **Telemetry Completeness & Synthetic Fallbacks**: Analysis quality is directly constrained by the channels present in the telemetry export. When non-critical channels (such as tyre surface temperatures or dynamic pressures) are absent from a generic CSV, the parser populates static baseline values (e.g. 84.0°C / 27.2 psi) to allow charting without crash. These fallback values do not represent physical sensor readings, and the diagnostic plan flags missing channels in its limitations brief.
+- **Live Telemetry Constraints**: F1 UDP live frames do not carry tyre channels and display standard placeholder baselines; ACC live telemetry is struct-verified and requires on-track confirmation with ACC running.
 - **Heuristic Diagnostic Rules**: Technique diagnostics (such as steering scrub when steering exceeds 35° under 120 km/h with low lateral G, or abrupt brake releases) are based on empirical vehicle dynamics heuristics rather than vehicle-specific multi-body tire models. They provide actionable engineering direction rather than absolute mathematical truths.
 - **Project-Authored Simulator Catalogs**: While custom Assetto Corsa mods can ingest exact slider definitions directly from `setup.ini`, built-in simulator parameter catalogs are project-authored schemas reflecting known game menus, units, and click grids. They are engineering approximations, not official game source code.
 - **Title-Specific Physics Differences**: Simulators implement tire models, suspension geometry, and setup effects differently. An adjustment that resolves mid-corner push in Assetto Corsa Competizione may behave differently in Automobilista 2 or iRacing due to carcass flex and contact patch modeling differences.

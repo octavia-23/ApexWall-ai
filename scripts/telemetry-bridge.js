@@ -10,7 +10,7 @@
  *   • Automobilista 2 & Project CARS 2 : UDP Port 5606
  *   • Forza Motorsport & Horizon       : UDP Port 5300 ("Data Out")
  *   • F1 23 / 24 / 25                 : UDP Port 20777
- *   • Assetto Corsa Competizione      : UDP Port 9000
+ *   • Assetto Corsa Competizione      : Shared Memory (Python bridge)
  *   • Assetto Corsa Evo               : Shared Memory / Relay Port 9002
  *
  * Usage:
@@ -43,7 +43,6 @@ const PORTS = {
   AMS2: 5606,   // Automobilista 2 & Project CARS 2 (Packet 0)
   FORZA: 5300,  // Forza Motorsport & Horizon ("Data Out")
   F1: 20777,    // F1 23 / F1 24 / F1 25 (Packet 6 Telemetry)
-  ACC: 9000,    // Assetto Corsa Competizione UDP
   ACEVO: 9002,  // Assetto Corsa Evo UDP Relay
 };
 
@@ -66,7 +65,7 @@ console.log(`• Listening Ports:`);
 if (!gameFilter || gameFilter === "ams2" || gameFilter === "automobilista") console.log(`   - Automobilista 2 / PCars 2 : UDP ${PORTS.AMS2}`);
 if (!gameFilter || gameFilter === "forza")                                console.log(`   - Forza Motorsport / Horizon: UDP ${PORTS.FORZA}`);
 if (!gameFilter || gameFilter === "f1")                                   console.log(`   - F1 23 / F1 24 / F1 25     : UDP ${PORTS.F1}`);
-if (!gameFilter || gameFilter === "acc")                                  console.log(`   - Assetto Corsa Competizione: UDP ${PORTS.ACC}`);
+if (!gameFilter || gameFilter === "acc")                                  console.log(`   - Assetto Corsa Competizione: Shared Memory (Python bridge)`);
 if (!gameFilter || gameFilter === "acevo")                                console.log(`   - Assetto Corsa Evo         : UDP ${PORTS.ACEVO} / Shared Memory`);
 console.log(`• WebSocket Dashboard Server : ws://localhost:${WS_PORT}`);
 console.log(`• HTTP Setup Injection API   : http://localhost:${WS_PORT}/api/inject-setup`);
@@ -621,18 +620,50 @@ function parseForzaPacket(msg) {
   };
 }
 
-// 3. F1 23 / 24 / 25 (Port 20777, Packet 6: Car Telemetry)
+// 3. F1 22 / 23 / 24 / 25 (Port 20777, Packet 6: Car Telemetry)
 function parseF1Packet(msg) {
-  if (msg.length < 60) return null;
-  const speed = msg.readUInt16LE(28);
-  const throttle = Math.round(msg.readFloatLE(30) * 100);
-  const steer = Math.round(msg.readFloatLE(34) * 100);
-  const brake = Math.round(msg.readFloatLE(38) * 100);
-  const gear = msg.readInt8(43);
-  const engineRPM = msg.readUInt16LE(44);
+  if (!msg || msg.length < 24) return null;
+
+  const packetFormat = msg.readUInt16LE(0);
+  let headerSize;
+  let packetId;
+  let playerCarIndex;
+
+  if (packetFormat >= 2023) {
+    if (msg.length < 29) return null;
+    headerSize = 29;
+    packetId = msg.readUInt8(6);
+    playerCarIndex = msg.readUInt8(27);
+  } else if (packetFormat === 2022) {
+    if (msg.length < 24) return null;
+    headerSize = 24;
+    packetId = msg.readUInt8(5);
+    playerCarIndex = msg.readUInt8(22);
+  } else {
+    return null;
+  }
+
+  // Validate packetId == 6 (CarTelemetry)
+  if (packetId !== 6) return null;
+  if (playerCarIndex < 0 || playerCarIndex >= 22) return null;
+
+  const recordStride = 60;
+  const recordOffset = headerSize + playerCarIndex * recordStride;
+  if (msg.length < recordOffset + recordStride) return null;
+
+  const speed = msg.readUInt16LE(recordOffset + 0);
+  const throttleRaw = msg.readFloatLE(recordOffset + 2);
+  const steerRaw = msg.readFloatLE(recordOffset + 6);
+  const brakeRaw = msg.readFloatLE(recordOffset + 10);
+  const gear = msg.readInt8(recordOffset + 15);
+  const engineRPM = msg.readUInt16LE(recordOffset + 16);
+
+  const throttle = Math.min(100, Math.max(0, Math.round(throttleRaw * 100)));
+  const brake = Math.min(100, Math.max(0, Math.round(brakeRaw * 100)));
+  const steer = Math.round(steerRaw * 100);
 
   return {
-    game: "F1 24",
+    game: packetFormat === 2022 ? "F1 22" : packetFormat === 2023 ? "F1 23" : "F1 24",
     speed,
     rpm: engineRPM,
     maxRpm: 15000,
@@ -646,8 +677,6 @@ function parseF1Packet(msg) {
     totalDistance: 5891,
     lapTime: 0,
     delta: 0,
-    tyreTemps: { FL: 95, FR: 93, RL: 92, RR: 90 },
-    tyrePressures: { FL: 23.5, FR: 23.5, RL: 21.0, RR: 21.0 },
   };
 }
 
@@ -725,13 +754,7 @@ if (isTestMode) {
   // 3. F1 23/24/25
   startUDPListener("F1 24 / F1 23", PORTS.F1, parseF1Packet);
 
-  // 4. Assetto Corsa Competizione
-  startUDPListener("ACC", PORTS.ACC, (msg) => {
-    // Basic ACC telemetry packet
-    return parseF1Packet(msg);
-  });
-
-  // 5. Assetto Corsa Evo Relay
+  // 4. Assetto Corsa Evo Relay
   startUDPListener("AC Evo Relay", PORTS.ACEVO, (msg) => {
     try {
       const data = JSON.parse(msg.toString("utf8"));
@@ -741,7 +764,7 @@ if (isTestMode) {
     }
   });
 
-  // 6. Launch Assetto Corsa Evo Python Bridge if requested
+  // 5. Launch Assetto Corsa Evo Python Bridge if requested
   if (gameFilter === "acevo" || gameFilter === "assetto-corsa-evo") {
     console.log("[ACEVO] Launching Assetto Corsa Evo Shared Memory Bridge process...");
     const scriptPath = path.join(__dirname, "acevo-bridge.py");
@@ -753,6 +776,24 @@ if (isTestMode) {
           if (!line.trim()) return;
           const frame = JSON.parse(line.trim());
           activeGame = "Assetto Corsa Evo";
+          broadcastFrame(frame);
+        } catch (_e) {}
+      });
+    }
+  }
+
+  // 6. Launch Assetto Corsa Competizione Python Bridge if requested
+  if (gameFilter === "acc" || gameFilter === "assetto-corsa-competizione") {
+    console.log("[ACC] Launching Assetto Corsa Competizione Shared Memory Bridge process...");
+    const scriptPath = path.join(__dirname, "acc-bridge.py");
+    if (fs.existsSync(scriptPath)) {
+      const pyProcess = spawn("python", [scriptPath], { stdio: ["ignore", "pipe", "inherit"] });
+      const rl = readline.createInterface({ input: pyProcess.stdout });
+      rl.on("line", (line) => {
+        try {
+          if (!line.trim()) return;
+          const frame = JSON.parse(line.trim());
+          activeGame = "Assetto Corsa Competizione";
           broadcastFrame(frame);
         } catch (_e) {}
       });
