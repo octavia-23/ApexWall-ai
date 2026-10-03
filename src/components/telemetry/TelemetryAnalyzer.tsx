@@ -105,6 +105,77 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   const [copiedAdaptive, setCopiedAdaptive] = useState(false);
   const [savedAdaptiveVault, setSavedAdaptiveVault] = useState(false);
 
+  // Live Rig Bridge Status
+  const [liveRigStatus, setLiveRigStatus] = useState<{
+    connected: boolean;
+    game: string;
+    isReceiving: boolean;
+    totalPackets: number;
+    lapCounter: number;
+    pointsCount: number;
+  } | null>(null);
+  const [isLoadingLiveLap, setIsLoadingLiveLap] = useState(false);
+
+  // Poll Local Telemetry Bridge for active live rig connection
+  useEffect(() => {
+    let isMounted = true;
+    const checkRigStatus = async () => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1200);
+        const res = await fetch("http://localhost:9001/api/status", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          const data = await res.json();
+          if (isMounted) {
+            setLiveRigStatus({
+              connected: true,
+              game: data.activeGame || "Unknown Sim",
+              isReceiving: data.isReceiving,
+              totalPackets: data.totalPackets || 0,
+              lapCounter: data.lapCounter || 0,
+              pointsCount: data.currentLapPointsCount || 0,
+            });
+          }
+        } else if (isMounted) {
+          setLiveRigStatus(null);
+        }
+      } catch {
+        if (isMounted) setLiveRigStatus(null);
+      }
+    };
+
+    checkRigStatus();
+    const interval = setInterval(checkRigStatus, 3000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const fetchLatestLiveLapFromRig = async () => {
+    setIsLoadingLiveLap(true);
+    try {
+      const res = await fetch("http://localhost:9001/api/latest-lap.csv");
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || "Could not retrieve latest lap from rig bridge.");
+      }
+      const csvText = await res.text();
+      const gameTitle = liveRigStatus?.game && liveRigStatus.game !== "Awaiting Sim Connection" ? liveRigStatus.game : game;
+      const filename = `Live_${gameTitle.replace(/[^a-z0-9]+/gi, "_")}_Lap.csv`;
+      const parsed = parseTelemetryCSV(csvText, filename);
+      if (liveRigStatus?.game && liveRigStatus.game !== "Awaiting Sim Connection") {
+        setGame(liveRigStatus.game);
+      }
+      processParsedTelemetry(parsed);
+    } catch (err: any) {
+      alert(`Could not import live lap: ${err.message}`);
+    } finally {
+      setIsLoadingLiveLap(false);
+    }
+  };
+
   // Load Preset Handler
   const loadPreset = async (presetKey: string) => {
     setActivePreset(presetKey);
@@ -1318,6 +1389,48 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             </svg>
             Telemetry File Ingest
           </div>
+
+          {/* Live Rig Bridge Auto-Detector Banner */}
+          {liveRigStatus?.connected && (
+            <div className="mb-3.5 p-3.5 rounded-xl border border-emerald-500/30 bg-emerald-950/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 shadow-lg shadow-emerald-950/20">
+              <div className="flex items-center gap-3">
+                <div className="relative flex items-center justify-center">
+                  <span className="w-3 h-3 rounded-full bg-emerald-400"></span>
+                  <span className="absolute w-3 h-3 rounded-full bg-emerald-400 animate-ping opacity-75"></span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Live Rig Stream Active</span>
+                    <span className="text-xs px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 font-mono font-semibold border border-emerald-500/30">
+                      {liveRigStatus.game}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 mt-0.5">
+                    {liveRigStatus.pointsCount > 0
+                      ? `Telemetry buffer: ${liveRigStatus.pointsCount.toLocaleString()} live points recording at 60Hz. Zero manual exports needed.`
+                      : "Ready to capture live telemetry directly from your game."}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={fetchLatestLiveLapFromRig}
+                disabled={isLoadingLiveLap}
+                className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg text-xs shadow-md shadow-emerald-900/30 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              >
+                {isLoadingLiveLap ? (
+                  <span>Importing Lap Data...</span>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span>⚡ Import Live Lap from Rig</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Dropzone */}
           <div

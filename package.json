@@ -8,7 +8,12 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
+    "bridge": "node scripts/telemetry-bridge.js",
     "telemetry-bridge": "node scripts/telemetry-bridge.js",
+    "telemetry-bridge:ams2": "node scripts/telemetry-bridge.js --game ams2",
+    "telemetry-bridge:forza": "node scripts/telemetry-bridge.js --game forza",
+    "telemetry-bridge:f1": "node scripts/telemetry-bridge.js --game f1",
+    "telemetry-bridge:acc": "node scripts/telemetry-bridge.js --game acc",
     "telemetry-bridge:acevo": "node scripts/telemetry-bridge.js --game acevo",
     "serve:legacy": "node server.js"
   },

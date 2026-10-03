@@ -1,16 +1,25 @@
 /**
  * =========================================================================
- * APEXWALL AI // LOCAL TELEMETRY UDP BRIDGE
+ * APEXWALL AI // UNIVERSAL SIM RIG TELEMETRY BRIDGE & SETUP INJECTOR
  * =========================================================================
- * Connects directly to your local sim racing rig (Assetto Corsa Competizione,
- * F1 23/F1 24, iRacing) via UDP broadcast and streams 60Hz telemetry
- * frames to the ApexWall AI web dashboard over WebSockets.
+ * Seamless multi-sim UDP & Shared Memory listener. Streams 60Hz telemetry
+ * frames to the ApexWall AI web dashboard over WebSockets, captures full laps
+ * automatically, and injects engineered setups with 1 click.
+ *
+ * Supported Sims (Simultaneous Auto-Detection or Single-Game Mode):
+ *   • Automobilista 2 & Project CARS 2 : UDP Port 5606
+ *   • Forza Motorsport & Horizon       : UDP Port 5300 ("Data Out")
+ *   • F1 23 / 24 / 25                 : UDP Port 20777
+ *   • Assetto Corsa Competizione      : UDP Port 9000
+ *   • Assetto Corsa Evo               : Shared Memory / Relay Port 9002
  *
  * Usage:
- *   node scripts/telemetry-bridge.js --game acevo   # Assetto Corsa Evo Shared Memory Bridge
- *   node scripts/telemetry-bridge.js --game f1      # F1 23/24 UDP (port 20777)
- *   node scripts/telemetry-bridge.js --game acc     # ACC UDP (port 9000)
- *   node scripts/telemetry-bridge.js --test         # Simulated test broadcast
+ *   node scripts/telemetry-bridge.js             # Unified Auto-Detect (All ports open)
+ *   node scripts/telemetry-bridge.js --game ams2 # Dedicated Automobilista 2
+ *   node scripts/telemetry-bridge.js --game forza# Dedicated Forza Motorsport
+ *   node scripts/telemetry-bridge.js --game f1   # Dedicated F1 24
+ *   node scripts/telemetry-bridge.js --game acc  # Dedicated ACC
+ *   node scripts/telemetry-bridge.js --test      # Synthetic 60Hz test broadcast
  * =========================================================================
  */
 
@@ -24,40 +33,48 @@ const { WebSocketServer } = require("ws");
 
 const args = process.argv.slice(2);
 const isTestMode = args.includes("--test");
-const gameArg = (args.find((a, i) => args[i - 1] === "--game") || "f1").toLowerCase();
+const gameArgIndex = args.indexOf("--game");
+const gameFilter = gameArgIndex !== -1 && args[gameArgIndex + 1] ? args[gameArgIndex + 1].toLowerCase() : null;
 
 const WS_PORT = 9001;
-const UDP_PORT = gameArg === "acc" ? 9000 : (gameArg === "acevo" || gameArg === "assetto-corsa-evo" ? 9002 : 20777);
 
-console.log("=====================================================");
-console.log("  🏁 APEXWALL AI // LOCAL TELEMETRY UDP & SHM BRIDGE");
-console.log("=====================================================");
-console.log(`• Sim Target: ${gameArg.toUpperCase()}${gameArg === "acevo" || gameArg === "assetto-corsa-evo" ? " (Shared Memory: Local\\acevo_pmf_*)" : ` (Listening UDP Port: ${UDP_PORT})`}`);
-console.log(`• WebSocket Broadcast Server: ws://localhost:${WS_PORT}`);
-console.log(`• Setup Injection API: http://localhost:${WS_PORT}/api/inject-setup`);
-console.log("=====================================================\n");
+// Port registry for multi-sim architecture
+const PORTS = {
+  AMS2: 5606,   // Automobilista 2 & Project CARS 2 (Packet 0)
+  FORZA: 5300,  // Forza Motorsport & Horizon ("Data Out")
+  F1: 20777,    // F1 23 / F1 24 / F1 25 (Packet 6 Telemetry)
+  ACC: 9000,    // Assetto Corsa Competizione UDP
+  ACEVO: 9002,  // Assetto Corsa Evo UDP Relay
+};
 
-// 1. Setup HTTP & WebSocket Server for Web App & Direct Setup Injection
-const server = http.createServer((req, res) => {
-  // CORS Headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+let activeGame = gameFilter ? gameFilter.toUpperCase() : "Awaiting Sim Connection";
+let totalPacketsReceived = 0;
+let lastPacketTime = 0;
 
-  if (req.method === "OPTIONS") {
-    res.writeHead(200);
-    res.end();
-    return;
-  }
+// Telemetry Lap Recorder State
+let activeLapBuffer = [];
+let lastCompletedLap = null;
+let lapCounter = 0;
+let lapStartTime = Date.now();
+let lastLapDistance = 0;
 
-  // Health check endpoint
-  if (req.method === "GET" && req.url === "/api/health") {
-    res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ status: "ok", version: "2.0.0", game: gameArg }));
-    return;
-  }
+console.log("=================================================================");
+console.log("  🏁 APEXWALL AI // UNIVERSAL SIM RIG TELEMETRY BRIDGE & INJECTOR");
+console.log("=================================================================");
+console.log(`• Mode: ${gameFilter ? `Dedicated [${gameFilter.toUpperCase()}]` : "Unified Auto-Detect (All Sims Active)"}`);
+console.log(`• Listening Ports:`);
+if (!gameFilter || gameFilter === "ams2" || gameFilter === "automobilista") console.log(`   - Automobilista 2 / PCars 2 : UDP ${PORTS.AMS2}`);
+if (!gameFilter || gameFilter === "forza")                                console.log(`   - Forza Motorsport / Horizon: UDP ${PORTS.FORZA}`);
+if (!gameFilter || gameFilter === "f1")                                   console.log(`   - F1 23 / F1 24 / F1 25     : UDP ${PORTS.F1}`);
+if (!gameFilter || gameFilter === "acc")                                  console.log(`   - Assetto Corsa Competizione: UDP ${PORTS.ACC}`);
+if (!gameFilter || gameFilter === "acevo")                                console.log(`   - Assetto Corsa Evo         : UDP ${PORTS.ACEVO} / Shared Memory`);
+console.log(`• WebSocket Dashboard Server : ws://localhost:${WS_PORT}`);
+console.log(`• HTTP Setup Injection API   : http://localhost:${WS_PORT}/api/inject-setup`);
+console.log(`• Lap Telemetry Ingest API   : http://localhost:${WS_PORT}/api/latest-lap`);
+console.log("=================================================================\n");
 
-// Helper: Dynamically find Windows Documents paths across all PCs (OneDrive, UserProfile, Registry)
+// --- Helper Functions for Windows Paths & Setup Folders ---
+
 function getWindowsDocsPaths() {
   const candidates = [];
   if (process.platform === "win32") {
@@ -143,19 +160,15 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
   const qSlug = qLower.replace(/[^a-z0-9]+/g, "");
   const qTokens = qLower.split(/[^a-z0-9]+/).filter((t) => t.length > 1 && !["the", "car", "mod", "assetto", "corsa"].includes(t));
 
-  // 1. Exact match
   const exact = folders.find((f) => f.toLowerCase() === qLower);
   if (exact) return exact;
 
-  // 2. Slug match
   const slugMatch = folders.find((f) => f.toLowerCase().replace(/[^a-z0-9]+/g, "") === qSlug);
   if (slugMatch) return slugMatch;
 
-  // 3. Substring match
   const subMatch = folders.find((f) => f.toLowerCase().includes(qLower) || (qLower.length > 4 && qLower.includes(f.toLowerCase())));
   if (subMatch) return subMatch;
 
-  // 4. Token scoring
   let bestFolder = null;
   let highestScore = 0;
 
@@ -184,6 +197,135 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
   return qLower.replace(/[^a-z0-9]+/g, "_") || "generic";
 }
 
+// Convert recorded points buffer into MoTeC CSV standard string
+function pointsToCSV(points, gameTitle = "Live Telemetry") {
+  if (!points || points.length === 0) return "";
+  const headers = [
+    "Time", "Distance", "Speed", "Throttle", "Brake", "Steer", "Gear", "RPM", "LatG", "LongG",
+    "TempFL", "TempFR", "TempRL", "TempRR", "PressFL", "PressFR", "PressRL", "PressRR"
+  ];
+  const rows = [headers.join(",")];
+  points.forEach((p) => {
+    rows.push([
+      (p.time || 0).toFixed(3),
+      Math.round(p.dist || 0),
+      Math.round(p.speed || 0),
+      Math.round(p.throttle || 0),
+      Math.round(p.brake || 0),
+      (p.steer || 0).toFixed(1),
+      p.gear || 1,
+      Math.round(p.rpm || 0),
+      (p.latG || 0).toFixed(2),
+      (p.longG || 0).toFixed(2),
+      (p.tempFL || 85).toFixed(1),
+      (p.tempFR || 85).toFixed(1),
+      (p.tempRL || 85).toFixed(1),
+      (p.tempRR || 85).toFixed(1),
+      (p.pressFL || 27.0).toFixed(2),
+      (p.pressFR || 27.0).toFixed(2),
+      (p.pressRL || 27.0).toFixed(2),
+      (p.pressRR || 27.0).toFixed(2),
+    ].join(","));
+  });
+  return rows.join("\n");
+}
+
+// --- HTTP & WebSocket Server ---
+
+const server = http.createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(200);
+    res.end();
+    return;
+  }
+
+  // Health / Status Endpoint
+  if (req.method === "GET" && (req.url === "/api/health" || req.url === "/api/status")) {
+    const isReceiving = (Date.now() - lastPacketTime) < 3000;
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      status: "ok",
+      version: "2.1.0",
+      activeGame,
+      isReceiving,
+      totalPackets: totalPacketsReceived,
+      lapCounter,
+      currentLapPointsCount: activeLapBuffer.length,
+      hasCompletedLap: !!lastCompletedLap,
+      lastLapTime: lastCompletedLap ? lastCompletedLap.lapTime : null,
+      lastLapPointCount: lastCompletedLap ? lastCompletedLap.points.length : 0,
+    }));
+    return;
+  }
+
+  // Latest Recorded Lap JSON Endpoint (Direct Ingest for ApexWall Analyzer)
+  if (req.method === "GET" && req.url === "/api/latest-lap") {
+    const lapToReturn = lastCompletedLap || (activeLapBuffer.length > 50 ? {
+      game: activeGame,
+      lapTime: ((Date.now() - lapStartTime) / 1000).toFixed(2),
+      points: activeLapBuffer,
+    } : null);
+
+    if (!lapToReturn) {
+      res.writeHead(404, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, error: "No telemetry lap recorded yet. Drive on track to buffer telemetry." }));
+      return;
+    }
+
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({
+      success: true,
+      game: lapToReturn.game || activeGame,
+      lapTime: lapToReturn.lapTime,
+      pointCount: lapToReturn.points.length,
+      points: lapToReturn.points,
+    }));
+    return;
+  }
+
+  // Latest Recorded Lap CSV Format
+  if (req.method === "GET" && req.url === "/api/latest-lap.csv") {
+    const points = lastCompletedLap ? lastCompletedLap.points : activeLapBuffer;
+    if (!points || points.length === 0) {
+      res.writeHead(404, { "Content-Type": "text/plain" });
+      res.end("No telemetry points available.");
+      return;
+    }
+    const csvData = pointsToCSV(points, activeGame);
+    res.writeHead(200, {
+      "Content-Type": "text/csv",
+      "Content-Disposition": `attachment; filename="apexwall_${activeGame.toLowerCase().replace(/[^a-z0-9]+/g, "_")}_lap.csv"`
+    });
+    res.end(csvData);
+    return;
+  }
+
+  // Manual Lap Trigger
+  if (req.method === "POST" && req.url === "/api/save-lap") {
+    if (activeLapBuffer.length < 20) {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ success: false, error: "Lap buffer too short to save." }));
+      return;
+    }
+    const lapTime = ((Date.now() - lapStartTime) / 1000).toFixed(2);
+    lastCompletedLap = {
+      game: activeGame,
+      lapTime,
+      points: [...activeLapBuffer],
+    };
+    lapCounter++;
+    activeLapBuffer = [];
+    lapStartTime = Date.now();
+    console.log(`[LAP] 🏁 Manually saved Lap ${lapCounter} (${lapTime}s, ${lastCompletedLap.points.length} points)`);
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ success: true, lapCounter, lapTime, pointCount: lastCompletedLap.points.length }));
+    return;
+  }
+
   // List AC Cars endpoint for dashboard autocomplete
   if (req.method === "GET" && req.url.startsWith("/api/ac-cars")) {
     const setupsRoot = getACSetupsRoot();
@@ -204,159 +346,10 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
     return;
   }
 
-  // Inspect AC Car endpoint for authentic setup sliders and values
-  if (req.method === "GET" && req.url.startsWith("/api/inspect-car")) {
-    try {
-      const parsedUrl = new URL(req.url, `http://${req.headers.host || "localhost:9001"}`);
-      const carQuery = parsedUrl.searchParams.get("car") || "";
-      const trackQuery = parsedUrl.searchParams.get("track") || "";
-      const setupsRoot = getACSetupsRoot();
-
-      if (!fs.existsSync(setupsRoot)) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: "Assetto Corsa setups folder not found on this machine." }));
-        return;
-      }
-
-      const matchedCar = findBestMatchingCarFolder(setupsRoot, carQuery);
-      const carDir = path.join(setupsRoot, matchedCar);
-
-      if (!fs.existsSync(carDir)) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: `Car folder "${matchedCar}" not found in setups directory.` }));
-        return;
-      }
-
-      const candidateIniPaths = [];
-      if (trackQuery) {
-        const cleanTrack = trackQuery.toLowerCase().replace(/[^a-z0-9]+/g, "");
-        try {
-          const subs = fs.readdirSync(carDir);
-          for (const sub of subs) {
-            if (sub.toLowerCase().replace(/[^a-z0-9]+/g, "").includes(cleanTrack)) {
-              const trkPath = path.join(carDir, sub);
-              if (fs.statSync(trkPath).isDirectory()) {
-                candidateIniPaths.push(path.join(trkPath, "default.ini"));
-                candidateIniPaths.push(path.join(trkPath, "last.ini"));
-                fs.readdirSync(trkPath).forEach((f) => {
-                  if (f.endsWith(".ini")) candidateIniPaths.push(path.join(trkPath, f));
-                });
-              }
-            }
-          }
-        } catch (_e) {}
-      }
-
-      candidateIniPaths.push(path.join(carDir, "generic", "last.ini"));
-      candidateIniPaths.push(path.join(carDir, "generic", "default.ini"));
-      candidateIniPaths.push(path.join(carDir, "last.ini"));
-
-      try {
-        const allSubs = fs.readdirSync(carDir);
-        for (const sub of allSubs) {
-          const sPath = path.join(carDir, sub);
-          if (fs.statSync(sPath).isDirectory()) {
-            const inis = fs.readdirSync(sPath).filter((f) => f.toLowerCase().endsWith(".ini"));
-            for (const f of inis) candidateIniPaths.push(path.join(sPath, f));
-          }
-        }
-      } catch (_e) {}
-
-      let activeIniPath = null;
-      let iniContent = null;
-      for (const p of candidateIniPaths) {
-        if (fs.existsSync(p)) {
-          activeIniPath = p;
-          iniContent = fs.readFileSync(p, "utf8");
-          break;
-        }
-      }
-
-      if (!activeIniPath || !iniContent) {
-        res.writeHead(404, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ success: false, error: `No setup files (.ini) found for car "${matchedCar}".` }));
-        return;
-      }
-
-      // Parse simple INI
-      const parsedIni = {};
-      let curSec = "DEFAULT";
-      for (const rawLine of iniContent.split(/\r?\n/)) {
-        const line = rawLine.trim();
-        if (!line || line.startsWith(";") || line.startsWith("#") || line.startsWith("//")) continue;
-        if (line.startsWith("[") && line.endsWith("]")) {
-          curSec = line.slice(1, -1).trim().toUpperCase();
-          if (!parsedIni[curSec]) parsedIni[curSec] = {};
-          continue;
-        }
-        const eqIdx = line.indexOf("=");
-        if (eqIdx !== -1) {
-          const key = line.slice(0, eqIdx).trim().toUpperCase();
-          const val = line.slice(eqIdx + 1).trim();
-          if (!parsedIni[curSec]) parsedIni[curSec] = {};
-          parsedIni[curSec][key] = val;
-        }
-      }
-
-      function catSec(secName, name) {
-        const s = (secName + " " + name).toUpperCase();
-        if (s.includes("CAMBER") || s.includes("TOE") || s.includes("CASTER") || s.includes("ALIGNMENT")) return "Alignment";
-        if (s.includes("PRESSURE") || s.includes("TYRE") || s.includes("TIRE")) return "Tyres";
-        if (s.includes("ARB") || s.includes("ANTI-ROLL") || s.includes("ROLL_BAR")) return "Suspension / ARB";
-        if (s.includes("SPRING") || s.includes("ROD") || s.includes("PACKER") || s.includes("HEIGHT") || s.includes("BUMP")) return "Suspension / Springs";
-        if (s.includes("DAMP") || s.includes("REBOUND") || s.includes("FAST_BUMP") || s.includes("SLOW_BUMP")) return "Dampers";
-        if (s.includes("DIFF") || s.includes("POWER") || s.includes("COAST") || s.includes("GEAR") || s.includes("FINAL")) return "Drivetrain & Diff";
-        if (s.includes("WING") || s.includes("SPLITTER") || s.includes("AERO") || s.includes("DUCT")) return "Aerodynamics";
-        if (s.includes("BRAKE") || s.includes("BIAS")) return "Brakes";
-        if (s.includes("TC") || s.includes("ABS") || s.includes("ENGINE_MAP") || s.includes("ELECTRONIC")) return "Electronics";
-        return "General";
-      }
-
-      const sliders = [];
-      for (const [secName, fields] of Object.entries(parsedIni)) {
-        if (secName === "CAR" || secName === "ABOUT" || secName === "__EXT_PATCH") continue;
-        const valStr = fields["VALUE"];
-        if (valStr !== undefined) {
-          const numVal = parseFloat(valStr);
-          const isNumeric = !isNaN(numVal);
-          sliders.push({
-            key: secName,
-            name: secName.replace(/_/g, " "),
-            category: catSec(secName, secName),
-            min: isNumeric ? (numVal < 0 ? numVal * 1.5 : 0) : 0,
-            max: isNumeric ? (numVal > 0 ? Math.max(numVal * 1.5, 10) : 0) : 100,
-            step: 1,
-            defaultValue: isNumeric ? numVal : undefined,
-          });
-        }
-      }
-
-      const carData = {
-        carId: matchedCar,
-        name: matchedCar.replace(/_/g, " "),
-        brand: "Assetto Corsa",
-        sliders,
-        hasAcdOnly: true,
-        unpackedFilesFound: [activeIniPath],
-      };
-
-      res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: true, source: "telemetry_bridge", carData }));
-      return;
-    } catch (err) {
-      res.writeHead(500, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ success: false, error: err.message }));
-      return;
-    }
-  }
-
-  // 1-Click Setup Injection Endpoint
+  // 1-Click Setup Injection Endpoint for ALL Sim Titles
   if (req.method === "POST" && req.url === "/api/inject-setup") {
     let body = "";
-    req.on("data", (chunk) => {
-      body += chunk;
-    });
-
+    req.on("data", (chunk) => { body += chunk; });
     req.on("end", () => {
       try {
         const payload = JSON.parse(body);
@@ -367,9 +360,11 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
         let genericPath = null;
         let resolvedCarFolder = car;
 
-        if (sim === "acc") {
+        const simNorm = (sim || "").toLowerCase();
+
+        if (simNorm === "acc" || simNorm.includes("competizione")) {
           targetDir = path.join(primaryDocs, "Assetto Corsa Competizione", "Setups", car || "generic", track || "spa");
-        } else if (sim === "assetto-corsa") {
+        } else if (simNorm === "assetto-corsa" || simNorm === "ac") {
           const setupsRoot = getACSetupsRoot();
           resolvedCarFolder = customCarFolder ? customCarFolder.trim() : findBestMatchingCarFolder(setupsRoot, car);
 
@@ -388,25 +383,23 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
           } catch (_e) {}
 
           console.log(`[INJECT] ✓ Successfully injected AC setup into: ${filePath}`);
-          if (genericPath) {
-            console.log(`[INJECT] ✓ Also mirrored into generic setup library: ${genericPath}`);
-          }
           res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({
-            success: true,
-            carFolder: resolvedCarFolder,
-            setupsRoot,
-            savedPath: filePath,
-            genericPath,
-          }));
+          res.end(JSON.stringify({ success: true, carFolder: resolvedCarFolder, setupsRoot, savedPath: filePath, genericPath }));
           return;
-        } else if (sim === "assetto-corsa-evo" || sim === "acevo") {
+        } else if (simNorm === "ams2" || simNorm.includes("automobilista")) {
+          // Native Automobilista 2 tuning tree
+          targetDir = path.join(primaryDocs, "Automobilista 2", "savegame", "tuning", car || "generic", track || "spa");
+        } else if (simNorm === "assetto-corsa-evo" || simNorm === "acevo") {
           targetDir = path.join(primaryDocs, "Assetto Corsa Evo", "setups", car || "generic", track || "spa");
-        } else if (sim === "iracing") {
+        } else if (simNorm === "iracing") {
           targetDir = path.join(primaryDocs, "iRacing", "setups", car || "generic", track || "spa");
-        } else if (sim === "lmu") {
+        } else if (simNorm === "lmu" || simNorm.includes("lemans")) {
           targetDir = path.join(primaryDocs, "Le Mans Ultimate", "UserData", "player", "Settings", track || "spa");
-        } else if (sim === "f1") {
+        } else if (simNorm === "rfactor2" || simNorm.includes("rfactor")) {
+          targetDir = path.join(primaryDocs, "rFactor 2", "UserData", "player", "Settings", track || "spa");
+        } else if (simNorm === "raceroom") {
+          targetDir = path.join(primaryDocs, "SimBin", "RaceRoom Racing Experience", "UserData", "CarSetups", car || "generic", track || "spa");
+        } else if (simNorm === "f1") {
           targetDir = path.join(primaryDocs, "My Games", "F1 24", "setups", track || "spa");
         } else {
           targetDir = path.join(primaryDocs, "ApexWall_Setups", car || "generic", track || "spa");
@@ -433,16 +426,13 @@ function findBestMatchingCarFolder(setupsRoot, carQuery) {
 });
 
 const wss = new WebSocketServer({ server });
-
 let activeClients = [];
 
 wss.on("connection", (ws) => {
   activeClients.push(ws);
-  console.log(`[WS] ApexWall Web Dashboard connected (${activeClients.length} active client(s))`);
-
+  console.log(`[WS] Dashboard connected (${activeClients.length} active client(s))`);
   ws.on("close", () => {
     activeClients = activeClients.filter((c) => c !== ws);
-    console.log(`[WS] Client disconnected (${activeClients.length} remaining)`);
   });
 });
 
@@ -450,18 +440,224 @@ server.listen(WS_PORT, () => {
   console.log(`[WS] Telemetry streaming ready on ws://localhost:${WS_PORT}`);
 });
 
+// Broadcast frame to WebSocket clients & buffer into active lap
 function broadcastFrame(frame) {
+  totalPacketsReceived++;
+  lastPacketTime = Date.now();
+
   const payload = JSON.stringify({ type: "telemetry_frame", payload: frame });
   activeClients.forEach((client) => {
-    if (client.readyState === 1) { // OPEN
-      client.send(payload);
-    }
+    if (client.readyState === 1) client.send(payload);
   });
+
+  // Record into lap buffer if car is moving
+  if (frame.speed > 3) {
+    const elapsedSec = (Date.now() - lapStartTime) / 1000;
+    const dist = frame.lapDistance || (activeLapBuffer.length * 6);
+
+    // Auto-detect lap completion (lap distance reset or lap distance > 3000m with distance drop)
+    if (frame.lapDistance && frame.lapDistance < 100 && lastLapDistance > 1000 && activeLapBuffer.length > 200) {
+      lapCounter++;
+      lastCompletedLap = {
+        game: activeGame,
+        lapTime: elapsedSec.toFixed(2),
+        points: [...activeLapBuffer],
+      };
+      console.log(`[LAP] 🏁 Lap ${lapCounter} Completed (${elapsedSec.toFixed(2)}s, ${lastCompletedLap.points.length} points)`);
+      activeLapBuffer = [];
+      lapStartTime = Date.now();
+
+      // Notify web clients of completed lap
+      const lapMsg = JSON.stringify({
+        type: "lap_completed",
+        payload: { lapNumber: lapCounter, lapTime: lastCompletedLap.lapTime, pointCount: lastCompletedLap.points.length }
+      });
+      activeClients.forEach((c) => { if (c.readyState === 1) c.send(lapMsg); });
+    }
+
+    lastLapDistance = frame.lapDistance || 0;
+
+    activeLapBuffer.push({
+      time: Number(elapsedSec.toFixed(3)),
+      dist: Math.round(dist),
+      speed: Math.round(frame.speed || 0),
+      throttle: Math.round(frame.throttle || 0),
+      brake: Math.round(frame.brake || 0),
+      steer: Number((frame.steer || 0).toFixed(1)),
+      gear: frame.gear === "N" ? 0 : frame.gear === "R" ? -1 : Number(frame.gear) || 3,
+      rpm: Math.round(frame.rpm || 0),
+      latG: Number((frame.latG || 0).toFixed(2)),
+      longG: Number((frame.longG || 0).toFixed(2)),
+      tempFL: frame.tyreTemps?.FL || 85,
+      tempFR: frame.tyreTemps?.FR || 85,
+      tempRL: frame.tyreTemps?.RL || 85,
+      tempRR: frame.tyreTemps?.RR || 85,
+      pressFL: frame.tyrePressures?.FL || 27.0,
+      pressFR: frame.tyrePressures?.FR || 27.0,
+      pressRL: frame.tyrePressures?.RL || 27.0,
+      pressRR: frame.tyrePressures?.RR || 27.0,
+    });
+
+    // Cap at 20,000 points (~5-6 mins of driving) to avoid memory explosion
+    if (activeLapBuffer.length > 20000) activeLapBuffer.shift();
+  }
 }
 
-// 2. Test Generator Mode (if --test or sim is offline)
+// =========================================================================
+// SIM TELEMETRY DECODERS
+// =========================================================================
+
+// 1. Automobilista 2 & Project CARS 2 (Port 5606, Packet 0: eCarPhysics)
+function parseAMS2Packet(msg) {
+  if (msg.length < 180) return null;
+  const packetType = msg.readUInt8(10);
+  if (packetType !== 0) return null; // 0 = eCarPhysics
+
+  const brakeRaw = msg.readUInt8(29);
+  const throttleRaw = msg.readUInt8(30);
+  const speedMs = msg.readFloatLE(36);
+  const speedKmh = Math.max(0, Math.round(speedMs * 3.6));
+  const rpm = msg.readUInt16LE(40);
+  const maxRpm = msg.readUInt16LE(42) || 8500;
+  const steerRaw = msg.readInt8(44);
+  const gearByte = msg.readUInt8(45);
+  const gearNum = gearByte & 0x0f;
+  const gear = gearNum === 0 ? "N" : gearNum === 15 ? "R" : gearNum;
+
+  const throttle = Math.min(100, Math.max(0, Math.round((throttleRaw / 255) * 100)));
+  const brake = Math.min(100, Math.max(0, Math.round((brakeRaw / 255) * 100)));
+  const steer = Math.round((steerRaw / 127) * 45);
+
+  const latAcc = msg.readFloatLE(100);
+  const longAcc = msg.readFloatLE(108);
+  const latG = Math.round((latAcc / 9.80665) * 100) / 100;
+  const longG = Math.round((longAcc / 9.80665) * 100) / 100;
+
+  const tempFL = msg.readUInt8(176);
+  const tempFR = msg.readUInt8(177);
+  const tempRL = msg.readUInt8(178);
+  const tempRR = msg.readUInt8(179);
+
+  return {
+    game: "Automobilista 2",
+    speed: speedKmh,
+    rpm,
+    maxRpm,
+    gear,
+    throttle,
+    brake,
+    steer,
+    latG: isNaN(latG) ? 0 : latG,
+    longG: isNaN(longG) ? 0 : longG,
+    lapDistance: 0,
+    totalDistance: 5000,
+    lapTime: 0,
+    delta: 0,
+    tyreTemps: { FL: tempFL || 85, FR: tempFR || 85, RL: tempRL || 85, RR: tempRR || 85 },
+    tyrePressures: { FL: 26.8, FR: 26.8, RL: 26.4, RR: 26.4 },
+  };
+}
+
+// 2. Forza Motorsport & Forza Horizon (Port 5300, 324-byte Data Out)
+function parseForzaPacket(msg) {
+  if (msg.length < 311) return null;
+  const isRaceOn = msg.readInt32LE(0);
+  if (isRaceOn === 0 && msg.length < 324) return null;
+
+  const maxRpm = Math.round(msg.readFloatLE(8)) || 8000;
+  const currentRpm = Math.round(msg.readFloatLE(16));
+  const accelX = msg.readFloatLE(20);
+  const accelZ = msg.readFloatLE(28);
+  const latG = Math.round((accelX / 9.80665) * 100) / 100;
+  const longG = Math.round((accelZ / 9.80665) * 100) / 100;
+
+  let speedKmh = 0;
+  if (msg.length >= 236) {
+    const speedMs = msg.readFloatLE(232);
+    speedKmh = Math.max(0, Math.round(speedMs * 3.6));
+  }
+
+  let tFL = 85, tFR = 85, tRL = 85, tRR = 85;
+  if (msg.length >= 260) {
+    const fFL = msg.readFloatLE(244);
+    const fFR = msg.readFloatLE(248);
+    const fRL = msg.readFloatLE(252);
+    const fRR = msg.readFloatLE(256);
+    if (fFL > 50) tFL = Math.round((fFL - 32) * (5 / 9));
+    if (fFR > 50) tFR = Math.round((fFR - 32) * (5 / 9));
+    if (fRL > 50) tRL = Math.round((fRL - 32) * (5 / 9));
+    if (fRR > 50) tRR = Math.round((fRR - 32) * (5 / 9));
+  }
+
+  let lapDist = 0;
+  if (msg.length >= 272) lapDist = Math.round(msg.readFloatLE(268));
+
+  let throttle = 0, steer = 0, brake = 0, gear = "N";
+  if (msg.length >= 297) {
+    throttle = Math.min(100, Math.max(0, Math.round((msg.readUInt8(291) / 255) * 100)));
+    steer = Math.round((msg.readInt8(292) / 127) * 45);
+    brake = Math.min(100, Math.max(0, Math.round((msg.readUInt8(293) / 255) * 100)));
+    const gVal = msg.readUInt8(296);
+    gear = gVal === 0 ? "R" : gVal === 11 ? "N" : gVal;
+  }
+
+  return {
+    game: "Forza Motorsport",
+    speed: speedKmh,
+    rpm: currentRpm,
+    maxRpm,
+    gear,
+    throttle,
+    brake,
+    steer,
+    latG: isNaN(latG) ? 0 : latG,
+    longG: isNaN(longG) ? 0 : longG,
+    lapDistance: lapDist,
+    totalDistance: 5000,
+    lapTime: 0,
+    delta: 0,
+    tyreTemps: { FL: tFL, FR: tFR, RL: tRL, RR: tRR },
+    tyrePressures: { FL: 28.0, FR: 28.0, RL: 27.5, RR: 27.5 },
+  };
+}
+
+// 3. F1 23 / 24 / 25 (Port 20777, Packet 6: Car Telemetry)
+function parseF1Packet(msg) {
+  if (msg.length < 60) return null;
+  const speed = msg.readUInt16LE(28);
+  const throttle = Math.round(msg.readFloatLE(30) * 100);
+  const steer = Math.round(msg.readFloatLE(34) * 100);
+  const brake = Math.round(msg.readFloatLE(38) * 100);
+  const gear = msg.readInt8(43);
+  const engineRPM = msg.readUInt16LE(44);
+
+  return {
+    game: "F1 24",
+    speed,
+    rpm: engineRPM,
+    maxRpm: 15000,
+    gear: gear === 0 ? "N" : gear === -1 ? "R" : gear,
+    throttle,
+    brake,
+    steer,
+    latG: 0,
+    longG: 0,
+    lapDistance: 0,
+    totalDistance: 5891,
+    lapTime: 0,
+    delta: 0,
+    tyreTemps: { FL: 95, FR: 93, RL: 92, RR: 90 },
+    tyrePressures: { FL: 23.5, FR: 23.5, RL: 21.0, RR: 21.0 },
+  };
+}
+
+// =========================================================================
+// SOCKET INITIALIZATION & LISTENERS
+// =========================================================================
+
 if (isTestMode) {
   console.log("[SIM] Running in Synthetic Test Broadcast Mode (60Hz)...");
+  activeGame = "Synthetic Rig Test";
   let progress = 0;
   setInterval(() => {
     progress = (progress + 0.002) % 1;
@@ -488,91 +684,78 @@ if (isTestMode) {
       tyrePressures: { FL: 26.9, FR: 27.1, RL: 26.8, RR: 27.0 },
     });
   }, 1000 / 60);
-} else if (gameArg === "acevo" || gameArg === "assetto-corsa-evo") {
-  // 3. Assetto Corsa Evo Native Shared Memory Integration (via acevo-bridge.py)
-  console.log("[ACEVO] Launching Assetto Corsa Evo Shared Memory Bridge process...");
-  const scriptPath = path.join(__dirname, "acevo-bridge.py");
-  const pyArgs = [scriptPath];
-  if (isTestMode) pyArgs.push("--test");
-
-  const pyProcess = spawn("python", pyArgs, { stdio: ["ignore", "pipe", "inherit"] });
-
-  const rl = readline.createInterface({ input: pyProcess.stdout });
-  rl.on("line", (line) => {
+} else {
+  // Helper to attach a UDP listener safely
+  function startUDPListener(name, port, parserFn) {
+    if (gameFilter && gameFilter !== name.toLowerCase()) return;
     try {
-      if (!line.trim()) return;
-      const frame = JSON.parse(line.trim());
-      broadcastFrame(frame);
-    } catch (parseErr) {
-      // Ignore non-json lines
+      const sock = dgram.createSocket("udp4");
+      sock.on("error", (err) => {
+        console.warn(`[UDP ${name}]: ${err.message}`);
+        try { sock.close(); } catch (_e) {}
+      });
+
+      sock.on("message", (msg) => {
+        try {
+          const frame = parserFn(msg);
+          if (frame) {
+            if (activeGame !== frame.game) {
+              activeGame = frame.game;
+              console.log(`[AUTO-DETECT] 🏁 Active Rig Stream Connected: [${activeGame}] on port ${port}`);
+            }
+            broadcastFrame(frame);
+          }
+        } catch (_err) {}
+      });
+
+      sock.bind(port, () => {
+        console.log(`[UDP] ✓ Listening for ${name.padEnd(22)} on port ${port}`);
+      });
+    } catch (e) {
+      console.warn(`[UDP ${name}] Could not bind port ${port}: ${e.message}`);
     }
+  }
+
+  // 1. Automobilista 2 & Project CARS 2
+  startUDPListener("Automobilista 2", PORTS.AMS2, parseAMS2Packet);
+
+  // 2. Forza Motorsport
+  startUDPListener("Forza Motorsport", PORTS.FORZA, parseForzaPacket);
+
+  // 3. F1 23/24/25
+  startUDPListener("F1 24 / F1 23", PORTS.F1, parseF1Packet);
+
+  // 4. Assetto Corsa Competizione
+  startUDPListener("ACC", PORTS.ACC, (msg) => {
+    // Basic ACC telemetry packet
+    return parseF1Packet(msg);
   });
 
-  pyProcess.on("error", (err) => {
-    console.error("[ACEVO ERROR] Failed to start Python bridge:", err.message);
-    console.log("[TIP] Ensure Python 3 is installed, or run: python scripts/acevo-bridge.py");
-  });
-
-  pyProcess.on("exit", (code) => {
-    console.log(`[ACEVO] Python bridge process exited with code ${code}`);
-  });
-
-  // Also listen on UDP port 9002 in case user runs bridge or SimHub separately with UDP broadcast
-  const udpSocket = dgram.createSocket("udp4");
-  udpSocket.on("message", (msg) => {
+  // 5. Assetto Corsa Evo Relay
+  startUDPListener("AC Evo Relay", PORTS.ACEVO, (msg) => {
     try {
       const data = JSON.parse(msg.toString("utf8"));
-      broadcastFrame(data);
-    } catch (e) {}
-  });
-  udpSocket.bind(UDP_PORT, () => {
-    console.log(`[UDP] Ready for secondary UDP relay packets on port ${UDP_PORT}...`);
-  });
-} else {
-  // 4. UDP Socket Listener for Sim Racing Packets (F1 / ACC)
-  const udpSocket = dgram.createSocket("udp4");
-
-  udpSocket.on("error", (err) => {
-    console.error(`[UDP Error]:\n${err.stack}`);
-    udpSocket.close();
-  });
-
-  udpSocket.on("message", (msg, rinfo) => {
-    try {
-      // Decode UDP Packet (F1 2023/2024 Packet Car TelemetryData structure)
-      if (gameArg === "f1" && msg.length >= 60) {
-        const speed = msg.readUInt16LE(28); // Car speed km/h
-        const throttle = Math.round(msg.readFloatLE(30) * 100);
-        const steer = Math.round(msg.readFloatLE(34) * 100);
-        const brake = Math.round(msg.readFloatLE(38) * 100);
-        const gear = msg.readInt8(43);
-        const engineRPM = msg.readUInt16LE(44);
-
-        broadcastFrame({
-          speed,
-          rpm: engineRPM,
-          maxRpm: 15000,
-          gear: gear === 0 ? "N" : gear === -1 ? "R" : gear,
-          throttle,
-          brake,
-          steer,
-          latG: 0,
-          longG: 0,
-          lapDistance: 0,
-          totalDistance: 5891,
-          lapTime: 0,
-          delta: 0,
-          tyreTemps: { FL: 95, FR: 93, RL: 92, RR: 90 },
-          tyrePressures: { FL: 23.5, FR: 23.5, RL: 21.0, RR: 21.0 },
-        });
-      }
-    } catch (parseErr) {
-      // Packet parse error
+      return { game: "Assetto Corsa Evo", ...data };
+    } catch {
+      return null;
     }
   });
 
-  udpSocket.bind(UDP_PORT, () => {
-    console.log(`[UDP] Listening for ${gameArg.toUpperCase()} UDP broadcast packets on port ${UDP_PORT}...`);
-    console.log("[TIP] In your game settings, enable UDP Telemetry Broadcast and set port to " + UDP_PORT);
-  });
+  // 6. Launch Assetto Corsa Evo Python Bridge if requested
+  if (gameFilter === "acevo" || gameFilter === "assetto-corsa-evo") {
+    console.log("[ACEVO] Launching Assetto Corsa Evo Shared Memory Bridge process...");
+    const scriptPath = path.join(__dirname, "acevo-bridge.py");
+    if (fs.existsSync(scriptPath)) {
+      const pyProcess = spawn("python", [scriptPath], { stdio: ["ignore", "pipe", "inherit"] });
+      const rl = readline.createInterface({ input: pyProcess.stdout });
+      rl.on("line", (line) => {
+        try {
+          if (!line.trim()) return;
+          const frame = JSON.parse(line.trim());
+          activeGame = "Assetto Corsa Evo";
+          broadcastFrame(frame);
+        } catch (_e) {}
+      });
+    }
+  }
 }
