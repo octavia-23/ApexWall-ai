@@ -85,8 +85,10 @@ export function extractTelemetryEvidence(telemetryContext: any): TelemetryEviden
   // 6. Check Empirical Tyre Pressure Optimization
   if (telemetryContext.tyreOptimization?.recommendedCold) {
     const opt = telemetryContext.tyreOptimization;
+    const fmtCold = (v: number | null) => (v != null ? `${v}` : "—");
+    const fmtDelta = (v: number | null) => (v != null ? `${v >= 0 ? "+" : ""}${v}` : "—");
     observed.push(
-      `Calibrated Cold Pressures: FL ${opt.recommendedCold.FL}, FR ${opt.recommendedCold.FR}, RL ${opt.recommendedCold.RL}, RR ${opt.recommendedCold.RR} psi (Target hot: ${opt.targetHot} psi, Δ: FL ${opt.pressureDelta.FL >= 0 ? "+" : ""}${opt.pressureDelta.FL}, FR ${opt.pressureDelta.FR >= 0 ? "+" : ""}${opt.pressureDelta.FR}, RL ${opt.pressureDelta.RL >= 0 ? "+" : ""}${opt.pressureDelta.RL}, RR ${opt.pressureDelta.RR >= 0 ? "+" : ""}${opt.pressureDelta.RR} psi)`
+      `Calibrated Cold Pressures: FL ${fmtCold(opt.recommendedCold.FL)}, FR ${fmtCold(opt.recommendedCold.FR)}, RL ${fmtCold(opt.recommendedCold.RL)}, RR ${fmtCold(opt.recommendedCold.RR)} psi (Target hot: ${opt.targetHot != null ? opt.targetHot : "—"} psi, Δ: FL ${fmtDelta(opt.pressureDelta.FL)}, FR ${fmtDelta(opt.pressureDelta.FR)}, RL ${fmtDelta(opt.pressureDelta.RL)}, RR ${fmtDelta(opt.pressureDelta.RR)} psi)`
     );
   }
 
@@ -370,12 +372,8 @@ export function formulateDiagnosticPlan(
   // If empirical telemetry shows tyre pressure offsets, include tyre parameters for calibration
   if (telemetryContext?.tyreOptimization?.pressureDelta) {
     const pd = telemetryContext.tyreOptimization.pressureDelta;
-    const hasPressureDiscrepancy = Math.max(
-      Math.abs(pd.FL || 0),
-      Math.abs(pd.FR || 0),
-      Math.abs(pd.RL || 0),
-      Math.abs(pd.RR || 0)
-    ) >= 0.3;
+    const deltas = [pd.FL, pd.FR, pd.RL, pd.RR].filter((v): v is number => v != null);
+    const hasPressureDiscrepancy = deltas.some((v) => Math.abs(v) >= 0.3);
 
     if (hasPressureDiscrepancy) {
       const tyreParams = ["TYRE_PRESSURE_FL", "TYRE_PRESSURE_FR", "TYRE_PRESSURE_RL", "TYRE_PRESSURE_RR"];

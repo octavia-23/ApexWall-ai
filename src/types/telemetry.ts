@@ -1,56 +1,77 @@
+export type SampleQuality = "measured" | "interpolated" | "missing";
+
+export interface TelemetryChannelQuality {
+  channel: string;
+  totalSamples: number;
+  validSamples: number;
+  missingSamples: number;
+  coveragePct: number;
+  status: "available" | "partial" | "missing";
+}
+
+export interface TelemetryDataQuality {
+  totalRows: number;
+  channels: Record<string, TelemetryChannelQuality>;
+  overallQuality: "good" | "degraded" | "insufficient";
+  warnings: string[];
+}
+
 export interface TelemetryPoint {
   time: number;
   dist: number;
-  speed: number;
-  throttle: number;
-  brake: number;
-  steer: number;
-  gear: number;
-  rpm: number;
-  latG: number;
-  longG: number;
-  tempFL: number;
-  tempFR: number;
-  tempRL: number;
-  tempRR: number;
-  pressFL: number;
-  pressFR: number;
-  pressRL: number;
-  pressRR: number;
-  understeerAngle?: number; // Steering angle minus Ackermann angle (positive = understeer, negative = oversteer)
+  speed: number | null;
+  throttle: number | null;
+  brake: number | null;
+  steer: number | null;
+  gear: number | null;
+  rpm: number | null;
+  latG: number | null;
+  longG: number | null;
+  tempFL: number | null;
+  tempFR: number | null;
+  tempRL: number | null;
+  tempRR: number | null;
+  pressFL: number | null;
+  pressFR: number | null;
+  pressRL: number | null;
+  pressRR: number | null;
+  understeerAngle?: number | null; // Steering angle minus Ackermann angle (positive = understeer, negative = oversteer)
+  quality?: Partial<Record<string, SampleQuality>>;
 }
 
 export interface CornerPhaseBalance {
-  entry: "Oversteer" | "Neutral" | "Understeer";
-  mid: "Oversteer" | "Neutral" | "Understeer";
-  exit: "Oversteer" | "Neutral" | "Understeer";
-  entryDeltaDeg: number;
-  midDeltaDeg: number;
-  exitDeltaDeg: number;
+  entry: "Oversteer" | "Neutral" | "Understeer" | "Unavailable";
+  mid: "Oversteer" | "Neutral" | "Understeer" | "Unavailable";
+  exit: "Oversteer" | "Neutral" | "Understeer" | "Unavailable";
+  entryDeltaDeg: number | null;
+  midDeltaDeg: number | null;
+  exitDeltaDeg: number | null;
   verdict: string;
+  availability?: "available" | "partial" | "unavailable";
 }
 
 export interface TyreOptimizationReport {
   recommendedCold: {
-    FL: number;
-    FR: number;
-    RL: number;
-    RR: number;
+    FL: number | null;
+    FR: number | null;
+    RL: number | null;
+    RR: number | null;
   };
   observedHot: {
-    FL: number;
-    FR: number;
-    RL: number;
-    RR: number;
+    FL: number | null;
+    FR: number | null;
+    RL: number | null;
+    RR: number | null;
   };
   targetHot: number;
   pressureDelta: {
-    FL: number;
-    FR: number;
-    RL: number;
-    RR: number;
+    FL: number | null;
+    FR: number | null;
+    RL: number | null;
+    RR: number | null;
   };
   status: string;
+  availability?: "available" | "partial" | "unavailable";
 }
 
 export interface DriverVsCarDiagnostics {
@@ -71,20 +92,21 @@ export interface MinCornerSpeed {
 
 export interface TelemetryStats {
   lapTime: string;
-  topSpeed: number;
-  minSpeed: number;
-  maxLatG: number;
-  maxDecelG: number;
+  topSpeed: number | null;
+  minSpeed: number | null;
+  maxLatG: number | null;
+  maxDecelG: number | null;
   minCornerSpeeds: MinCornerSpeed[];
-  trailBrakingScore: number;
-  throttleSmoothness: number;
-  steeringScrub: number;
+  trailBrakingScore: number | null;
+  throttleSmoothness: number | null;
+  steeringScrub: number | null;
   tyres: {
     FL: TyreCornerData;
     FR: TyreCornerData;
     RL: TyreCornerData;
     RR: TyreCornerData;
   };
+  dataQuality?: TelemetryDataQuality;
 }
 
 export interface TelemetryAnomaly {
@@ -97,14 +119,14 @@ export interface ParsedTelemetryFile {
   filename: string;
   rawCount: number;
   lapTime: string;
-  topSpeed: number;
-  minSpeed: number;
-  maxLatG: number;
-  maxDecelG: number;
+  topSpeed: number | null;
+  minSpeed: number | null;
+  maxLatG: number | null;
+  maxDecelG: number | null;
   minCornerSpeeds: MinCornerSpeed[];
-  trailBrakingScore: number;
-  throttleSmoothness: number;
-  steeringScrub: number;
+  trailBrakingScore: number | null;
+  throttleSmoothness: number | null;
+  steeringScrub: number | null;
   tyreStats: {
     FL: TyreCornerData;
     FR: TyreCornerData;
@@ -114,6 +136,7 @@ export interface ParsedTelemetryFile {
   detectedAnomalies: TelemetryAnomaly[];
   points: TelemetryPoint[];
   channels: string[];
+  dataQuality?: TelemetryDataQuality;
   phaseBalance?: CornerPhaseBalance;
   tyreOptimization?: TyreOptimizationReport;
   driverVsCar?: DriverVsCarDiagnostics;
@@ -167,9 +190,9 @@ export interface CornerDeltaComparison {
   corner: string;
   shortName?: string;
   dist: number;
-  driverMinSpeed: number;
-  refMinSpeed: number;
-  speedDelta: number;
+  driverMinSpeed: number | null;
+  refMinSpeed: number | null;
+  speedDelta: number | null;
   timeDelta: number;
   brakingPointDeltaMeters: number;
   throttleCommitDeltaMeters: number;
@@ -179,23 +202,23 @@ export interface CornerDeltaComparison {
 export interface DeltaPoint {
   dist: number;
   timeDelta: number;
-  speedDelta: number;
-  driverSpeed: number;
-  refSpeed: number;
-  driverThrottle: number;
-  refThrottle: number;
-  driverBrake: number;
-  refBrake: number;
+  speedDelta: number | null;
+  driverSpeed: number | null;
+  refSpeed: number | null;
+  driverThrottle: number | null;
+  refThrottle: number | null;
+  driverBrake: number | null;
+  refBrake: number | null;
 }
 
 export interface GGPoint {
-  latG: number;
-  longG: number;
-  speed: number;
+  latG: number | null;
+  longG: number | null;
+  speed: number | null;
   dist: number;
-  throttle: number;
-  brake: number;
-  gTotal: number;
+  throttle: number | null;
+  brake: number | null;
+  gTotal: number | null;
 }
 
 export interface GGFrictionQuadrantStats {
@@ -207,17 +230,23 @@ export interface GGFrictionQuadrantStats {
 
 export interface GGFrictionCircleData {
   scaleMaxG: number;
-  peakCombinedG: number;
-  peakLatG: number;
-  peakDecelG: number;
-  gripUtilizationPct: number;
-  trailBrakingTransitionEfficiency: number;
+  peakCombinedG: number | null;
+  peakLatG: number | null;
+  peakDecelG: number | null;
+  gripUtilizationPct: number | null;
+  trailBrakingTransitionEfficiency: number | null;
   quadrantStats: GGFrictionQuadrantStats;
   points: GGPoint[];
   envelopeHull: { latG: number; longG: number }[];
   refEnvelopeHull?: { latG: number; longG: number }[];
-  refGripUtilizationPct?: number;
+  refGripUtilizationPct?: number | null;
   gripDeficitVerdict: string;
+  dataQuality?: {
+    validSampleCount: number;
+    totalSampleCount: number;
+    coveragePct: number;
+    status: "available" | "partial" | "insufficient";
+  };
 }
 
 export interface LapComparisonSummary {
@@ -248,6 +277,7 @@ export interface TelemetryAnalysisResult {
   phaseBalance?: CornerPhaseBalance;
   tyreOptimization?: TyreOptimizationReport;
   driverVsCar?: DriverVsCarDiagnostics;
+  dataQuality?: TelemetryDataQuality;
 }
 
 export interface GeneratedSetupResult {
@@ -293,9 +323,9 @@ export interface TrackCorner {
   dist: number;
   x: number;
   y: number;
-  driverSpeed?: number;
-  refSpeed?: number;
-  speedDelta?: number;
+  driverSpeed?: number | null;
+  refSpeed?: number | null;
+  speedDelta?: number | null;
   timeDelta?: number;
   brakingPointDeltaMeters?: number;
   throttleCommitDeltaMeters?: number;
@@ -306,12 +336,12 @@ export interface TrackMapPoint {
   dist: number;
   x: number;
   y: number;
-  speed: number;
-  throttle: number;
-  brake: number;
-  latG: number;
+  speed: number | null;
+  throttle: number | null;
+  brake: number | null;
+  latG: number | null;
   timeDelta?: number;
-  refSpeed?: number;
+  refSpeed?: number | null;
   cornerName?: string;
 }
 
@@ -339,4 +369,3 @@ export interface TrackMapData {
   sectors?: TrackSector[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
-

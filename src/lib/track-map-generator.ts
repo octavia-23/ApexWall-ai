@@ -78,9 +78,9 @@ function reconstructAutonomousTrajectory(telemetry: ParsedTelemetryFile): { x: n
 
   for (let i = 1; i < pts.length; i++) {
     const dt = Math.max(0.005, Math.min(0.2, pts[i].time - pts[i - 1].time));
-    const v = Math.max(4.0, pts[i].speed / 3.6); // speed in m/s
-    const latG = pts[i].latG || 0;
-    const steer = pts[i].steer || 0;
+    const v = pts[i].speed != null ? Math.max(4.0, pts[i].speed! / 3.6) : 20.0; // speed in m/s
+    const latG = pts[i].latG ?? 0;
+    const steer = pts[i].steer ?? 0;
 
     let omega = 0;
     if (Math.abs(latG) > 0.05) {
@@ -124,7 +124,6 @@ export function generateTrackMapData(
   const telemetryPoints = telemetry.points;
   const startDist = telemetryPoints[0]?.dist || 0;
   const endDist = telemetryPoints[telemetryPoints.length - 1]?.dist || 4000;
-  const totalDistance = Math.max(100, endDist - startDist);
 
   // 1. Identify Authentic FIA Circuit
   const searchHint = `${trackHint || ""} ${telemetry.filename || ""}`;
@@ -162,7 +161,7 @@ export function generateTrackMapData(
           minDiff = diff;
           closestPt = p;
         }
-        if (diff <= 220 && p.speed < minSpeedInZone) {
+        if (diff <= 220 && p.speed != null && p.speed < minSpeedInZone) {
           minSpeedInZone = p.speed;
         }
       });
@@ -193,7 +192,11 @@ export function generateTrackMapData(
         timeDelta: comp?.timeDelta,
         brakingPointDeltaMeters: comp?.brakingPointDeltaMeters,
         throttleCommitDeltaMeters: comp?.throttleCommitDeltaMeters,
-        verdict: comp?.verdict || (hasTelemetryInCorner ? `Apex Speed: ${Math.round(driverSpeed || 0)} km/h` : "FIA Reference Corner"),
+        verdict:
+          comp?.verdict ||
+          (hasTelemetryInCorner && driverSpeed != null
+            ? `Apex Speed: ${Math.round(driverSpeed)} km/h`
+            : "FIA Reference Corner"),
       };
     });
 
@@ -266,17 +269,24 @@ export function generateTrackMapData(
 
   // Dynamic Corner Detection
   const corners: TrackCorner[] = [];
-  const minCornerGap = Math.max(120, totalDistance / 30.0);
+  const minCornerGap = Math.max(120, (endDist - startDist) / 30.0);
 
   for (let i = 2; i < telemetryPoints.length - 2; i++) {
     const prev = telemetryPoints[i - 1].speed;
     const curr = telemetryPoints[i].speed;
     const next = telemetryPoints[i + 1].speed;
-    const latG = Math.abs(telemetryPoints[i].latG);
-    const steer = Math.abs(telemetryPoints[i].steer);
+    const latG = telemetryPoints[i].latG != null ? Math.abs(telemetryPoints[i].latG!) : null;
+    const steer = telemetryPoints[i].steer != null ? Math.abs(telemetryPoints[i].steer!) : null;
     const dist = telemetryPoints[i].dist;
 
-    if (curr <= prev && curr <= next && (latG >= 0.45 || steer >= 10.0)) {
+    if (
+      curr != null &&
+      prev != null &&
+      next != null &&
+      curr <= prev &&
+      curr <= next &&
+      ((latG != null && latG >= 0.45) || (steer != null && steer >= 10.0))
+    ) {
       if (corners.length === 0 || dist - corners[corners.length - 1].dist > minCornerGap) {
         const cNum = corners.length + 1;
         const pt = points[i];

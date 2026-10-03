@@ -8,6 +8,7 @@ import {
 
 /**
  * Compute an angular hull (36 bins, 10 deg each) representing the 95th percentile grip boundary
+ * Strictly skips samples where latG or longG is missing (null).
  */
 function computeEnvelopeHull(
   pts: TelemetryPoint[]
@@ -16,6 +17,7 @@ function computeEnvelopeHull(
   const binRadius: number[][] = Array.from({ length: NUM_BINS }, () => []);
 
   pts.forEach((p) => {
+    if (p.latG == null || p.longG == null) return;
     const lat = p.latG;
     const lon = p.longG;
     const r = Math.sqrt(lat * lat + lon * lon);
@@ -53,6 +55,7 @@ function computeEnvelopeHull(
 
 /**
  * Compute full G-G Friction Circle analysis from telemetry
+ * Strictly distinguishes missing G-force readings from 0G.
  */
 export function computeGGFrictionCircle(
   driver: ParsedTelemetryFile,
@@ -64,10 +67,25 @@ export function computeGGFrictionCircle(
   let peakCombinedG = 0;
   let peakLatG = 0;
   let peakDecelG = 0;
+  let validGCount = 0;
 
   const gTotals: number[] = [];
 
   driverPts.forEach((p) => {
+    if (p.latG == null || p.longG == null) {
+      ggPoints.push({
+        latG: null,
+        longG: null,
+        speed: p.speed,
+        dist: p.dist,
+        throttle: p.throttle,
+        brake: p.brake,
+        gTotal: null,
+      });
+      return;
+    }
+
+    validGCount++;
     const lat = p.latG;
     const lon = p.longG;
     const gTot = +(Math.sqrt(lat * lat + lon * lon)).toFixed(2);
@@ -88,6 +106,37 @@ export function computeGGFrictionCircle(
     });
   });
 
+  const totalPoints = driverPts.length;
+  const coveragePct = totalPoints > 0 ? Number(((validGCount / totalPoints) * 100).toFixed(1)) : 0;
+  const dataQuality = {
+    validSampleCount: validGCount,
+    totalSampleCount: totalPoints,
+    coveragePct,
+    status: (validGCount === 0 ? "insufficient" : coveragePct >= 80 ? "available" : "partial") as "available" | "partial" | "insufficient",
+  };
+
+  // If no G-force data is available, return an explicit unavailable state
+  if (validGCount === 0) {
+    return {
+      scaleMaxG: 2.5,
+      peakCombinedG: null,
+      peakLatG: null,
+      peakDecelG: null,
+      gripUtilizationPct: null,
+      trailBrakingTransitionEfficiency: null,
+      quadrantStats: {
+        trailBrakingLeftGripPct: 0,
+        trailBrakingRightGripPct: 0,
+        powerDownLeftGripPct: 0,
+        powerDownRightGripPct: 0,
+      },
+      points: ggPoints,
+      envelopeHull: [],
+      gripDeficitVerdict: "G-G Friction Circle unavailable: Lateral (latG) and longitudinal (longG) accelerometer channels are missing.",
+      dataQuality,
+    };
+  }
+
   // Calculate 95th percentile G for robust normalization
   gTotals.sort((a, b) => a - b);
   const p95Idx = Math.floor(gTotals.length * 0.95);
@@ -107,8 +156,13 @@ export function computeGGFrictionCircle(
   const qPDRight: number[] = [];
 
   ggPoints.forEach((p) => {
+    if (p.latG == null || p.longG == null || p.gTotal == null) return;
+
     // Dynamic event: either braking or cornering
-    const isDynamic = p.brake > 10 || Math.abs(p.latG) > 0.5;
+    const isBraking = p.brake != null && p.brake > 10;
+    const isCornering = Math.abs(p.latG) > 0.5;
+    const isDynamic = isBraking || isCornering;
+
     if (isDynamic) {
       dynamicCount++;
       if (p.gTotal >= p95G * 0.78) {
@@ -146,13 +200,13 @@ export function computeGGFrictionCircle(
   };
 
   // Trail-Braking Transition Smoothness (0-100)
-  // Evaluates how circular the transition is during simultaneous braking & steering
   let combinedSampleCount = 0;
   let combinedSumNorm = 0;
   const maxBrake = Math.max(1.0, Math.abs(peakDecelG));
   const maxLat = Math.max(1.0, peakLatG);
 
   ggPoints.forEach((p) => {
+    if (p.latG == null || p.longG == null) return;
     if (p.longG < -0.3 && Math.abs(p.latG) > 0.3) {
       combinedSampleCount++;
       const normLat = p.latG / maxLat;
@@ -176,26 +230,32 @@ export function computeGGFrictionCircle(
     refEnvelopeHull = computeEnvelopeHull(ref.points);
     let refDyn = 0;
     let refOpt = 0;
-    const refGTotals = ref.points.map((p) =>
-      Math.sqrt(p.latG * p.latG + p.longG * p.longG)
-    );
-    refGTotals.sort((a, b) => a - b);
-    const refP95 = refGTotals[Math.floor(refGTotals.length * 0.95)] || 2.0;
+    const refGTotals = ref.points
+      .filter((p) => p.latG != null && p.longG != null)
+      .map((p) => Math.sqrt(p.latG! * p.latG! + p.longG! * p.longG!));
 
-    ref.points.forEach((p) => {
-      const gTot = Math.sqrt(p.latG * p.latG + p.longG * p.longG);
-      if (p.brake > 10 || Math.abs(p.latG) > 0.5) {
-        refDyn++;
-        if (gTot >= refP95 * 0.78) refOpt++;
-      }
-    });
-    refGripUtilizationPct =
-      refDyn > 0 ? Math.round((refOpt / refDyn) * 100) : 88;
+    if (refGTotals.length > 0) {
+      refGTotals.sort((a, b) => a - b);
+      const refP95 = refGTotals[Math.floor(refGTotals.length * 0.95)] || 2.0;
+
+      ref.points.forEach((p) => {
+        if (p.latG == null || p.longG == null) return;
+        const gTot = Math.sqrt(p.latG * p.latG + p.longG * p.longG);
+        const isBrake = p.brake != null && p.brake > 10;
+        const isCorner = Math.abs(p.latG) > 0.5;
+        if (isBrake || isCorner) {
+          refDyn++;
+          if (gTot >= refP95 * 0.78) refOpt++;
+        }
+      });
+      refGripUtilizationPct =
+        refDyn > 0 ? Math.round((refOpt / refDyn) * 100) : 88;
+    }
   }
 
   // Generate Technical Diagnosis Verdict
   let gripDeficitVerdict = "";
-  if (refGripUtilizationPct) {
+  if (refGripUtilizationPct != null) {
     const diff = refGripUtilizationPct - gripUtilizationPct;
     if (diff > 8) {
       gripDeficitVerdict = `Grip Envelope Deficit: ${diff}% below benchmark. Significant friction pockets identified in transition phases—braking is released prematurely before lateral load builds up.`;
@@ -225,5 +285,6 @@ export function computeGGFrictionCircle(
     refEnvelopeHull,
     refGripUtilizationPct,
     gripDeficitVerdict,
+    dataQuality,
   };
 }

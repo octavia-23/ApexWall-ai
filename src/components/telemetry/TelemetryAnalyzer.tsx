@@ -659,12 +659,46 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
     const getX = (dist: number) => paddingLeft + (dist / maxDist) * plotW;
 
+    // Helper to draw segmented traces that create visual gaps for null telemetry
+    const drawSegmentedLine = (
+      pts: { dist: number; val: number | null | undefined }[],
+      getY: (val: number) => number
+    ) => {
+      ctx.beginPath();
+      let inSegment = false;
+      for (let i = 0; i < pts.length; i++) {
+        const val = pts[i].val;
+        if (val == null) {
+          inSegment = false;
+          continue;
+        }
+        const x = getX(pts[i].dist);
+        const y = getY(val);
+        if (!inSegment) {
+          ctx.moveTo(x, y);
+          inSegment = true;
+        } else {
+          ctx.lineTo(x, y);
+        }
+      }
+      ctx.stroke();
+    };
+
     // Dual Speed Shading (Delta Fill)
     if (activeChannel === "dualSpeed" && lapComparison?.deltaPoints && benchmarkMode === "pro") {
       const dPts = lapComparison.deltaPoints;
       for (let i = 0; i < dPts.length - 1; i++) {
         const p1 = dPts[i];
         const p2 = dPts[i + 1];
+        if (
+          p1.driverSpeed == null ||
+          p2.driverSpeed == null ||
+          p1.refSpeed == null ||
+          p2.refSpeed == null ||
+          p1.speedDelta == null
+        ) {
+          continue;
+        }
         const x1 = getX(p1.dist);
         const x2 = getX(p2.dist);
         const yDriver1 = paddingTop + plotH - (p1.driverSpeed / 320) * plotH;
@@ -686,16 +720,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
     // Speed trace (Driver)
     if (activeChannel === "pedals" || activeChannel === "dualSpeed" || activeChannel === "steering") {
-      ctx.beginPath();
       ctx.strokeStyle = "#38BDF8";
       ctx.lineWidth = 2;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH - (p.speed / 320) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.speed })),
+        (val) => paddingTop + plotH - (val / 320) * plotH
+      );
     }
 
     // Pro Reference Speed trace (Overlay)
@@ -705,17 +735,13 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       referenceTelemetry
     ) {
       const refPoints = referenceTelemetry.points;
-      ctx.beginPath();
       ctx.strokeStyle = "#F59E0B";
       ctx.lineWidth = 1.8;
       ctx.setLineDash([5, 3]);
-      refPoints.forEach((rp, idx) => {
-        const x = getX(rp.dist);
-        const y = paddingTop + plotH - (rp.speed / 320) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        refPoints.map((rp) => ({ dist: rp.dist, val: rp.speed })),
+        (val) => paddingTop + plotH - (val / 320) * plotH
+      );
       ctx.setLineDash([]);
     }
 
@@ -729,6 +755,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       for (let i = 0; i < dPts.length - 1; i++) {
         const p1 = dPts[i];
         const p2 = dPts[i + 1];
+        if (p1.timeDelta == null || p2.timeDelta == null) continue;
         const x1 = getX(p1.dist);
         const x2 = getX(p2.dist);
         const clamp1 = Math.max(-maxDt, Math.min(maxDt, p1.timeDelta));
@@ -750,98 +777,72 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       }
 
       // Delta trace line
-      ctx.beginPath();
-      ctx.lineWidth = 2.2;
-      dPts.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const clamp = Math.max(-maxDt, Math.min(maxDt, p.timeDelta));
-        const y = yMid - (clamp / maxDt) * (plotH / 2);
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
       ctx.strokeStyle = "#34D399";
-      ctx.stroke();
+      ctx.lineWidth = 2.2;
+      drawSegmentedLine(
+        dPts.map((p) => ({ dist: p.dist, val: p.timeDelta })),
+        (val) => {
+          const clamp = Math.max(-maxDt, Math.min(maxDt, val));
+          return yMid - (clamp / maxDt) * (plotH / 2);
+        }
+      );
     }
 
     // Pedals
     if (activeChannel === "pedals") {
       // Throttle (Green)
-      ctx.beginPath();
       ctx.strokeStyle = "#10B981";
       ctx.lineWidth = 1.8;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH - (p.throttle / 100) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.throttle })),
+        (val) => paddingTop + plotH - (val / 100) * plotH
+      );
 
       // Brake (Red)
-      ctx.beginPath();
       ctx.strokeStyle = "#F43F5E";
       ctx.lineWidth = 2;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH - (p.brake / 100) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.brake })),
+        (val) => paddingTop + plotH - (val / 100) * plotH
+      );
     }
 
     // Steering & Lateral G
     if (activeChannel === "steering") {
       // Steering (Yellow)
-      ctx.beginPath();
       ctx.strokeStyle = "#facc15";
       ctx.lineWidth = 1.8;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH / 2 - (p.steer / 60) * (plotH / 2);
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.steer })),
+        (val) => paddingTop + plotH / 2 - (val / 60) * (plotH / 2)
+      );
 
       // Lat G (Purple)
-      ctx.beginPath();
       ctx.strokeStyle = "#a855f7";
       ctx.lineWidth = 1.6;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH / 2 - (p.latG / 3.5) * (plotH / 2);
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.latG })),
+        (val) => paddingTop + plotH / 2 - (val / 3.5) * (plotH / 2)
+      );
     }
 
     // Gear & RPM
     if (activeChannel === "gear") {
       // Gear (Purple)
-      ctx.beginPath();
       ctx.strokeStyle = "#c084fc";
       ctx.lineWidth = 2;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH - (p.gear / 8) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.gear })),
+        (val) => paddingTop + plotH - (val / 8) * plotH
+      );
 
       // RPM (Cyan)
-      ctx.beginPath();
       ctx.strokeStyle = "#00d2be";
       ctx.lineWidth = 1.5;
-      points.forEach((p, idx) => {
-        const x = getX(p.dist);
-        const y = paddingTop + plotH - ((p.rpm - 4000) / 5000) * plotH;
-        if (idx === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
+      drawSegmentedLine(
+        points.map((p) => ({ dist: p.dist, val: p.rpm })),
+        (val) => paddingTop + plotH - ((val - 4000) / 5000) * plotH
+      );
     }
 
     // Hover vertical scrubber
@@ -860,26 +861,30 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
       if (activeChannel === "timeDelta" && lapComparison?.deltaPoints?.[hoverIndex]) {
         const dp = lapComparison.deltaPoints[hoverIndex];
-        const yMid = paddingTop + plotH / 2;
-        const clamp = Math.max(-1.5, Math.min(1.5, dp.timeDelta));
-        const yDelta = yMid - (clamp / 1.5) * (plotH / 2);
+        if (dp.timeDelta != null) {
+          const yMid = paddingTop + plotH / 2;
+          const clamp = Math.max(-1.5, Math.min(1.5, dp.timeDelta));
+          const yDelta = yMid - (clamp / 1.5) * (plotH / 2);
 
-        ctx.beginPath();
-        ctx.arc(x, yDelta, 4.5, 0, Math.PI * 2);
-        ctx.fillStyle = dp.timeDelta > 0 ? "#F43F5E" : "#10B981";
-        ctx.fill();
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+          ctx.beginPath();
+          ctx.arc(x, yDelta, 4.5, 0, Math.PI * 2);
+          ctx.fillStyle = dp.timeDelta > 0 ? "#F43F5E" : "#10B981";
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
       } else {
-        const ySpeed = paddingTop + plotH - (pt.speed / 320) * plotH;
-        ctx.beginPath();
-        ctx.arc(x, ySpeed, 4, 0, Math.PI * 2);
-        ctx.fillStyle = "#38BDF8";
-        ctx.fill();
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
+        if (pt.speed != null) {
+          const ySpeed = paddingTop + plotH - (pt.speed / 320) * plotH;
+          ctx.beginPath();
+          ctx.arc(x, ySpeed, 4, 0, Math.PI * 2);
+          ctx.fillStyle = "#38BDF8";
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        }
 
         // If benchmark speed exists at this point, draw amber circle on ref speed
         if (
@@ -888,14 +893,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           lapComparison?.deltaPoints?.[hoverIndex]
         ) {
           const dp = lapComparison.deltaPoints[hoverIndex];
-          const yRef = paddingTop + plotH - (dp.refSpeed / 320) * plotH;
-          ctx.beginPath();
-          ctx.arc(x, yRef, 4, 0, Math.PI * 2);
-          ctx.fillStyle = "#F59E0B";
-          ctx.fill();
-          ctx.strokeStyle = "#ffffff";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
+          if (dp.refSpeed != null) {
+            const yRef = paddingTop + plotH - (dp.refSpeed / 320) * plotH;
+            ctx.beginPath();
+            ctx.arc(x, yRef, 4, 0, Math.PI * 2);
+            ctx.fillStyle = "#F59E0B";
+            ctx.fill();
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+          }
         }
       }
     }
@@ -1996,8 +2003,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <span className={`benchmark-delta-pill ${lapComparison.totalTimeDeltaSeconds > 0 ? "loss" : "gain"}`}>
                     Δt: {lapComparison.totalTimeDeltaSeconds > 0 ? `+${lapComparison.totalTimeDeltaSeconds}s` : `${lapComparison.totalTimeDeltaSeconds}s`}
                   </span>
-                  <span className={`benchmark-delta-pill ${lapComparison.topSpeedDeltaKmh >= 0 ? "gain" : "loss"}`}>
-                    Δv Top: {lapComparison.topSpeedDeltaKmh > 0 ? `+${lapComparison.topSpeedDeltaKmh}` : lapComparison.topSpeedDeltaKmh} km/h
+                  <span className={`benchmark-delta-pill ${lapComparison.topSpeedDeltaKmh != null ? (lapComparison.topSpeedDeltaKmh >= 0 ? "gain" : "loss") : ""}`}>
+                    Δv Top: {lapComparison.topSpeedDeltaKmh != null ? (lapComparison.topSpeedDeltaKmh > 0 ? `+${lapComparison.topSpeedDeltaKmh}` : `${lapComparison.topSpeedDeltaKmh}`) : "—"} km/h
                   </span>
                 </div>
                 {referenceTelemetry && (
@@ -2058,22 +2065,34 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 {hoverPoint && (
                   <div className="telemetry-hover-hud">
                     <div className="hud-dist">Dist: {hoverPoint.dist}m</div>
-                    <div className="hud-val hud-speed">Driver: {hoverPoint.speed} km/h</div>
+                    <div className="hud-val hud-speed">
+                      Driver: {hoverPoint.speed != null ? `${hoverPoint.speed} km/h` : "—"}
+                    </div>
                     {benchmarkMode === "pro" && hoverDeltaPoint && (
                       <>
-                        <div className="hud-val hud-ref">Ref: {hoverDeltaPoint.refSpeed} km/h</div>
-                        <div className={`hud-val ${hoverDeltaPoint.speedDelta >= 0 ? "hud-delta-neg" : "hud-delta-pos"}`}>
-                          Δv: {hoverDeltaPoint.speedDelta > 0 ? "+" : ""}{hoverDeltaPoint.speedDelta} km/h
+                        <div className="hud-val hud-ref">
+                          Ref: {hoverDeltaPoint.refSpeed != null ? `${hoverDeltaPoint.refSpeed} km/h` : "—"}
                         </div>
-                        <div className={`hud-val ${hoverDeltaPoint.timeDelta <= 0 ? "hud-delta-neg" : "hud-delta-pos"}`}>
-                          Δt: {hoverDeltaPoint.timeDelta > 0 ? "+" : ""}{hoverDeltaPoint.timeDelta}s
+                        <div className={`hud-val ${hoverDeltaPoint.speedDelta != null ? (hoverDeltaPoint.speedDelta >= 0 ? "hud-delta-neg" : "hud-delta-pos") : ""}`}>
+                          Δv: {hoverDeltaPoint.speedDelta != null ? `${hoverDeltaPoint.speedDelta > 0 ? "+" : ""}${hoverDeltaPoint.speedDelta} km/h` : "—"}
+                        </div>
+                        <div className={`hud-val ${hoverDeltaPoint.timeDelta != null ? (hoverDeltaPoint.timeDelta <= 0 ? "hud-delta-neg" : "hud-delta-pos") : ""}`}>
+                          Δt: {hoverDeltaPoint.timeDelta != null ? `${hoverDeltaPoint.timeDelta > 0 ? "+" : ""}${hoverDeltaPoint.timeDelta}s` : "—"}
                         </div>
                       </>
                     )}
-                    <div className="hud-val hud-throttle">Thr: {hoverPoint.throttle}%</div>
-                    <div className="hud-val hud-brake">Brk: {hoverPoint.brake}%</div>
-                    <div className="hud-val hud-steer">Steer: {hoverPoint.steer}°</div>
-                    <div className="hud-val hud-gear">Gear: {hoverPoint.gear}</div>
+                    <div className="hud-val hud-throttle">
+                      Thr: {hoverPoint.throttle != null ? `${hoverPoint.throttle}%` : "—"}
+                    </div>
+                    <div className="hud-val hud-brake">
+                      Brk: {hoverPoint.brake != null ? `${hoverPoint.brake}%` : "—"}
+                    </div>
+                    <div className="hud-val hud-steer">
+                      Steer: {hoverPoint.steer != null ? `${hoverPoint.steer}°` : "—"}
+                    </div>
+                    <div className="hud-val hud-gear">
+                      Gear: {hoverPoint.gear != null ? hoverPoint.gear : "—"}
+                    </div>
                   </div>
                 )}
               </div>
@@ -2316,7 +2335,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <div className="tyre-pod tyre-fl">
                     <div className="tyre-header">
                       <span className="tyre-pos">FRONT LEFT</span>
-                      {parsedTelemetry.tyreOptimization ? (
+                      {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.pressureDelta.FL != null ? (
                         <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.FL) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
                           {parsedTelemetry.tyreOptimization.pressureDelta.FL >= 0 ? "+" : ""}
                           {parsedTelemetry.tyreOptimization.pressureDelta.FL.toFixed(1)} psi
@@ -2329,7 +2348,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     <div className="tyre-press">
                       Hot: {parsedTelemetry.tyreStats.FL.pressure}
                     </div>
-                    {parsedTelemetry.tyreOptimization && (
+                    {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.recommendedCold.FL != null && (
                       <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
                         Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.FL.toFixed(1)} psi
                       </div>
@@ -2339,7 +2358,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <div className="tyre-pod tyre-fr">
                     <div className="tyre-header">
                       <span className="tyre-pos">FRONT RIGHT</span>
-                      {parsedTelemetry.tyreOptimization ? (
+                      {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.pressureDelta.FR != null ? (
                         <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.FR) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
                           {parsedTelemetry.tyreOptimization.pressureDelta.FR >= 0 ? "+" : ""}
                           {parsedTelemetry.tyreOptimization.pressureDelta.FR.toFixed(1)} psi
@@ -2352,7 +2371,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     <div className="tyre-press">
                       Hot: {parsedTelemetry.tyreStats.FR.pressure}
                     </div>
-                    {parsedTelemetry.tyreOptimization && (
+                    {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.recommendedCold.FR != null && (
                       <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
                         Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.FR.toFixed(1)} psi
                       </div>
@@ -2362,7 +2381,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <div className="tyre-pod tyre-rl">
                     <div className="tyre-header">
                       <span className="tyre-pos">REAR LEFT</span>
-                      {parsedTelemetry.tyreOptimization ? (
+                      {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.pressureDelta.RL != null ? (
                         <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.RL) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
                           {parsedTelemetry.tyreOptimization.pressureDelta.RL >= 0 ? "+" : ""}
                           {parsedTelemetry.tyreOptimization.pressureDelta.RL.toFixed(1)} psi
@@ -2375,7 +2394,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     <div className="tyre-press">
                       Hot: {parsedTelemetry.tyreStats.RL.pressure}
                     </div>
-                    {parsedTelemetry.tyreOptimization && (
+                    {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.recommendedCold.RL != null && (
                       <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
                         Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.RL.toFixed(1)} psi
                       </div>
@@ -2385,7 +2404,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <div className="tyre-pod tyre-rr">
                     <div className="tyre-header">
                       <span className="tyre-pos">REAR RIGHT</span>
-                      {parsedTelemetry.tyreOptimization ? (
+                      {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.pressureDelta.RR != null ? (
                         <span className={`tyre-status-badge ${Math.abs(parsedTelemetry.tyreOptimization.pressureDelta.RR) < 0.3 ? "badge-optimal" : "badge-warm"}`}>
                           {parsedTelemetry.tyreOptimization.pressureDelta.RR >= 0 ? "+" : ""}
                           {parsedTelemetry.tyreOptimization.pressureDelta.RR.toFixed(1)} psi
@@ -2398,7 +2417,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                     <div className="tyre-press">
                       Hot: {parsedTelemetry.tyreStats.RR.pressure}
                     </div>
-                    {parsedTelemetry.tyreOptimization && (
+                    {parsedTelemetry.tyreOptimization && parsedTelemetry.tyreOptimization.recommendedCold.RR != null && (
                       <div className="text-[11px] font-mono text-emerald-400/90 mt-1">
                         Rec. Cold: {parsedTelemetry.tyreOptimization.recommendedCold.RR.toFixed(1)} psi
                       </div>

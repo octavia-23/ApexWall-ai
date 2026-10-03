@@ -56,7 +56,8 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   }, [hoveredCorner, activeCornerId, data.corners]);
 
   // Speed color gradient helper: 60 km/h (blue) -> 140 km/h (cyan) -> 220 km/h (lime) -> 280 km/h (yellow) -> 330 km/h (red)
-  const getSpeedColor = (speed: number): string => {
+  const getSpeedColor = (speed: number | null | undefined): string => {
+    if (speed == null) return "rgba(100, 116, 139, 0.4)";
     const s = Math.max(60, Math.min(330, speed));
     if (s < 140) {
       const f = (s - 60) / 80;
@@ -74,12 +75,13 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   };
 
   // Pedal color: Crimson for heavy brake, emerald for throttle, slate for coasting
-  const getPedalColor = (throttle: number, brake: number): string => {
-    if (brake > 15) {
+  const getPedalColor = (throttle: number | null | undefined, brake: number | null | undefined): string => {
+    if (throttle == null && brake == null) return "rgba(100, 116, 139, 0.4)";
+    if (brake != null && brake > 15) {
       const intensity = Math.min(1, brake / 100);
       return `rgb(244, ${Math.round(63 * (1 - intensity * 0.4))}, ${Math.round(94 * (1 - intensity * 0.4))})`;
     }
-    if (throttle > 40) {
+    if (throttle != null && throttle > 40) {
       const intensity = Math.min(1, (throttle - 40) / 60);
       return `rgb(${Math.round(16 + 20 * (1 - intensity))}, ${Math.round(185 + 30 * intensity)}, ${Math.round(129 + 10 * (1 - intensity))})`;
     }
@@ -87,7 +89,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   };
 
   // Time delta color: Green if gaining, Red if losing
-  const getDeltaColor = (delta: number | undefined): string => {
+  const getDeltaColor = (delta: number | null | undefined): string => {
     if (delta == null) return "#38BDF8";
     if (delta <= -0.05) return "#10B981";
     if (delta >= 0.05) return "#F43F5E";
@@ -95,7 +97,8 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   };
 
   // Lat G color
-  const getLatGColor = (latG: number): string => {
+  const getLatGColor = (latG: number | null | undefined): string => {
+    if (latG == null) return "rgba(100, 116, 139, 0.4)";
     const g = Math.min(3.0, Math.abs(latG));
     const f = Math.min(1, g / 2.5);
     return `rgb(${Math.round(56 + 180 * f)}, ${Math.round(189 - 120 * f)}, ${Math.round(248 + 7 * f)})`;
@@ -740,7 +743,9 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
             <div className="hover-card-metrics">
               <div className="hover-metric">
                 <span className="m-label">Driver Speed:</span>
-                <span className="m-val text-sky">{Math.round(currentHoverPoint.speed)} km/h</span>
+                <span className="m-val text-sky">
+                  {currentHoverPoint.speed != null ? `${Math.round(currentHoverPoint.speed)} km/h` : "—"}
+                </span>
               </div>
 
               {benchmarkMode === "pro" && currentHoverPoint.refSpeed != null && (
@@ -767,14 +772,21 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
               <div className="hover-metric">
                 <span className="m-label">Pedals:</span>
                 <span className="m-val">
-                  <span className="text-emerald">T: {Math.round(currentHoverPoint.throttle)}%</span> /{" "}
-                  <span className="text-rose">B: {Math.round(currentHoverPoint.brake)}%</span>
+                  <span className="text-emerald">
+                    T: {currentHoverPoint.throttle != null ? `${Math.round(currentHoverPoint.throttle)}%` : "—"}
+                  </span>{" "}
+                  /{" "}
+                  <span className="text-rose">
+                    B: {currentHoverPoint.brake != null ? `${Math.round(currentHoverPoint.brake)}%` : "—"}
+                  </span>
                 </span>
               </div>
 
               <div className="hover-metric">
                 <span className="m-label">Lateral G:</span>
-                <span className="m-val text-slate">{currentHoverPoint.latG?.toFixed(2)} G</span>
+                <span className="m-val text-slate">
+                  {currentHoverPoint.latG != null ? `${currentHoverPoint.latG.toFixed(2)} G` : "—"}
+                </span>
               </div>
             </div>
 

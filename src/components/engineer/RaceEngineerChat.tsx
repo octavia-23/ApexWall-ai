@@ -51,7 +51,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
   const activeCar = currentSetup?.car || activeCarProp || parsedTelemetry?.filename?.split(/[-_]/)[0]?.toUpperCase() || "GT3 Car";
   const activeTrack = currentSetup?.track || activeTrackProp || "Current Circuit";
   const activeLapTime = telemetryResult?.lapComparison?.driverLapTime || parsedTelemetry?.lapTime || "--:--.---";
-  const gripUtil = telemetryResult?.frictionCircle?.gripUtilizationPct || 89.4;
+  const gripUtil = telemetryResult?.frictionCircle?.gripUtilizationPct ?? null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -104,9 +104,9 @@ I have your active session telemetry and chassis telemetry synced. How does the 
       car: activeCar,
       track: activeTrack,
       lapTime: activeLapTime,
-      topSpeed: parsedTelemetry?.topSpeed || 285,
-      minSpeed: parsedTelemetry?.minSpeed || 65,
-      trailBrakingScore: parsedTelemetry?.trailBrakingScore || 78,
+      topSpeed: parsedTelemetry?.topSpeed ?? null,
+      minSpeed: parsedTelemetry?.minSpeed ?? null,
+      trailBrakingScore: parsedTelemetry?.trailBrakingScore ?? null,
       gripUtilization: gripUtil,
       tyres: parsedTelemetry?.tyreStats,
       keyCorners: telemetryResult?.lapComparison?.cornerComparisons?.map((c) => ({

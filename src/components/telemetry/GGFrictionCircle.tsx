@@ -131,13 +131,14 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
 
     // 3. Driver Telemetry Scatter Points
     data.points.forEach((p, idx) => {
+      if (p.latG == null || p.longG == null) return;
       const x = getCanvasX(p.latG);
       const y = getCanvasY(p.longG);
 
       // Color by driving state
       let color = "rgba(56, 189, 248, 0.4)";
-      if (p.brake > 20) color = "rgba(244, 63, 94, 0.6)"; // Braking (Rose)
-      else if (p.throttle > 50) color = "rgba(16, 185, 129, 0.55)"; // Accel (Emerald)
+      if (p.brake != null && p.brake > 20) color = "rgba(244, 63, 94, 0.6)"; // Braking (Rose)
+      else if (p.throttle != null && p.throttle > 50) color = "rgba(16, 185, 129, 0.55)"; // Accel (Emerald)
       else if (Math.abs(p.latG) > 1.0) color = "rgba(245, 158, 11, 0.55)"; // Hard cornering (Amber)
 
       ctx.beginPath();
@@ -149,34 +150,36 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
     // 4. Synchronized Hover Cursor (Live Target Reticle)
     if (hoverIndex >= 0 && hoverIndex < data.points.length) {
       const activePt = data.points[hoverIndex];
-      const curX = getCanvasX(activePt.latG);
-      const curY = getCanvasY(activePt.longG);
+      if (activePt && activePt.latG != null && activePt.longG != null) {
+        const curX = getCanvasX(activePt.latG);
+        const curY = getCanvasY(activePt.longG);
 
-      // Outer pulsing ring
-      ctx.beginPath();
-      ctx.arc(curX, curY, 8, 0, Math.PI * 2);
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
+        // Outer pulsing ring
+        ctx.beginPath();
+        ctx.arc(curX, curY, 8, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
 
-      // Center solid core
-      ctx.beginPath();
-      ctx.arc(curX, curY, 4, 0, Math.PI * 2);
-      ctx.fillStyle = "#38BDF8";
-      ctx.fill();
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
+        // Center solid core
+        ctx.beginPath();
+        ctx.arc(curX, curY, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#38BDF8";
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 1.2;
+        ctx.stroke();
 
-      // Crosshair tick marks
-      ctx.beginPath();
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
-      ctx.lineWidth = 1;
-      ctx.moveTo(curX - 12, curY);
-      ctx.lineTo(curX + 12, curY);
-      ctx.moveTo(curX, curY - 12);
-      ctx.lineTo(curX, curY + 12);
-      ctx.stroke();
+        // Crosshair tick marks
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.6)";
+        ctx.lineWidth = 1;
+        ctx.moveTo(curX - 12, curY);
+        ctx.lineTo(curX + 12, curY);
+        ctx.moveTo(curX, curY - 12);
+        ctx.lineTo(curX, curY + 12);
+        ctx.stroke();
+      }
     }
 
     ctx.restore();
@@ -201,7 +204,7 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
             </span>
           )}
           <span className="status-badge-utilization">
-            UTILIZATION: {data.gripUtilizationPct}%
+            UTILIZATION: {data.gripUtilizationPct != null ? `${data.gripUtilizationPct}%` : "—"}
           </span>
         </div>
       </div>
@@ -213,16 +216,16 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
           {activePoint && (
             <div className="gg-live-hud">
               <span className="hud-metric">
-                Lat: <strong>{activePoint.latG > 0 ? `+${activePoint.latG}` : activePoint.latG}G</strong>
+                Lat: <strong>{activePoint.latG != null ? (activePoint.latG > 0 ? `+${activePoint.latG}` : `${activePoint.latG}`) : "—"}G</strong>
               </span>
               <span className="hud-metric">
-                Long: <strong>{activePoint.longG > 0 ? `+${activePoint.longG}` : activePoint.longG}G</strong>
+                Long: <strong>{activePoint.longG != null ? (activePoint.longG > 0 ? `+${activePoint.longG}` : `${activePoint.longG}`) : "—"}G</strong>
               </span>
               <span className="hud-metric">
-                Total: <strong className="text-cyan">{activePoint.gTotal}G</strong>
+                Total: <strong className="text-cyan">{activePoint.gTotal != null ? `${activePoint.gTotal}G` : "—"}</strong>
               </span>
               <span className="hud-metric">
-                Speed: <strong>{activePoint.speed} km/h</strong>
+                Speed: <strong>{activePoint.speed != null ? `${activePoint.speed} km/h` : "—"}</strong>
               </span>
             </div>
           )}
@@ -235,8 +238,8 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
             <div className="gg-kpi-card">
               <span className="gg-kpi-label">Grip Utilization Index</span>
               <div className="gg-kpi-val-row">
-                <span className="gg-kpi-val">{data.gripUtilizationPct}%</span>
-                {data.refGripUtilizationPct != null && (
+                <span className="gg-kpi-val">{data.gripUtilizationPct != null ? `${data.gripUtilizationPct}%` : "—"}</span>
+                {data.gripUtilizationPct != null && data.refGripUtilizationPct != null && (
                   <span
                     className={`gg-kpi-diff ${
                       data.gripUtilizationPct >= data.refGripUtilizationPct
@@ -255,9 +258,13 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
             <div className="gg-kpi-card">
               <span className="gg-kpi-label">Transition Efficiency</span>
               <div className="gg-kpi-val-row">
-                <span className="gg-kpi-val">{data.trailBrakingTransitionEfficiency}/100</span>
+                <span className="gg-kpi-val">
+                  {data.trailBrakingTransitionEfficiency != null ? `${data.trailBrakingTransitionEfficiency}/100` : "—"}
+                </span>
                 <span className="status-badge-efficiency">
-                  {data.trailBrakingTransitionEfficiency >= 80 ? "SMOOTH" : "POCKETS"}
+                  {data.trailBrakingTransitionEfficiency != null
+                    ? (data.trailBrakingTransitionEfficiency >= 80 ? "SMOOTH" : "POCKETS")
+                    : "UNAVAILABLE"}
                 </span>
               </div>
               <span className="gg-kpi-sub">Trail-braking circularity</span>
@@ -266,7 +273,7 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
             <div className="gg-kpi-card">
               <span className="gg-kpi-label">Peak Combined Load</span>
               <div className="gg-kpi-val-row">
-                <span className="gg-kpi-val">{data.peakCombinedG} G</span>
+                <span className="gg-kpi-val">{data.peakCombinedG != null ? `${data.peakCombinedG} G` : "—"}</span>
               </div>
               <span className="gg-kpi-sub">Vector maximum</span>
             </div>
@@ -274,7 +281,7 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
             <div className="gg-kpi-card">
               <span className="gg-kpi-label">Peak Braking Decel</span>
               <div className="gg-kpi-val-row">
-                <span className="gg-kpi-val text-rose">{data.peakDecelG} G</span>
+                <span className="gg-kpi-val text-rose">{data.peakDecelG != null ? `${data.peakDecelG} G` : "—"}</span>
               </div>
               <span className="gg-kpi-sub">Straight-line threshold</span>
             </div>
@@ -287,12 +294,16 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
               <div className="quadrant-bar-item">
                 <div className="quadrant-bar-header">
                   <span>Trail-Braking (Left)</span>
-                  <span className="quadrant-pct">{data.quadrantStats.trailBrakingLeftGripPct}%</span>
+                  <span className="quadrant-pct">
+                    {data.quadrantStats.trailBrakingLeftGripPct != null
+                      ? `${data.quadrantStats.trailBrakingLeftGripPct}%`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="quadrant-bar-track">
                   <div
                     className="quadrant-bar-fill fill-rose"
-                    style={{ width: `${data.quadrantStats.trailBrakingLeftGripPct}%` }}
+                    style={{ width: `${data.quadrantStats.trailBrakingLeftGripPct ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -300,12 +311,16 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
               <div className="quadrant-bar-item">
                 <div className="quadrant-bar-header">
                   <span>Trail-Braking (Right)</span>
-                  <span className="quadrant-pct">{data.quadrantStats.trailBrakingRightGripPct}%</span>
+                  <span className="quadrant-pct">
+                    {data.quadrantStats.trailBrakingRightGripPct != null
+                      ? `${data.quadrantStats.trailBrakingRightGripPct}%`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="quadrant-bar-track">
                   <div
                     className="quadrant-bar-fill fill-rose"
-                    style={{ width: `${data.quadrantStats.trailBrakingRightGripPct}%` }}
+                    style={{ width: `${data.quadrantStats.trailBrakingRightGripPct ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -313,12 +328,16 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
               <div className="quadrant-bar-item">
                 <div className="quadrant-bar-header">
                   <span>Exit Traction (Left)</span>
-                  <span className="quadrant-pct">{data.quadrantStats.powerDownLeftGripPct}%</span>
+                  <span className="quadrant-pct">
+                    {data.quadrantStats.powerDownLeftGripPct != null
+                      ? `${data.quadrantStats.powerDownLeftGripPct}%`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="quadrant-bar-track">
                   <div
                     className="quadrant-bar-fill fill-emerald"
-                    style={{ width: `${data.quadrantStats.powerDownLeftGripPct}%` }}
+                    style={{ width: `${data.quadrantStats.powerDownLeftGripPct ?? 0}%` }}
                   />
                 </div>
               </div>
@@ -326,12 +345,16 @@ export const GGFrictionCircle: React.FC<GGFrictionCircleProps> = ({
               <div className="quadrant-bar-item">
                 <div className="quadrant-bar-header">
                   <span>Exit Traction (Right)</span>
-                  <span className="quadrant-pct">{data.quadrantStats.powerDownRightGripPct}%</span>
+                  <span className="quadrant-pct">
+                    {data.quadrantStats.powerDownRightGripPct != null
+                      ? `${data.quadrantStats.powerDownRightGripPct}%`
+                      : "—"}
+                  </span>
                 </div>
                 <div className="quadrant-bar-track">
                   <div
                     className="quadrant-bar-fill fill-emerald"
-                    style={{ width: `${data.quadrantStats.powerDownRightGripPct}%` }}
+                    style={{ width: `${data.quadrantStats.powerDownRightGripPct ?? 0}%` }}
                   />
                 </div>
               </div>

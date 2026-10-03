@@ -192,7 +192,10 @@ ${telemetryBrief}
   if (!fullBaselineRequested && telemetryContext?.tyreOptimization?.recommendedCold) {
     const to = telemetryContext.tyreOptimization;
     const wheels = ["FL", "FR", "RL", "RR"] as const;
-    const hasDiscrepancy = wheels.some((w) => Math.abs((to.pressureDelta as any)?.[w] || 0) >= 0.3);
+    const hasDiscrepancy = wheels.some((w) => {
+      const v = (to.pressureDelta as any)?.[w];
+      return v != null && Math.abs(v) >= 0.3;
+    });
     if (hasDiscrepancy) {
       wheels.forEach((w) => {
         const paramId = `TYRE_PRESSURE_${w}`;
@@ -202,15 +205,18 @@ ${telemetryBrief}
           (a) => a.parameter && a.parameter.toLowerCase().trim() === def.label.toLowerCase().trim()
         );
         if (!alreadyProposed) {
-          const recCold = Number((to.recommendedCold as any)[w]);
-          if (!isNaN(recCold) && recCold > 0) {
-            const delta = Number((to.pressureDelta as any)?.[w] || 0);
-            const obsHot = Number((to.observedHot as any)?.[w] || 0);
+          const rawRec = (to.recommendedCold as any)[w];
+          const recCold = rawRec != null ? Number(rawRec) : null;
+          if (recCold != null && !isNaN(recCold) && recCold > 0) {
+            const rawDelta = (to.pressureDelta as any)?.[w];
+            const rawObsHot = (to.observedHot as any)?.[w];
+            const delta = rawDelta != null ? Number(rawDelta) : null;
+            const obsHot = rawObsHot != null ? Number(rawObsHot) : null;
             proposedAdjustments.push({
               parameter: def.label,
               newValue: def.formatDisplay ? def.formatDisplay(recCold) : `${recCold.toFixed(1)} psi`,
-              diagnosis: `Hot tyre pressure offset on ${w} (${obsHot.toFixed(1)} psi vs target ${to.targetHot?.toFixed(1) || "26.8"} psi)`,
-              rationale: `Calibrated cold pressure adjusted by ${delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} psi to bring running hot pressures into optimal contact patch window.`,
+              diagnosis: `Hot tyre pressure offset on ${w} (${obsHot != null ? `${obsHot.toFixed(1)} psi` : "—"} vs target ${to.targetHot != null ? `${to.targetHot.toFixed(1)} psi` : "26.8 psi"})`,
+              rationale: `Calibrated cold pressure adjusted by ${delta != null ? `${delta > 0 ? `+${delta.toFixed(1)}` : delta.toFixed(1)} psi` : "optimal margin"} to bring running hot pressures into optimal contact patch window.`,
               tradeoff: "None (thermodynamic pressure alignment).",
               expectedEffect: "Even contact patch pressure distribution and maximum tyre grip.",
               validationTest: "Run 3 hotlaps and verify hot pressure reaches target window.",
