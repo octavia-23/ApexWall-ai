@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { WorkspaceMode } from "@/components/ModeNavigation";
-import { Activity, Sliders, MessageSquare, Timer, Radio, Moon, Sun, ShieldCheck } from "lucide-react";
+import { Activity, Sliders, MessageSquare, Timer, Radio, Moon, Sun, ShieldCheck, Download } from "lucide-react";
+import Link from "next/link";
 
 interface CockpitNavbarProps {
   mode: WorkspaceMode;
@@ -134,6 +135,16 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
             ></span>
             <span className="font-mono text-[11px]">AMOLED</span>
           </button>
+
+          {/* Rig Bridge Download Link */}
+          <Link
+            href="/download"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20 hover:bg-blue-500/20 text-xs font-medium text-blue-300 hover:text-white transition-colors"
+            title="Download ApexWall Rig Bridge (UDP / Exe) for Windows"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-400" />
+            <span className="hidden md:inline font-mono text-[11px]">Rig Bridge</span>
+          </Link>
 
           {/* Setup Vault Button */}
           <button

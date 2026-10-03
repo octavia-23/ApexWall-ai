@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import { parseTelemetryCSV } from "@/lib/telemetry-parser";
 import { computeLapComparison } from "@/lib/telemetry-comparison";
 import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
@@ -1419,123 +1420,66 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             Telemetry File Ingest
           </div>
 
-          {/* Live Rig Bridge Controller Card (Persistent) */}
-          <div className={`mb-4 p-3.5 rounded-xl border backdrop-blur-md shadow-lg transition-all ${
-            liveRigStatus?.connected
-              ? "border-emerald-500/40 bg-emerald-950/25 shadow-emerald-950/20"
-              : "border-slate-800 bg-slate-900/50"
-          }`}>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-3">
-                <div className="relative flex items-center justify-center">
-                  <span className={`w-3 h-3 rounded-full ${liveRigStatus?.connected ? "bg-emerald-400" : "bg-amber-400/80"}`} />
-                  {liveRigStatus?.connected && (
-                    <span className="absolute w-3 h-3 rounded-full bg-emerald-400 animate-ping opacity-75" />
-                  )}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-200">
-                      {liveRigStatus?.connected ? "Live Sim Rig Connected" : "Universal Sim Rig Bridge (UDP)"}
-                    </span>
-                    <span className={`text-[11px] px-2 py-0.5 rounded font-mono font-semibold border ${
-                      liveRigStatus?.connected
-                        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                        : "bg-slate-800/80 text-slate-400 border-slate-700/60"
-                    }`}>
-                      {liveRigStatus?.connected ? liveRigStatus.game : "Standby • Port 5606 / 5300 / 20777"}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    {liveRigStatus?.connected
-                      ? `Telemetry stream active: ${liveRigStatus.pointsCount.toLocaleString()} live points recording at 60Hz. Zero manual exports needed.`
-                      : "Direct real-time telemetry from Automobilista 2, Forza, F1 & ACC without manual CSV exporting."}
-                  </p>
-                </div>
+          {/* Compact Rig Bridge Connection Bar */}
+          {liveRigStatus?.connected ? (
+            <div className="mb-3 px-3.5 py-2 rounded-xl bg-emerald-950/25 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-2 shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs font-semibold text-emerald-400">Live Rig Active:</span>
+                <span className="text-xs font-mono font-medium text-slate-100 px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
+                  {liveRigStatus.game}
+                </span>
+                <span className="text-[11px] text-slate-400 font-mono">
+                  ({liveRigStatus.pointsCount.toLocaleString()} pts recording)
+                </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <a
-                  href="/downloads/ApexWall-Bridge.zip"
-                  download="ApexWall-Bridge.zip"
-                  className="px-3 py-1.5 bg-sky-600/90 hover:bg-sky-500 text-white font-medium rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer"
-                  title="Download the standalone Windows bridge to stream live telemetry from your PC rig"
-                >
-                  <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.2">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="7 10 12 15 17 10" />
-                    <line x1="12" y1="15" x2="12" y2="3" />
-                  </svg>
-                  <span>Download Bridge (.exe)</span>
-                </a>
+              <button
+                type="button"
+                onClick={fetchLatestLiveLapFromRig}
+                disabled={isLoadingLiveLap}
+                className="px-3 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg text-xs transition flex items-center gap-1.5 shadow-sm cursor-pointer disabled:opacity-50"
+              >
+                {isLoadingLiveLap ? (
+                  <span>Importing...</span>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                    </svg>
+                    <span>⚡ Import Live Lap</span>
+                  </>
+                )}
+              </button>
+            </div>
+          ) : (
+            <div className="mb-3 px-3.5 py-2 rounded-xl bg-slate-900/50 border border-slate-800 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5 text-xs text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-slate-600" />
+                <span className="text-slate-300 font-medium text-[11px]">Rig Bridge Standby</span>
+                <span className="hidden sm:inline text-slate-500 text-[11px]">• Direct UDP from AMS2, Forza, F1 &amp; ACC</span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
                 <button
                   type="button"
-                  onClick={() => setShowBridgeHelp(!showBridgeHelp)}
-                  className="px-2.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 hover:border-slate-600 rounded-lg transition cursor-pointer"
+                  onClick={checkRigStatusManual}
+                  disabled={isCheckingRig}
+                  className="text-[11px] text-slate-400 hover:text-slate-200 transition cursor-pointer"
                 >
-                  {showBridgeHelp ? "Hide Guide" : "Setup Guide"}
+                  {isCheckingRig ? "Checking..." : "Check Rig"}
                 </button>
-                {liveRigStatus?.connected ? (
-                  <button
-                    type="button"
-                    onClick={fetchLatestLiveLapFromRig}
-                    disabled={isLoadingLiveLap}
-                    className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold rounded-lg text-xs shadow-md shadow-emerald-900/30 transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-                  >
-                    {isLoadingLiveLap ? (
-                      <span>Importing Lap Data...</span>
-                    ) : (
-                      <>
-                        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5">
-                          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                        </svg>
-                        <span>⚡ Import Live Lap from Rig</span>
-                      </>
-                    )}
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={checkRigStatusManual}
-                    disabled={isCheckingRig}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg text-xs border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <svg className={isCheckingRig ? "animate-spin" : ""} viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                      <polyline points="23 4 23 10 17 10" />
-                      <polyline points="1 20 1 14 7 14" />
-                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-                    </svg>
-                    <span>Check Rig</span>
-                  </button>
-                )}
+                <span className="text-slate-700">|</span>
+                <Link
+                  href="/download"
+                  className="text-[11px] text-sky-400 hover:text-sky-300 font-medium flex items-center gap-1 transition"
+                >
+                  <span>Get Bridge App</span>
+                  <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Link>
               </div>
             </div>
-
-            {/* Expandable 2-step instructions */}
-            {showBridgeHelp && (
-              <div className="mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300 grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="font-semibold text-sky-400 mb-1 flex items-center justify-between">
-                    <span>Step 1: Download & Run on your PC</span>
-                    <a href="/downloads/ApexWall-Bridge.zip" download="ApexWall-Bridge.zip" className="text-amber-400 underline hover:text-amber-300 font-normal text-[11px]">
-                      Download .zip
-                    </a>
-                  </div>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    Download and extract the bridge. Double-click <code className="text-amber-300 font-mono">Launch_ApexWall_Bridge.bat</code> or <code className="text-amber-300 font-mono">ApexWall-Bridge.exe</code>. It immediately opens UDP ports 5606 (AMS2), 5300 (Forza), 20777 (F1), and 9000 (ACC).
-                  </p>
-                </div>
-                <div className="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="font-semibold text-sky-400 mb-1">Step 2: Enable Telemetry In-Game</div>
-                  <p className="text-slate-400 text-[11px] leading-relaxed">
-                    • <strong>AMS2</strong>: Options &gt; System &gt; Shared Memory: <em>Project CARS 2</em><br />
-                    • <strong>Forza</strong>: Options &gt; Gameplay &gt; Data Out: <em>ON (127.0.0.1:5300)</em><br />
-                    • <strong>F1</strong>: Settings &gt; Telemetry &gt; UDP Broadcast: <em>ON (Port 20777)</em>
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+          )}
 
           {/* Dropzone */}
           <div
