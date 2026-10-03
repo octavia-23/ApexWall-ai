@@ -410,6 +410,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       detectedGame = "F1 24";
     } else if (lowerName.includes("lmu") || lowerName.includes("lemans") || lowerName.endsWith(".duckdb")) {
       detectedGame = "Le Mans Ultimate";
+    } else if (lowerName.includes("ams2") || lowerName.includes("automobilista")) {
+      detectedGame = "Automobilista 2";
     }
     setGame(detectedGame);
 
@@ -1353,7 +1355,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   {isParsingDuckDB ? "Executing DuckDB-Wasm Engine..." : "Drag & drop your Telemetry file"}
                 </span>
                 <span className="dropzone-sub">
-                  Supports <strong>Assetto Corsa Evo (MoTeC CSV)</strong>, <strong>Le Mans Ultimate (.duckdb)</strong>, <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong>, <strong>ACC Telemetry</strong> & <strong>iRacing</strong> logs
+                  Supports <strong>AMS2 / SecondMonitor (CSV)</strong>, <strong>Assetto Corsa Evo</strong>, <strong>Le Mans Ultimate (.duckdb)</strong>, <strong>MoTeC i2 CSV</strong>, <strong>Popometer</strong> & <strong>iRacing</strong> logs
                 </span>
               </div>
               <button
