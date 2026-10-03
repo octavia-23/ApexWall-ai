@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
+import { computeGGFrictionCircle, INSUFFICIENT_SAMPLE_FALLBACK } from "@/lib/telemetry-friction-circle";
 import { ParsedTelemetryFile, TelemetryPoint } from "@/types/telemetry";
 
 function createMockTelemetryFile(
@@ -117,6 +117,18 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
       powerDownLeftGripPct: 70,
       powerDownRightGripPct: 70,
     });
+
+    // Steady cornering: grip utilization has valid samples (dynamicCount > 0),
+    // but trail-braking and quadrants have 0 samples -> marked as estimated
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: false,
+      trailBrakingTransitionEfficiency: true,
+      trailBrakingLeftGripPct: true,
+      trailBrakingRightGripPct: true,
+      powerDownLeftGripPct: true,
+      powerDownRightGripPct: true,
+      refGripUtilizationPct: false,
+    });
   });
 
   it("characterizes straight-line braking at -3.0G", () => {
@@ -151,6 +163,17 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
       trailBrakingRightGripPct: 70,
       powerDownLeftGripPct: 70,
       powerDownRightGripPct: 70,
+    });
+
+    // Straight-line braking: grip utilization measured; transitions & quadrants estimated
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: false,
+      trailBrakingTransitionEfficiency: true,
+      trailBrakingLeftGripPct: true,
+      trailBrakingRightGripPct: true,
+      powerDownLeftGripPct: true,
+      powerDownRightGripPct: true,
+      refGripUtilizationPct: false,
     });
   });
 
@@ -210,6 +233,17 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
 
     // Trail braking transition efficiency should be pinned
     expect(result.trailBrakingTransitionEfficiency).toBe(100);
+
+    // In normal paths with adequate samples, all metrics are measured (estimated: false)
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: false,
+      trailBrakingTransitionEfficiency: false,
+      trailBrakingLeftGripPct: false,
+      trailBrakingRightGripPct: false,
+      powerDownLeftGripPct: false,
+      powerDownRightGripPct: false,
+      refGripUtilizationPct: false,
+    });
   });
 
   it("pins the exact current fallback values (75, 72, 70, 88)", () => {
@@ -234,11 +268,30 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
     const result = computeGGFrictionCircle(file, idleRef);
 
     expect(result.gripUtilizationPct).toBe(75);
+    expect(result.gripUtilizationPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.gripUtilizationPct);
     expect(result.trailBrakingTransitionEfficiency).toBe(72);
+    expect(result.trailBrakingTransitionEfficiency).toBe(INSUFFICIENT_SAMPLE_FALLBACK.trailBrakingTransitionEfficiency);
     expect(result.quadrantStats.trailBrakingLeftGripPct).toBe(70);
+    expect(result.quadrantStats.trailBrakingLeftGripPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.quadrantGripPct);
     expect(result.quadrantStats.trailBrakingRightGripPct).toBe(70);
+    expect(result.quadrantStats.trailBrakingRightGripPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.quadrantGripPct);
     expect(result.quadrantStats.powerDownLeftGripPct).toBe(70);
+    expect(result.quadrantStats.powerDownLeftGripPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.quadrantGripPct);
     expect(result.quadrantStats.powerDownRightGripPct).toBe(70);
+    expect(result.quadrantStats.powerDownRightGripPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.quadrantGripPct);
+    expect(result.refGripUtilizationPct).toBe(88);
+    expect(result.refGripUtilizationPct).toBe(INSUFFICIENT_SAMPLE_FALLBACK.refGripUtilizationPct);
+
+    // All zero-sample metrics must flag estimated: true
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: true,
+      trailBrakingTransitionEfficiency: true,
+      trailBrakingLeftGripPct: true,
+      trailBrakingRightGripPct: true,
+      powerDownLeftGripPct: true,
+      powerDownRightGripPct: true,
+      refGripUtilizationPct: true,
+    });
 
     // Verdict with refGripUtilizationPct = 88 and gripUtilizationPct = 75: diff = 13 (> 8)
     expect(result.gripDeficitVerdict).toContain("Grip Envelope Deficit: 13% below benchmark");
@@ -294,5 +347,53 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
     expect(result.gripDeficitVerdict).toBe(
       "G-G Friction Circle unavailable: Lateral (latG) and longitudinal (longG) accelerometer channels are missing."
     );
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: false,
+      trailBrakingTransitionEfficiency: false,
+      trailBrakingLeftGripPct: false,
+      trailBrakingRightGripPct: false,
+      powerDownLeftGripPct: false,
+      powerDownRightGripPct: false,
+      refGripUtilizationPct: false,
+    });
+  });
+
+  it("smoke tests golden path A and B with authentic Monza GT3 sample telemetry", async () => {
+    const fs = await import("fs");
+    const path = await import("path");
+    const { parseTelemetryCSV } = await import("@/lib/telemetry-parser");
+
+    const driverCsvPath = path.resolve(process.cwd(), "public/sample-telemetry/monza-gt3-motec.csv");
+    const refCsvPath = path.resolve(process.cwd(), "public/sample-telemetry/monza-gt3-pro-reference.csv");
+
+    const driverCsv = fs.readFileSync(driverCsvPath, "utf8");
+    const refCsv = fs.readFileSync(refCsvPath, "utf8");
+
+    const driver = parseTelemetryCSV(driverCsv, "monza-gt3-motec.csv");
+    const ref = parseTelemetryCSV(refCsv, "monza-gt3-pro-reference.csv");
+
+    const result = computeGGFrictionCircle(driver, ref);
+
+    // Verify baseline pinned metrics from BASELINE.md
+    expect(driver.lapTime).toBe("2:11.080");
+    expect(driver.topSpeed).toBe(258);
+    expect(driver.minSpeed).toBe(69);
+    expect(driver.trailBrakingScore).toBe(90);
+    expect(result.envelopeHull).toHaveLength(36);
+    expect(result.gripUtilizationPct).toBe(44);
+    expect(result.trailBrakingTransitionEfficiency).toBe(63);
+    expect(result.peakLatG).toBe(2.07);
+    expect(result.peakDecelG).toBe(-1.85);
+
+    // Verify estimated flags are all false on real telemetry with samples
+    expect(result.estimated).toEqual({
+      gripUtilizationPct: false,
+      trailBrakingTransitionEfficiency: false,
+      trailBrakingLeftGripPct: false,
+      trailBrakingRightGripPct: false,
+      powerDownLeftGripPct: false,
+      powerDownRightGripPct: false,
+      refGripUtilizationPct: false,
+    });
   });
 });
