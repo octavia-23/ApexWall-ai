@@ -1,18 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGroqChatText } from "@/lib/groq";
 import { detectChassisArchetype } from "@/lib/chassis-archetypes";
+import {
+  RaceEngineerRequestSchema,
+  RaceEngineerRequest,
+  MemoryRateLimiter,
+  MAX_PAYLOAD_BYTES,
+  getClientIp,
+} from "@/lib/api-schemas";
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
+/**
+ * In-memory token-bucket limiter (10 requests per minute per IP).
+ * Note: Rate limiting is per-serverless-instance, which is acceptable for a demo deployment.
+ */
+const raceEngineerLimiter = new MemoryRateLimiter(10, 60 * 1000);
 
 export async function POST(req: NextRequest) {
-  let body: any = {};
+  // 1. In-memory Rate Limiting
+  const clientIp = getClientIp(req.headers);
+  const { allowed } = raceEngineerLimiter.check(clientIp);
+  if (!allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again in a minute." },
+      { status: 429 }
+    );
+  }
+
+  // 2. Early Content-Length check (reject payloads > 32KB before parsing)
+  const contentLength = req.headers.get("content-length");
+  if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json(
+      { error: "Payload too large. Maximum allowed size is 32KB." },
+      { status: 413 }
+    );
+  }
+
+  // 3. Read body text with size cap check as a belt-and-braces measure
+  let rawBodyText: string;
   try {
-    body = await req.json();
+    rawBodyText = await req.text();
+  } catch {
+    return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+
+  if (Buffer.byteLength(rawBodyText, "utf8") > MAX_PAYLOAD_BYTES) {
+    return NextResponse.json(
+      { error: "Payload too large. Maximum allowed size is 32KB." },
+      { status: 413 }
+    );
+  }
+
+  // 4. Parse JSON
+  let jsonBody: unknown;
+  try {
+    jsonBody = JSON.parse(rawBodyText);
   } catch {
     return NextResponse.json({ error: "Invalid JSON request body." }, { status: 400 });
+  }
+
+  // 5. Validate schema with safeParse
+  const parseResult = RaceEngineerRequestSchema.safeParse(jsonBody);
+  if (!parseResult.success) {
+    const issueMessages = parseResult.error.issues.map((issue) => issue.message).join("; ");
+    return NextResponse.json(
+      { error: `Validation error: ${issueMessages}` },
+      { status: 400 }
+    );
   }
 
   const {
@@ -20,7 +73,7 @@ export async function POST(req: NextRequest) {
     telemetryContext,
     setupContext,
     activeSim = "Assetto Corsa Competizione",
-  } = body;
+  }: RaceEngineerRequest = parseResult.data;
 
   const lastUserMessage = messages[messages.length - 1]?.content || "";
 
@@ -97,7 +150,7 @@ Guidelines:
   try {
     const formattedMessages = [
       { role: "system" as const, content: systemPrompt },
-      ...messages.slice(-8).map((m: ChatMessage) => ({
+      ...messages.slice(-8).map((m) => ({
         role: m.role,
         content: m.content,
       })),
