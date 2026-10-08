@@ -101,7 +101,7 @@ export default function DownloadPage() {
             <a
               href="/downloads/ApexWall-Bridge.zip"
               download="ApexWall-Bridge.zip"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-blue-900/30 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 active:translate-y-0"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-gradient-to-r from-amber-600 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-400 text-white font-bold text-sm shadow-xl shadow-amber-950/40 flex items-center justify-center gap-2.5 transition transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <Download className="w-4 h-4" />
               <span>Download ApexWall Bridge for Windows</span>

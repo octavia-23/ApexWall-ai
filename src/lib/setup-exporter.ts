@@ -512,8 +512,8 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
         .param-val { font-family: monospace; color: #111827; }
         .param-note { font-size: 10.5px; color: #6b7280; }
         .notes-box {
-          background: #f3f4f6;
-          border-left: 3px solid #3b82f6;
+          background: #fefce8;
+          border-left: 3px solid #d97706;
           padding: 10px 14px;
           margin-top: 16px;
           font-size: 11.5px;
@@ -525,7 +525,7 @@ export function openPrintableRunSheet(ctx: SetupExportContext): void {
           gap: 8px;
         }
         .print-btn {
-          background: #2563eb;
+          background: #d97706;
           color: white;
           border: none;
           padding: 8px 16px;

@@ -19,8 +19,8 @@
   /* Restrained, Non-Distracting Hairline Borders */
   --border-subtle: rgba(255, 255, 255, 0.05);
   --border-default: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(59, 130, 246, 0.25);
-  --border-accent: #3B82F6;
+  --border-strong: rgba(245, 158, 11, 0.25);
+  --border-accent: #F59E0B;
 
   /* Glare-Free Soft Typography */
   --text-primary: #F1F5F9;
@@ -28,10 +28,10 @@
   --text-muted: #64748B;
   --text-dim: #475569;
 
-  /* Porsche Precision Racing Cobalt Accents */
-  --accent-blue: #3B82F6;
-  --accent-blue-hover: #2563EB;
-  --accent-blue-subtle: rgba(59, 130, 246, 0.12);
+  /* Precision Warm Amber / Honey Gold Accents */
+  --accent-blue: #F59E0B;
+  --accent-blue-hover: #D97706;
+  --accent-blue-subtle: rgba(245, 158, 11, 0.12);
 
   /* Status & Telemetry */
   --status-emerald: #10B981;
@@ -645,16 +645,16 @@ textarea {
 }
 
 .demo-btn.active .demo-btn-title {
-  color: #93C5FD;
+  color: #FDE68A;
 }
 
 .demo-active-pill {
   font-size: 9px;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: #60A5FA;
-  background: rgba(59, 130, 246, 0.18);
-  border: 1px solid rgba(59, 130, 246, 0.4);
+  color: #FBBF24;
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(245, 158, 11, 0.4);
   padding: 1px 5px;
   border-radius: 3px;
   letter-spacing: 0.05em;
@@ -909,13 +909,13 @@ textarea {
 
 .action-btn-accent {
   background: var(--accent-blue-subtle);
-  border-color: rgba(59, 130, 246, 0.3);
-  color: #93C5FD;
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #FDE68A;
 }
 
 .action-btn-accent:hover {
-  background: rgba(59, 130, 246, 0.2);
-  color: #BFDBFE;
+  background: rgba(245, 158, 11, 0.2);
+  color: #FEF3C7;
   border-color: var(--accent-blue);
 }
 
