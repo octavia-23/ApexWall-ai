@@ -201,7 +201,7 @@ export default function CockpitDDUPage() {
 
   // Thermal color resolver
   const getTempColor = (t: number) => {
-    if (t < 75) return "text-cyan-400 bg-cyan-500/10 border-cyan-500/30";
+    if (t < 75) return "text-blue-400 bg-blue-500/10 border-blue-500/30";
     if (t > 102) return "text-red-400 bg-red-500/20 border-red-500/50 animate-pulse";
     if (t > 96) return "text-amber-400 bg-amber-500/15 border-amber-500/40";
     return "text-emerald-400 bg-emerald-500/10 border-emerald-500/30";
