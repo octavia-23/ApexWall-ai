@@ -506,12 +506,48 @@ function broadcastFrame(frame) {
 // SIM TELEMETRY DECODERS
 // =========================================================================
 
-// 1. Automobilista 2 & Project CARS 2 (Port 5606, Packet 0: eCarPhysics)
+// State caches for multi-packet UDP protocols
+const f1LapData = {
+  lapDistance: 0,
+  totalDistance: 5891,
+  lapTime: 0,
+  latG: 0,
+  longG: 0,
+  lastPacketTime: 0,
+};
+
+const ams2State = {
+  lapDistance: 0,
+  totalDistance: 5000,
+  lapTime: 0,
+  lastSpeedMs: 0,
+  lastTimestamp: 0,
+};
+
+// 1. Automobilista 2 & Project CARS 2 (Port 5606: Packet 0 eCarPhysics, Packet 2 eTimings)
 function parseAMS2Packet(msg) {
   if (msg.length < 180) return null;
   const packetType = msg.readUInt8(10);
+
+  // Packet 2: eTimings (Track Length and Lap Distance)
+  if (packetType === 2 && msg.length >= 32) {
+    try {
+      const trackLength = msg.readFloatLE(24);
+      if (trackLength > 500 && trackLength < 30000) {
+        ams2State.totalDistance = Math.round(trackLength);
+      }
+      // Participant 0 (Player) lap distance at offset 32
+      if (msg.length >= 36) {
+        const p0LapDist = msg.readUInt16LE(32);
+        if (p0LapDist > 0) ams2State.lapDistance = p0LapDist;
+      }
+    } catch (_e) {}
+    return null;
+  }
+
   if (packetType !== 0) return null; // 0 = eCarPhysics
 
+  const now = Date.now();
   const brakeRaw = msg.readUInt8(29);
   const throttleRaw = msg.readUInt8(30);
   const speedMs = msg.readFloatLE(36);
@@ -537,6 +573,13 @@ function parseAMS2Packet(msg) {
   const tempRL = msg.readUInt8(178);
   const tempRR = msg.readUInt8(179);
 
+  // Integrate lap distance if eTimings packet not received
+  if (ams2State.lastTimestamp > 0 && speedMs > 1) {
+    const dt = Math.min(0.1, (now - ams2State.lastTimestamp) / 1000);
+    ams2State.lapDistance = Math.round((ams2State.lapDistance + speedMs * dt) % ams2State.totalDistance);
+  }
+  ams2State.lastTimestamp = now;
+
   return {
     game: "Automobilista 2",
     speed: speedKmh,
@@ -548,8 +591,8 @@ function parseAMS2Packet(msg) {
     steer,
     latG: isNaN(latG) ? 0 : latG,
     longG: isNaN(longG) ? 0 : longG,
-    lapDistance: 0,
-    totalDistance: 5000,
+    lapDistance: ams2State.lapDistance,
+    totalDistance: ams2State.totalDistance,
     lapTime: 0,
     delta: 0,
     tyreTemps: { FL: tempFL || 85, FR: tempFR || 85, RL: tempRL || 85, RR: tempRR || 85 },
@@ -620,7 +663,7 @@ function parseForzaPacket(msg) {
   };
 }
 
-// 3. F1 22 / 23 / 24 / 25 (Port 20777, Packet 6: Car Telemetry)
+// 3. F1 22 / 23 / 24 / 25 (Port 20777: Packet 0 Motion, Packet 2 LapData, Packet 6 Telemetry)
 function parseF1Packet(msg) {
   if (!msg || msg.length < 24) return null;
 
@@ -643,9 +686,43 @@ function parseF1Packet(msg) {
     return null;
   }
 
+  if (playerCarIndex < 0 || playerCarIndex >= 22) return null;
+
+  // Packet 2: Lap Data (Current Lap Distance, Lap Time, Lap Count)
+  if (packetId === 2) {
+    try {
+      const lapStride = packetFormat >= 2024 ? 58 : packetFormat === 2023 ? 57 : 43;
+      const offset = headerSize + playerCarIndex * lapStride;
+      if (msg.length >= offset + 26) {
+        const curLapTimeMs = msg.readUInt32LE(offset + 4);
+        const lapDist = msg.readFloatLE(offset + 18);
+        const totDist = msg.readFloatLE(offset + 22);
+
+        if (!isNaN(lapDist)) f1LapData.lapDistance = Math.max(0, Math.round(lapDist));
+        if (!isNaN(totDist) && totDist > 0) f1LapData.totalDistance = Math.max(5000, Math.round(totDist));
+        if (curLapTimeMs > 0) f1LapData.lapTime = Number((curLapTimeMs / 1000).toFixed(2));
+      }
+    } catch (_e) {}
+    return null; // Return null so we don't double broadcast, telemetry frame broadcasts on packet 6
+  }
+
+  // Packet 0: Motion (G-Forces)
+  if (packetId === 0) {
+    try {
+      const motionStride = 60;
+      const offset = headerSize + playerCarIndex * motionStride;
+      if (msg.length >= offset + 44) {
+        const gLat = msg.readFloatLE(offset + 36);
+        const gLong = msg.readFloatLE(offset + 40);
+        if (!isNaN(gLat)) f1LapData.latG = Number(gLat.toFixed(2));
+        if (!isNaN(gLong)) f1LapData.longG = Number(gLong.toFixed(2));
+      }
+    } catch (_e) {}
+    return null;
+  }
+
   // Validate packetId == 6 (CarTelemetry)
   if (packetId !== 6) return null;
-  if (playerCarIndex < 0 || playerCarIndex >= 22) return null;
 
   const recordStride = 60;
   const recordOffset = headerSize + playerCarIndex * recordStride;
@@ -657,6 +734,18 @@ function parseF1Packet(msg) {
   const brakeRaw = msg.readFloatLE(recordOffset + 10);
   const gear = msg.readInt8(recordOffset + 15);
   const engineRPM = msg.readUInt16LE(recordOffset + 16);
+
+  // F1 Tyre Surface Temps (RL, RR, FL, FR at byte 30..33)
+  const tempRL = msg.readUInt8(recordOffset + 30);
+  const tempRR = msg.readUInt8(recordOffset + 31);
+  const tempFL = msg.readUInt8(recordOffset + 32);
+  const tempFR = msg.readUInt8(recordOffset + 33);
+
+  // F1 Tyre Pressures in PSI (RL, RR, FL, FR floats at byte 40..55)
+  const pressRL = Math.round(msg.readFloatLE(recordOffset + 40) * 10) / 10;
+  const pressRR = Math.round(msg.readFloatLE(recordOffset + 44) * 10) / 10;
+  const pressFL = Math.round(msg.readFloatLE(recordOffset + 48) * 10) / 10;
+  const pressFR = Math.round(msg.readFloatLE(recordOffset + 52) * 10) / 10;
 
   const throttle = Math.min(100, Math.max(0, Math.round(throttleRaw * 100)));
   const brake = Math.min(100, Math.max(0, Math.round(brakeRaw * 100)));
@@ -671,12 +760,24 @@ function parseF1Packet(msg) {
     throttle,
     brake,
     steer,
-    latG: 0,
-    longG: 0,
-    lapDistance: 0,
-    totalDistance: 5891,
-    lapTime: 0,
+    latG: f1LapData.latG || 0,
+    longG: f1LapData.longG || 0,
+    lapDistance: f1LapData.lapDistance || 0,
+    totalDistance: f1LapData.totalDistance || 5891,
+    lapTime: f1LapData.lapTime || 0,
     delta: 0,
+    tyreTemps: {
+      FL: tempFL > 0 ? tempFL : 95,
+      FR: tempFR > 0 ? tempFR : 95,
+      RL: tempRL > 0 ? tempRL : 95,
+      RR: tempRR > 0 ? tempRR : 95,
+    },
+    tyrePressures: {
+      FL: pressFL > 10 ? pressFL : 23.5,
+      FR: pressFR > 10 ? pressFR : 23.5,
+      RL: pressRL > 10 ? pressRL : 21.5,
+      RR: pressRR > 10 ? pressRR : 21.5,
+    },
   };
 }
 
@@ -770,6 +871,7 @@ if (isTestMode) {
     const scriptPath = path.join(__dirname, "acevo-bridge.py");
     if (fs.existsSync(scriptPath)) {
       const pyProcess = spawn("python", [scriptPath], { stdio: ["ignore", "pipe", "inherit"] });
+      pyProcess.on("error", () => {});
       const rl = readline.createInterface({ input: pyProcess.stdout });
       rl.on("line", (line) => {
         try {
@@ -782,21 +884,33 @@ if (isTestMode) {
     }
   }
 
-  // 6. Launch Assetto Corsa Competizione Python Bridge if requested
-  if (gameFilter === "acc" || gameFilter === "assetto-corsa-competizione") {
-    console.log("[ACC] Launching Assetto Corsa Competizione Shared Memory Bridge process...");
+  // 6. Launch Assetto Corsa Competizione & Assetto Corsa Shared Memory Bridge
+  // (In dedicated ACC mode OR unified auto-detect mode)
+  if (!gameFilter || gameFilter === "acc" || gameFilter === "assetto-corsa-competizione" || gameFilter === "ac" || gameFilter === "assetto-corsa") {
+    const isDedicated = !!gameFilter;
+    console.log(`[SHM] Initializing Assetto Corsa / ACC Shared Memory Bridge (${isDedicated ? "Dedicated" : "Auto-Detect"})...`);
     const scriptPath = path.join(__dirname, "acc-bridge.py");
     if (fs.existsSync(scriptPath)) {
-      const pyProcess = spawn("python", [scriptPath], { stdio: ["ignore", "pipe", "inherit"] });
-      const rl = readline.createInterface({ input: pyProcess.stdout });
-      rl.on("line", (line) => {
-        try {
-          if (!line.trim()) return;
-          const frame = JSON.parse(line.trim());
-          activeGame = "Assetto Corsa Competizione";
-          broadcastFrame(frame);
-        } catch (_e) {}
-      });
+      try {
+        const pyProcess = spawn("python", [scriptPath], { stdio: ["ignore", "pipe", "inherit"] });
+        pyProcess.on("error", (err) => {
+          console.warn(`[SHM BRIDGE]: Python unavailable for direct Shared Memory: ${err.message}`);
+        });
+        const rl = readline.createInterface({ input: pyProcess.stdout });
+        rl.on("line", (line) => {
+          try {
+            if (!line.trim()) return;
+            const frame = JSON.parse(line.trim());
+            if (activeGame !== "Assetto Corsa Competizione" && activeGame !== "Assetto Corsa") {
+              activeGame = "Assetto Corsa Competizione";
+              console.log(`[AUTO-DETECT] 🏁 Active Rig Stream Connected: [${activeGame}] via Windows Shared Memory`);
+            }
+            broadcastFrame(frame);
+          } catch (_e) {}
+        });
+      } catch (err) {
+        console.warn(`[SHM BRIDGE]: Could not start Python shared memory bridge: ${err.message}`);
+      }
     }
   }
 }

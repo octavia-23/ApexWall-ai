@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { WorkspaceMode } from "@/components/ModeNavigation";
-import { Activity, Sliders, MessageSquare, Timer, Radio, Moon, Sun, ShieldCheck, Download } from "lucide-react";
+import { Activity, Sliders, MessageSquare, Timer, Radio, Moon, Sun, ShieldCheck, Download, Gauge } from "lucide-react";
 import Link from "next/link";
 
 interface CockpitNavbarProps {
@@ -135,6 +135,17 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
             ></span>
             <span className="font-mono text-[11px]">AMOLED</span>
           </button>
+
+          {/* Cockpit DDU Dash Link */}
+          <Link
+            href="/dash"
+            target="_blank"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/20 text-xs font-medium text-emerald-300 hover:text-white transition-colors"
+            title="Open Dedicated Fullscreen Sim Rig DDU (Digital Dash Unit)"
+          >
+            <Gauge className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden md:inline font-mono text-[11px]">Cockpit DDU</span>
+          </Link>
 
           {/* Rig Bridge Download Link */}
           <Link

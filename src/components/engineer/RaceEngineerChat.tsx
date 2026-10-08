@@ -45,7 +45,12 @@ I have your active session telemetry and chassis telemetry synced. How does the 
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [radioAudioEnabled, setRadioAudioEnabled] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const gamepadPollingRef = useRef<number | null>(null);
+  const lastGamepadBtnState = useRef<boolean>(false);
 
   const activeSim = currentSetup?.game || "Assetto Corsa Competizione";
   const activeCar = currentSetup?.car || activeCarProp || parsedTelemetry?.filename?.split(/[-_]/)[0]?.toUpperCase() || "GT3 Car";
@@ -60,6 +65,113 @@ I have your active session telemetry and chassis telemetry synced. How does the 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  // Authentic pit-radio beep sound via Web Audio API
+  const playRadioBeep = (open: boolean) => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(open ? 920 : 620, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(open ? 1200 : 420, ctx.currentTime + 0.07);
+      gain.gain.setValueAtTime(0.06, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.07);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.08);
+    } catch (_e) {}
+  };
+
+  // Initialize Speech Recognition & Wheel Button Listener
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRec) {
+      setSpeechSupported(true);
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = "en-US";
+
+      rec.onstart = () => {
+        setIsListening(true);
+        playRadioBeep(true);
+      };
+
+      rec.onresult = (e: any) => {
+        const transcript = e.results[0]?.[0]?.transcript;
+        if (transcript) {
+          setInput(transcript);
+          handleSendMessage(transcript);
+        }
+      };
+
+      rec.onerror = () => {
+        setIsListening(false);
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+        playRadioBeep(false);
+      };
+
+      recognitionRef.current = rec;
+    }
+
+    // Gamepad API Poller for Sim Rig Steering Wheel Button PTT
+    const pollGamepad = () => {
+      const gamepads = typeof navigator.getGamepads === "function" ? navigator.getGamepads() : [];
+      let anyBtnPressed = false;
+      for (const gp of gamepads) {
+        if (!gp) continue;
+        // Check primary action buttons or wheel thumb buttons (index 0, 1, 4, 5)
+        for (let i = 0; i < Math.min(gp.buttons.length, 12); i++) {
+          if (gp.buttons[i]?.pressed) {
+            anyBtnPressed = true;
+            break;
+          }
+        }
+      }
+
+      if (anyBtnPressed && !lastGamepadBtnState.current) {
+        // Toggle PTT
+        toggleVoiceInput();
+      }
+      lastGamepadBtnState.current = anyBtnPressed;
+      gamepadPollingRef.current = requestAnimationFrame(pollGamepad);
+    };
+
+    gamepadPollingRef.current = requestAnimationFrame(pollGamepad);
+
+    return () => {
+      if (gamepadPollingRef.current) cancelAnimationFrame(gamepadPollingRef.current);
+      if (recognitionRef.current) {
+        try { recognitionRef.current.abort(); } catch (_e) {}
+      }
+    };
+  }, []);
+
+  const toggleVoiceInput = () => {
+    if (!recognitionRef.current) return;
+    if (isListening) {
+      try {
+        recognitionRef.current.stop();
+      } catch (_e) {}
+      setIsListening(false);
+    } else {
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch (_e) {
+        setIsListening(false);
+      }
+    }
+  };
 
   // Voice synthesis for authentic pit radio comms
   const speakRadioMessage = (text: string) => {
@@ -352,13 +464,30 @@ I have your active session telemetry and chassis telemetry synced. How does the 
 
         {/* Input Bar */}
         <div className="p-3 bg-[#0d121c] border-t border-white/10 flex items-center gap-2.5">
+          {/* Wheel/Voice PTT Button */}
+          {speechSupported && (
+            <button
+              type="button"
+              onClick={toggleVoiceInput}
+              className={`px-3 py-2 rounded-md font-mono text-xs flex items-center gap-1.5 transition-all border ${
+                isListening
+                  ? "bg-red-500/20 border-red-500 text-red-300 animate-pulse"
+                  : "bg-white/[0.04] border-white/10 hover:border-blue-500/50 text-slate-300 hover:text-white"
+              }`}
+              title="Push-To-Talk Radio (Click or Press Wheel Button)"
+            >
+              <span className={`w-2 h-2 rounded-full ${isListening ? "bg-red-500" : "bg-slate-400"}`} />
+              <span className="hidden sm:inline">{isListening ? "Listening..." : "Radio PTT"}</span>
+            </button>
+          )}
+
           <div className="flex-1 flex items-center bg-[#151c2a] border border-white/10 focus-within:border-blue-500 rounded-md px-3 py-2 transition-colors">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Report car behavior or ask for engineering recommendations..."
+              placeholder={isListening ? "Listening to driver comms..." : "Report car behavior or ask for engineering recommendations..."}
               className="w-full bg-transparent text-xs sm:text-sm text-white placeholder-slate-500 focus:outline-none font-sans"
             />
           </div>
