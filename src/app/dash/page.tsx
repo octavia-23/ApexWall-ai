@@ -270,7 +270,7 @@ export default function CockpitDDUPage() {
       {/* Main DDU Screen */}
       <div className="flex-1 flex flex-col justify-between py-2 sm:py-4 max-w-7xl w-full mx-auto">
         {/* 1. Shift Lights Array */}
-        <div className="w-full flex items-center justify-between gap-1 sm:gap-2 px-2 py-1 mb-2 bg-[#090d14] rounded-lg border border-white/10">
+        <div className="w-full flex items-center justify-between gap-1 sm:gap-2 px-2 py-1 mb-2 bg-[#0D0F12] rounded-lg border border-white/10">
           {Array.from({ length: ledCount }).map((_, i) => {
             const isLit = i < activeLeds;
             let ledColor = "bg-emerald-500 shadow-[0_0_8px_#10b981]";
@@ -296,7 +296,7 @@ export default function CockpitDDUPage() {
         {/* 2. Primary Instrument Cluster */}
         <div className="grid grid-cols-12 gap-2 sm:gap-4 flex-1 items-stretch">
           {/* LEFT: Gear & Speed */}
-          <div className="col-span-4 bg-[#090d14] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between items-center relative overflow-hidden">
+          <div className="col-span-4 bg-[#0D0F12] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between items-center relative overflow-hidden">
             <span className="text-[10px] sm:text-xs font-mono uppercase text-slate-500 font-bold tracking-widest self-start">
               Transmission
             </span>
@@ -320,7 +320,7 @@ export default function CockpitDDUPage() {
           </div>
 
           {/* CENTER: Delta, Lap Times & Pedal Inputs */}
-          <div className="col-span-4 bg-[#090d14] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between">
+          <div className="col-span-4 bg-[#0D0F12] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between">
             {/* Live Delta vs Benchmark */}
             <div
               className={`w-full py-2 sm:py-3 rounded-lg border text-center font-mono font-black text-2xl sm:text-4xl transition-colors ${
@@ -376,7 +376,7 @@ export default function CockpitDDUPage() {
           </div>
 
           {/* RIGHT: 4-Corner Tyres & G-Forces */}
-          <div className="col-span-4 bg-[#090d14] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between">
+          <div className="col-span-4 bg-[#0D0F12] border border-white/10 rounded-xl p-3 sm:p-6 flex flex-col justify-between">
             <span className="text-[10px] sm:text-xs font-mono uppercase text-slate-500 font-bold tracking-widest">
               Tyre Thermals & Pressure
             </span>

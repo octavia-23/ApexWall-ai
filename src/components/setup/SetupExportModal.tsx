@@ -139,7 +139,7 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-start sm:items-center justify-center bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
           <div
-            className="relative w-full max-w-3xl my-auto bg-[#090C14] border border-slate-700/60 rounded-lg shadow-2xl overflow-hidden text-left flex flex-col max-h-[calc(100vh-2.5rem)]"
+            className="relative w-full max-w-3xl my-auto bg-[var(--bg-base)] border border-slate-700/60 rounded-lg shadow-2xl overflow-hidden text-left flex flex-col max-h-[calc(100vh-2.5rem)]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Scrollable Modal Body */}
@@ -153,7 +153,7 @@ export const SetupExportModal: React.FC<SetupExportModalProps> = ({
               </div>
 
             {/* Quick Standalone File Downloads Section */}
-            <div className="px-6 py-4 bg-[#07090F] border-t border-white/10">
+            <div className="px-6 py-4 bg-[var(--bg-inset)] border-t border-white/10">
               <div className="text-[11px] font-mono font-semibold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
                 <span className="flex items-center gap-1.5">
                   Direct File Downloads (Standalone Native Files):

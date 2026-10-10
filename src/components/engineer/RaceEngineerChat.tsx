@@ -350,7 +350,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
       </div>
 
       {/* Main Chat Interface */}
-      <div className="bg-[#0b0e14] border border-white/10 rounded-lg flex flex-col h-[650px] overflow-hidden">
+      <div className="bg-[var(--bg-surface)] border border-white/10 rounded-lg flex flex-col h-[650px] overflow-hidden">
         {/* Messages Feed */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
           {messages.map((msg) => {
@@ -377,7 +377,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
                 <div
                   className={`rounded-lg p-4 text-xs md:text-[13px] leading-relaxed flex-1 ${
                     isEngineer
-                      ? "bg-[#111723] border border-white/10 text-slate-200 shadow-sm"
+                      ? "bg-[var(--bg-surface-elevated)] border border-white/10 text-slate-200 shadow-sm"
                       : "bg-blue-600 text-white"
                   }`}
                 >
@@ -436,7 +436,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
               <div className="w-7 h-7 rounded bg-slate-800 text-slate-300 border border-slate-700 flex items-center justify-center text-[10px] font-mono font-bold">
                 RE
               </div>
-              <div className="bg-[#121824] border border-white/10 rounded-md p-3 text-xs font-mono text-slate-400">
+              <div className="bg-[var(--bg-surface-elevated)] border border-white/10 rounded-md p-3 text-xs font-mono text-slate-400">
                 <span>Analyzing telemetry channels and evaluating setup recommendations...</span>
               </div>
             </div>
@@ -463,7 +463,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
         </div>
 
         {/* Input Bar */}
-        <div className="p-3 bg-[#0d121c] border-t border-white/10 flex items-center gap-2.5">
+        <div className="p-3 bg-[var(--bg-surface-elevated)] border-t border-white/10 flex items-center gap-2.5">
           {/* Wheel/Voice PTT Button */}
           {speechSupported && (
             <button
@@ -481,7 +481,7 @@ I have your active session telemetry and chassis telemetry synced. How does the 
             </button>
           )}
 
-          <div className="flex-1 flex items-center bg-[#151c2a] border border-white/10 focus-within:border-blue-500 rounded-md px-3 py-2 transition-colors">
+          <div className="flex-1 flex items-center bg-[var(--bg-inset)] border border-white/10 focus-within:border-blue-500 rounded-md px-3 py-2 transition-colors">
             <input
               type="text"
               value={input}

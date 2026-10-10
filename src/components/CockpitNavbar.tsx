@@ -199,7 +199,7 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
               </button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-1.5 w-52 bg-[#0C101A] border border-white/10 rounded-lg shadow-lg py-1.5 z-50 text-xs">
+                <div className="absolute right-0 mt-1.5 w-52 bg-[#14171D] border border-white/10 rounded-lg shadow-lg py-1.5 z-50 text-xs">
                   <div className="px-3 py-1.5 border-b border-white/10">
                     <div className="font-medium text-slate-100 truncate">{displayName}</div>
                     <div className="text-[10.5px] text-slate-400 truncate">{user.email}</div>

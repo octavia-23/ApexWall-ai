@@ -255,7 +255,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
         <form onSubmit={handleSubmit} autoComplete="off">
           {/* Active Telemetry Link Banner */}
           {activeTelemetry && (
-            <div className="mb-4 p-3 rounded-lg border border-cyan-500/30 bg-[#0E1524] text-xs font-mono">
+            <div className="mb-4 p-3 rounded-lg border border-cyan-500/30 bg-[var(--bg-inset)] text-xs font-mono">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>

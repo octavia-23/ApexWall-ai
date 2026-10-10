@@ -91,9 +91,9 @@ export default function SharedSetupPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0E14] text-slate-100 flex flex-col">
+    <div className="min-h-screen bg-[var(--bg-base)] text-slate-100 flex flex-col">
       {/* Top Bar */}
-      <header className="border-b border-slate-800 bg-[#0E131F]/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-30 flex items-center justify-between">
+      <header className="border-b border-slate-800 bg-[var(--bg-surface)]/90 backdrop-blur-md px-6 py-3.5 sticky top-0 z-30 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button
             type="button"

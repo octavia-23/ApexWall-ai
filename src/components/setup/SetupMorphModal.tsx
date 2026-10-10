@@ -156,11 +156,11 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
       <div 
-        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[#090C14] border border-white/10 rounded-lg shadow-xl overflow-hidden text-slate-100"
+        className="relative w-full max-w-4xl max-h-[92vh] flex flex-col bg-[var(--bg-base)] border border-white/10 rounded-lg shadow-xl overflow-hidden text-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Top Header */}
-        <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between bg-[#0E1320]">
+        <div className="p-4 sm:p-5 border-b border-white/[0.08] flex items-center justify-between bg-[var(--bg-surface)]">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-md bg-blue-600/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
               <Zap className="w-4 h-4" />
@@ -203,7 +203,7 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
         {/* Modal Body (Scrollable) */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {/* Target Conditions Controls Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[#0E1320] border border-white/[0.06] p-4 rounded-xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-[var(--bg-surface)] border border-white/[0.06] p-4 rounded-xl">
             {/* 1. Track Temperature Slider */}
             <div className="space-y-2">
               <div className="flex items-center justify-between text-xs">
@@ -356,7 +356,7 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
                 No setup adjustments needed for these conditions. Move the sliders to test temperature and weather shifts.
               </div>
             ) : (
-              <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-[#0B0F19]">
+              <div className="border border-white/[0.08] rounded-xl overflow-hidden bg-[var(--bg-inset)]">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-white/[0.04] text-[10px] uppercase font-mono text-slate-400 border-b border-white/[0.08]">
@@ -406,7 +406,7 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
         </div>
 
         {/* Modal Footer Controls */}
-        <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-[#0E1320] flex flex-wrap items-center justify-between gap-3">
+        <div className="p-4 sm:p-5 border-t border-white/[0.08] bg-[var(--bg-surface)] flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             {appliedToast && (
               <span className="text-xs font-medium text-emerald-400 flex items-center gap-1">

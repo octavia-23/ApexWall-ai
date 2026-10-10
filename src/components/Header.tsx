@@ -88,7 +88,7 @@ export const Header: React.FC<HeaderProps> = ({ isLoading, onOpenAuth }) => {
 
               {/* Dropdown Menu */}
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-[#0D111A] border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-xs">
+                <div className="absolute right-0 mt-2 w-56 bg-[#14171D] border border-slate-700 rounded-xl shadow-2xl py-2 z-50 text-xs">
                   <div className="px-3 py-2 border-b border-slate-800">
                     <div className="font-semibold text-slate-200 truncate">{displayName}</div>
                     <div className="text-[11px] text-slate-400 font-mono truncate">{user.email}</div>
