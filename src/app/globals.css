@@ -8,32 +8,32 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces (Matte Obsidian & Charcoal Noir from 21st.dev template) */
-  --bg-base: #060708;
-  --bg-surface: #0D0F12;
-  --bg-surface-elevated: #14171D;
-  --bg-surface-hover: #1C2028;
-  --bg-inset: #08090C;
-  --bg-inset-hover: #0E1015;
+  /* Surfaces (Harmonized with Agent Console Template) */
+  --bg-base: var(--act-surface, #0c0e12);
+  --bg-surface: var(--act-raised, #13171f);
+  --bg-surface-elevated: var(--act-raised, #181d26);
+  --bg-surface-hover: color-mix(in srgb, var(--act-raised, #13171f) 80%, white 5%);
+  --bg-inset: var(--act-sunk, #1a202c);
+  --bg-inset-hover: color-mix(in srgb, var(--act-sunk, #1a202c) 85%, white 5%);
 
   /* Frosted Hairline Glass Borders */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.09);
-  --border-strong: rgba(200, 112, 56, 0.3);
-  --border-accent: #C87038;
+  --border-subtle: var(--act-rule, rgba(241, 245, 249, 0.08));
+  --border-default: var(--act-rule, rgba(241, 245, 249, 0.12));
+  --border-strong: color-mix(in srgb, var(--act-ink, #f1f5f9) 25%, transparent);
+  --border-accent: var(--act-crew, #c87038);
 
   /* Glare-Free Soft Chalk & Zinc Typography */
-  --text-primary: #F4F4F5;
-  --text-secondary: #A1A1AA;
-  --text-muted: #71717A;
-  --text-dim: #52525B;
+  --text-primary: var(--act-ink, #f1f5f9);
+  --text-secondary: var(--act-muted, #94a3b8);
+  --text-muted: var(--act-faint, #64748b);
+  --text-dim: color-mix(in srgb, var(--act-faint, #64748b) 70%, transparent);
 
-  /* Refined Metallic Anodized Copper & Champagne Accents */
-  --accent-blue: #C87038;
-  --accent-blue-hover: #A85524;
-  --accent-blue-subtle: rgba(200, 112, 56, 0.12);
-  --accent-copper: #C87038;
-  --accent-copper-hover: #A85524;
+  /* Refined Metallic Motorsport Accents */
+  --accent-blue: var(--act-ink, #f1f5f9);
+  --accent-blue-hover: var(--act-muted, #94a3b8);
+  --accent-blue-subtle: var(--act-rule, rgba(241, 245, 249, 0.08));
+  --accent-copper: var(--act-crew, #c87038);
+  --accent-copper-hover: #b05f2b;
   --accent-copper-subtle: rgba(200, 112, 56, 0.12);
 
   /* Status & Telemetry */

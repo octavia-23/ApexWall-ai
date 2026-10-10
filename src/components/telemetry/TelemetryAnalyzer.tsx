@@ -38,6 +38,7 @@ interface TelemetryAnalyzerProps {
   onTelemetryAnalyzed?: (result: TelemetryAnalysisResult, file: ParsedTelemetryFile | null) => void;
   onDiscussWithEngineer?: () => void;
   onSessionChange?: (session: { car: string; track: string; game?: string }) => void;
+  initialParsedTelemetry?: ParsedTelemetryFile | null;
 }
 
 const telLoadingMessages = [
@@ -54,6 +55,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   onTelemetryAnalyzed,
   onDiscussWithEngineer,
   onSessionChange,
+  initialParsedTelemetry,
 }) => {
   // Session & Vehicle Spec
   const [game, setGame] = useState("Assetto Corsa Competizione");
@@ -539,6 +541,12 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       console.warn("Could not compute G-G friction circle:", errGg);
     }
   };
+
+  useEffect(() => {
+    if (initialParsedTelemetry) {
+      processParsedTelemetry(initialParsedTelemetry);
+    }
+  }, [initialParsedTelemetry]);
 
   const handleFileUpload = async (file: File) => {
     if (file.name.toLowerCase().endsWith(".duckdb")) {
