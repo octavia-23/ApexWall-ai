@@ -8,21 +8,21 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Refined Anodized Copper & Champagne palette (21st.dev template design language)
+        // Locode Warm Desert Sand / Terracotta Gold palette (replaces cold cobalt & brownish copper)
         blue: {
-          50: "#FAF6F2",
-          100: "#F5EBE1",
-          200: "#E8D4C3",
-          300: "#DCBBA1",
-          400: "#CFA07E",
-          500: "#C87038",
-          600: "#B85D28",
-          700: "#984A1D",
-          800: "#773815",
-          900: "#50240D",
-          950: "#2A1206",
+          50: "#FAF7F2",
+          100: "#F5EFE6",
+          200: "#EADECF",
+          300: "#DFCCB4",
+          400: "#E2B88E",
+          500: "#D4A373", // Locode Primary Accent
+          600: "#C4925F", // Locode Deep Gold Accent
+          700: "#A67645",
+          800: "#7E552C",
+          900: "#543619",
+          950: "#2C1A0B",
         },
-        // Neutral Obsidian Graphite & Charcoal Zinc (replaces cold navy slate)
+        // Locode Natural Muted Zinc / Charcoal Graphite
         slate: {
           50: "#FAFAFA",
           100: "#F4F4F5",
@@ -36,13 +36,21 @@ module.exports = {
           900: "#18181B",
           950: "#09090B",
         },
+        gold: {
+          DEFAULT: "#D4A373",
+          hover: "#E2B88E",
+          subtle: "rgba(212, 163, 115, 0.14)",
+          border: "rgba(212, 163, 115, 0.35)",
+          text: "#E5B98F",
+          light: "#EADECF",
+        },
         copper: {
-          DEFAULT: "#C87038",
-          hover: "#A85524",
-          subtle: "rgba(200, 112, 56, 0.12)",
-          border: "rgba(200, 112, 56, 0.35)",
-          text: "#F09B66",
-          light: "#E59560",
+          DEFAULT: "#D4A373",
+          hover: "#E2B88E",
+          subtle: "rgba(212, 163, 115, 0.14)",
+          border: "rgba(212, 163, 115, 0.35)",
+          text: "#E5B98F",
+          light: "#EADECF",
         },
         obsidian: {
           base: "#060708",
@@ -52,11 +60,11 @@ module.exports = {
           inset: "#08090C",
         },
         telemetry: {
-          cyan: "#00d2be",
-          red: "#ff3b30",
-          orange: "#ff6b35",
-          green: "#22c55e",
-          amber: "#f59e0b",
+          cyan: "#38bdf8",
+          red: "#f43f5e",
+          orange: "#fb923c",
+          green: "#34d399",
+          amber: "#fbbf24",
         },
       },
       fontFamily: {

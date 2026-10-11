@@ -8,42 +8,45 @@
    ========================================================================== */
 
 :root {
-  /* Surfaces (Harmonized with Agent Console Template) */
-  --bg-base: var(--act-surface, #0c0e12);
-  --bg-surface: var(--act-raised, #13171f);
-  --bg-surface-elevated: var(--act-raised, #181d26);
-  --bg-surface-hover: color-mix(in srgb, var(--act-raised, #13171f) 80%, white 5%);
-  --bg-inset: var(--act-sunk, #1a202c);
-  --bg-inset-hover: color-mix(in srgb, var(--act-sunk, #1a202c) 85%, white 5%);
+  /* Surfaces (Harmonized with Locode Natural Muted Neutrals) */
+  --bg-base: #0c0e12;
+  --bg-surface: #13171f;
+  --bg-surface-elevated: #181d26;
+  --bg-surface-hover: #1f2530;
+  --bg-inset: #1a202c;
+  --bg-inset-hover: #212938;
 
   /* Frosted Hairline Glass Borders */
-  --border-subtle: var(--act-rule, rgba(241, 245, 249, 0.08));
-  --border-default: var(--act-rule, rgba(241, 245, 249, 0.12));
-  --border-strong: color-mix(in srgb, var(--act-ink, #f1f5f9) 25%, transparent);
-  --border-accent: var(--act-crew, #c87038);
+  --border-subtle: rgba(241, 245, 249, 0.08);
+  --border-default: rgba(241, 245, 249, 0.12);
+  --border-strong: rgba(212, 163, 115, 0.35);
+  --border-accent: #d4a373;
 
   /* Glare-Free Soft Chalk & Zinc Typography */
-  --text-primary: var(--act-ink, #f1f5f9);
-  --text-secondary: var(--act-muted, #94a3b8);
-  --text-muted: var(--act-faint, #64748b);
-  --text-dim: color-mix(in srgb, var(--act-faint, #64748b) 70%, transparent);
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --text-dim: #475569;
 
-  /* Refined Metallic Motorsport Accents */
-  --accent-blue: var(--act-ink, #f1f5f9);
-  --accent-blue-hover: var(--act-muted, #94a3b8);
-  --accent-blue-subtle: var(--act-rule, rgba(241, 245, 249, 0.08));
-  --accent-copper: var(--act-crew, #c87038);
-  --accent-copper-hover: #b05f2b;
-  --accent-copper-subtle: rgba(200, 112, 56, 0.12);
+  /* Locode Golden Sand & Desert Terracotta Accents */
+  --accent-blue: #d4a373;
+  --accent-blue-hover: #e2b88e;
+  --accent-blue-subtle: rgba(212, 163, 115, 0.14);
+  --accent-copper: #d4a373;
+  --accent-copper-hover: #e2b88e;
+  --accent-copper-subtle: rgba(212, 163, 115, 0.14);
+  --accent-gold: #d4a373;
+  --accent-gold-hover: #e2b88e;
+  --accent-gold-subtle: rgba(212, 163, 115, 0.14);
 
   /* Status & Telemetry */
-  --status-emerald: #10B981;
-  --status-emerald-subtle: rgba(16, 185, 129, 0.12);
-  --status-amber: #F59E0B;
-  --status-amber-subtle: rgba(245, 158, 11, 0.12);
-  --status-rose: #F43F5E;
-  --status-rose-subtle: rgba(244, 63, 94, 0.12);
-  --status-cyan: #38BDF8;
+  --status-emerald: #34d399;
+  --status-emerald-subtle: rgba(52, 211, 153, 0.14);
+  --status-amber: #fbbf24;
+  --status-amber-subtle: rgba(251, 191, 36, 0.14);
+  --status-rose: #f43f5e;
+  --status-rose-subtle: rgba(244, 63, 94, 0.14);
+  --status-cyan: #38bdf8;
   --status-cyan-subtle: rgba(56, 189, 248, 0.12);
 
   /* Telemetry Channels */
@@ -629,7 +632,7 @@ textarea {
 }
 
 .demo-btn.active {
-  background: rgba(200, 112, 56, 0.09);
+  background: rgba(212, 163, 115, 0.12);
   border-color: var(--accent-blue);
   box-shadow: 0 0 0 1px var(--accent-blue);
 }
@@ -648,16 +651,16 @@ textarea {
 }
 
 .demo-btn.active .demo-btn-title {
-  color: #F0A875;
+  color: #d4a373;
 }
 
 .demo-active-pill {
   font-size: 9px;
   font-family: var(--font-mono);
   font-weight: 700;
-  color: #E59560;
-  background: rgba(200, 112, 56, 0.18);
-  border: 1px solid rgba(200, 112, 56, 0.4);
+  color: #d4a373;
+  background: rgba(212, 163, 115, 0.18);
+  border: 1px solid rgba(212, 163, 115, 0.4);
   padding: 1px 5px;
   border-radius: 3px;
   letter-spacing: 0.05em;
@@ -912,13 +915,13 @@ textarea {
 
 .action-btn-accent {
   background: var(--accent-blue-subtle);
-  border-color: rgba(200, 112, 56, 0.3);
-  color: #F0A875;
+  border-color: rgba(212, 163, 115, 0.35);
+  color: #d4a373;
 }
 
 .action-btn-accent:hover {
-  background: rgba(200, 112, 56, 0.2);
-  color: #FBE8DC;
+  background: rgba(212, 163, 115, 0.22);
+  color: #f7ebe1;
   border-color: var(--accent-blue);
 }
 
@@ -3861,7 +3864,7 @@ textarea {
 
 .vault-quick-save-strip {
   padding: 10px 22px;
-  background: rgba(200, 112, 56, 0.06);
+  background: rgba(212, 163, 115, 0.08);
   border-bottom: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
@@ -4050,8 +4053,8 @@ textarea {
 }
 
 .card-load-btn {
-  background: rgba(200, 112, 56, 0.15);
-  border: 1px solid rgba(200, 112, 56, 0.35);
+  background: rgba(212, 163, 115, 0.16);
+  border: 1px solid rgba(212, 163, 115, 0.4);
   color: var(--accent-blue);
   font-family: var(--font-mono);
   font-size: 10.5px;

@@ -65,7 +65,7 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
         {/* LEFT: Brand */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-blue-600 flex items-center justify-center text-white font-bold text-xs tracking-tight">
+            <div className="w-6 h-6 rounded-md bg-[#d4a373] flex items-center justify-center text-slate-950 font-black text-xs tracking-tight shadow-sm shadow-[#d4a373]/30">
               AW
             </div>
             <span className="font-bold text-sm tracking-tight text-white font-sans">
@@ -84,9 +84,9 @@ export const CockpitNavbar: React.FC<CockpitNavbarProps> = ({
                   key={m.id}
                   type="button"
                   onClick={() => onChangeMode(m.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-colors ${
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs transition-all ${
                     isActive
-                      ? "bg-blue-600 text-white font-semibold"
+                      ? "bg-[#d4a373] text-slate-950 font-bold shadow-sm shadow-[#d4a373]/25"
                       : "text-slate-400 hover:text-white hover:bg-white/[0.05]"
                   }`}
                 >
