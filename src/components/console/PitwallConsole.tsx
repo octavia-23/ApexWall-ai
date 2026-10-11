@@ -459,6 +459,82 @@ export const PitwallConsole: React.FC = () => {
     >
       <style>{`
         ${ACT_CSS}
+
+        /* Sleek Slim Sidepanels: frees 180px+ horizontal space for middle stage */
+        .act-root.act-sb-on {
+          --act-sbw: 182px !important;
+        }
+        .act-root.act-pn-on {
+          --act-pnw: 240px !important;
+        }
+        .act-side-in {
+          width: 182px !important;
+        }
+        .act-panel-in {
+          width: 240px !important;
+        }
+
+        /* 16:9 Center Stage Geometry */
+        .act-main {
+          display: flex !important;
+          flex-direction: column !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          height: 100% !important;
+          overflow: hidden !important;
+        }
+        .act-custom-workspace {
+          flex: 1 1 0% !important;
+          min-height: 0 !important;
+          overflow-y: auto !important;
+          overflow-x: hidden !important;
+          padding: 8px 12px !important;
+          background: var(--act-surface) !important;
+          color: var(--act-ink) !important;
+        }
+        .act-stage-16-9 {
+          width: 100% !important;
+          max-width: calc((100svh - 50px) * (16 / 9)) !important;
+          margin: 0 auto !important;
+        }
+
+        /* Responsive workbench form column: 290px instead of 440px */
+        .act-custom-workspace .layout {
+          display: grid !important;
+          grid-template-columns: minmax(260px, 310px) minmax(0, 1fr) !important;
+          gap: 12px !important;
+        }
+        @media (max-width: 1150px) {
+          .act-custom-workspace .layout {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        /* Sleek sidepanel typography and micro-spacing */
+        .act-side-head {
+          padding: 8px 10px 4px 10px !important;
+        }
+        .act-search {
+          height: 28px !important;
+          margin: 2px 6px 6px !important;
+          padding: 0 6px 0 8px !important;
+        }
+        .act-search input {
+          font-size: 11px !important;
+        }
+        .act-sess-btn {
+          padding: 5px 8px !important;
+        }
+        .act-sess-title {
+          font-size: 11px !important;
+        }
+        .act-sess-status {
+          font-size: 9.5px !important;
+        }
+        .act-panel-in {
+          font-size: 12px !important;
+        }
+
         @keyframes act-pulse-param {
           0%, 100% {
             outline: 2px solid var(--act-ok);
@@ -629,6 +705,33 @@ export const PitwallConsole: React.FC = () => {
             </svg>
             <span>Bridge Agent</span>
           </Link>
+
+          {/* 16:9 Widescreen Focus Mode Toggle */}
+          <button
+            type="button"
+            className="act-action-pill"
+            style={{
+              background: (!isSidebarOpen && !isInspectorOpen) ? "color-mix(in srgb, var(--act-ok) 22%, var(--act-sunk))" : undefined,
+              borderColor: (!isSidebarOpen && !isInspectorOpen) ? "var(--act-ok)" : undefined,
+              color: (!isSidebarOpen && !isInspectorOpen) ? "var(--act-ok)" : undefined,
+            }}
+            onClick={() => {
+              if (isSidebarOpen || isInspectorOpen) {
+                setIsSidebarOpen(false);
+                setIsInspectorOpen(false);
+              } else {
+                setIsSidebarOpen(true);
+                setIsInspectorOpen(true);
+              }
+            }}
+            title="16:9 Cinema Focus (Collapse both sidepanels for full widescreen view)"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+              <line x1="2" y1="10" x2="22" y2="10"></line>
+            </svg>
+            <span>16:9 {!isSidebarOpen && !isInspectorOpen ? "Full" : "Focus"}</span>
+          </button>
 
           <button
             type="button"
@@ -890,97 +993,99 @@ export const PitwallConsole: React.FC = () => {
             CENTER MAIN STAGE: THE WORKBENCH
             ----------------------------------------------------------------------- */}
         <main className="act-main" style={{ flex: 1, minHeight: 0, position: "relative", overflow: "hidden" }}>
-          <div className="act-custom-workspace" style={{ padding: "14px 18px" }}>
-            {activeTab === "telemetry" && (
-              <TelemetryAnalyzer
-                initialParsedTelemetry={lastTelemetryFile}
-                onLoadingChange={() => {}}
-                onApplyToSetup={handleApplyToSetup}
-                onTelemetryAnalyzed={(res, file) => {
-                  setLastTelemetryResult(res);
-                  setLastTelemetryFile(file);
-                  if (res.lapComparison?.driverLapTime) {
-                    setStore((prev) => ({
-                      ...prev,
-                      telemetryLapTime: { value: res.lapComparison.driverLapTime, kind: "observed" },
-                    }));
+          <div className="act-custom-workspace">
+            <div className="act-stage-16-9">
+              {activeTab === "telemetry" && (
+                <TelemetryAnalyzer
+                  initialParsedTelemetry={lastTelemetryFile}
+                  onLoadingChange={() => {}}
+                  onApplyToSetup={handleApplyToSetup}
+                  onTelemetryAnalyzed={(res, file) => {
+                    setLastTelemetryResult(res);
+                    setLastTelemetryFile(file);
+                    if (res.lapComparison?.driverLapTime) {
+                      setStore((prev) => ({
+                        ...prev,
+                        telemetryLapTime: { value: res.lapComparison.driverLapTime, kind: "observed" },
+                      }));
+                    }
+                  }}
+                  onDiscussWithEngineer={() => {
+                    setIsInspectorOpen(true);
+                    setInspectorView("engineer");
+                  }}
+                  onSessionChange={(s) => {
+                    if (s.car) setSessionCar(s.car);
+                    if (s.track) setSessionTrack(s.track);
+                    if (s.game) setSessionGame(s.game);
+                  }}
+                />
+              )}
+
+              {activeTab === "setup" && (
+                <SetupGenerator
+                  initialValues={setupInitialValues}
+                  telemetryContext={
+                    setupInitialValues?.telemetryContext ||
+                    (lastTelemetryFile
+                      ? {
+                          hasTelemetry: true,
+                          trailBrakingScore: lastTelemetryFile.trailBrakingScore,
+                          throttleSmoothness: lastTelemetryFile.throttleSmoothness,
+                          steeringScrub: lastTelemetryFile.steeringScrub,
+                          maxLatG: lastTelemetryFile.maxLatG,
+                          maxDecelG: lastTelemetryFile.maxDecelG,
+                          topSpeed: lastTelemetryFile.topSpeed,
+                          minSpeed: lastTelemetryFile.minSpeed,
+                          lapTime: lastTelemetryFile.lapTime,
+                          tyres: lastTelemetryFile.tyreStats,
+                          phaseBalance: lastTelemetryFile.phaseBalance,
+                          tyreOptimization: lastTelemetryFile.tyreOptimization,
+                          driverVsCar: lastTelemetryFile.driverVsCar,
+                          gripUtilization: lastTelemetryResult?.frictionCircle?.gripUtilizationPct,
+                        }
+                      : undefined)
                   }
-                }}
-                onDiscussWithEngineer={() => {
-                  setIsInspectorOpen(true);
-                  setInspectorView("engineer");
-                }}
-                onSessionChange={(s) => {
-                  if (s.car) setSessionCar(s.car);
-                  if (s.track) setSessionTrack(s.track);
-                  if (s.game) setSessionGame(s.game);
-                }}
-              />
-            )}
+                  baselineSetup={lastGeneratedSetup ? { sections: lastGeneratedSetup.sections } : undefined}
+                  onLoadingChange={() => {}}
+                  onSetupGenerated={handleSetupGenerated}
+                  onDiscussWithEngineer={() => {
+                    setIsInspectorOpen(true);
+                    setInspectorView("engineer");
+                  }}
+                  onSessionChange={(s) => {
+                    if (s.car) setSessionCar(s.car);
+                    if (s.track) setSessionTrack(s.track);
+                    if (s.game) setSessionGame(s.game);
+                  }}
+                />
+              )}
 
-            {activeTab === "setup" && (
-              <SetupGenerator
-                initialValues={setupInitialValues}
-                telemetryContext={
-                  setupInitialValues?.telemetryContext ||
-                  (lastTelemetryFile
-                    ? {
-                        hasTelemetry: true,
-                        trailBrakingScore: lastTelemetryFile.trailBrakingScore,
-                        throttleSmoothness: lastTelemetryFile.throttleSmoothness,
-                        steeringScrub: lastTelemetryFile.steeringScrub,
-                        maxLatG: lastTelemetryFile.maxLatG,
-                        maxDecelG: lastTelemetryFile.maxDecelG,
-                        topSpeed: lastTelemetryFile.topSpeed,
-                        minSpeed: lastTelemetryFile.minSpeed,
-                        lapTime: lastTelemetryFile.lapTime,
-                        tyres: lastTelemetryFile.tyreStats,
-                        phaseBalance: lastTelemetryFile.phaseBalance,
-                        tyreOptimization: lastTelemetryFile.tyreOptimization,
-                        driverVsCar: lastTelemetryFile.driverVsCar,
-                        gripUtilization: lastTelemetryResult?.frictionCircle?.gripUtilizationPct,
-                      }
-                    : undefined)
-                }
-                baselineSetup={lastGeneratedSetup ? { sections: lastGeneratedSetup.sections } : undefined}
-                onLoadingChange={() => {}}
-                onSetupGenerated={handleSetupGenerated}
-                onDiscussWithEngineer={() => {
-                  setIsInspectorOpen(true);
-                  setInspectorView("engineer");
-                }}
-                onSessionChange={(s) => {
-                  if (s.car) setSessionCar(s.car);
-                  if (s.track) setSessionTrack(s.track);
-                  if (s.game) setSessionGame(s.game);
-                }}
-              />
-            )}
-
-            {activeTab === "strategy" && (
-              <StrategyTools
-                onApplyPressuresToSetup={handleApplyPressures}
-                onApplyFuelToSetup={handleApplyFuel}
-                activeCar={sessionCar || setupInitialValues?.car}
-                activeTrack={sessionTrack || setupInitialValues?.track}
-              />
-            )}
-
-            {activeTab === "live" && <LiveTelemetryHUD />}
-
-            {activeTab === "engineer" && (
-              <div style={{ height: "calc(100svh - 90px)" }}>
-                <RaceEngineerChat
-                  currentSetup={lastGeneratedSetup}
-                  telemetryResult={lastTelemetryResult}
-                  parsedTelemetry={lastTelemetryFile}
+              {activeTab === "strategy" && (
+                <StrategyTools
+                  onApplyPressuresToSetup={handleApplyPressures}
+                  onApplyFuelToSetup={handleApplyFuel}
                   activeCar={sessionCar || setupInitialValues?.car}
                   activeTrack={sessionTrack || setupInitialValues?.track}
-                  onApplyAdjustmentToSetup={(advice) => handleApplyAdviceToSetup(advice)}
-                  onSwitchToSetup={() => setActiveTab("setup")}
                 />
-              </div>
-            )}
+              )}
+
+              {activeTab === "live" && <LiveTelemetryHUD />}
+
+              {activeTab === "engineer" && (
+                <div style={{ height: "calc(100svh - 90px)" }}>
+                  <RaceEngineerChat
+                    currentSetup={lastGeneratedSetup}
+                    telemetryResult={lastTelemetryResult}
+                    parsedTelemetry={lastTelemetryFile}
+                    activeCar={sessionCar || setupInitialValues?.car}
+                    activeTrack={sessionTrack || setupInitialValues?.track}
+                    onApplyAdjustmentToSetup={(advice) => handleApplyAdviceToSetup(advice)}
+                    onSwitchToSetup={() => setActiveTab("setup")}
+                  />
+                </div>
+              )}
+            </div>
           </div>
         </main>
 

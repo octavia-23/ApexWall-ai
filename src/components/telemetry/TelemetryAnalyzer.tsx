@@ -586,7 +586,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
     const dpr = window.devicePixelRatio || 1;
     const rect = wrapperRef.current.getBoundingClientRect();
     const width = rect.width || 760;
-    const height = 240;
+    const height = Math.round(rect.height) || Math.round(Math.min(360, Math.max(220, width * 0.32)));
 
     if (canvas.width !== width * dpr || canvas.height !== height * dpr) {
       canvas.width = width * dpr;

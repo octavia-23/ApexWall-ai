@@ -1379,7 +1379,7 @@ textarea {
 .canvas-wrapper {
   position: relative;
   width: 100%;
-  height: 240px;
+  height: clamp(230px, 26vw, 360px);
   cursor: crosshair;
   background: #08090C;
 }
