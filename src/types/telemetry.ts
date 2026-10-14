@@ -35,6 +35,14 @@ export interface TelemetryPoint {
   pressFR: number | null;
   pressRL: number | null;
   pressRR: number | null;
+  suspFL?: number | null; // Suspension travel in mm
+  suspFR?: number | null;
+  suspRL?: number | null;
+  suspRR?: number | null;
+  damperVelFL?: number | null; // Damper velocity in mm/s
+  damperVelFR?: number | null;
+  damperVelRL?: number | null;
+  damperVelRR?: number | null;
   understeerAngle?: number | null; // Steering angle minus Ackermann angle (positive = understeer, negative = oversteer)
   quality?: Partial<Record<string, SampleQuality>>;
 }
@@ -140,6 +148,60 @@ export interface ParsedTelemetryFile {
   phaseBalance?: CornerPhaseBalance;
   tyreOptimization?: TyreOptimizationReport;
   driverVsCar?: DriverVsCarDiagnostics;
+  damperHistograms?: DamperHistogramAnalysis;
+}
+
+export type DamperCorner = "FL" | "FR" | "RL" | "RR";
+
+export type DamperRegime = "high_bump" | "low_bump" | "low_rebound" | "high_rebound";
+
+export interface DamperVelocityBin {
+  minVelocity: number;
+  maxVelocity: number;
+  centerVelocity: number;
+  count: number;
+  percentage: number; // 0 to 100
+  regime: DamperRegime;
+}
+
+export interface CornerDamperStats {
+  corner: DamperCorner;
+  sampleCount: number;
+  bins: DamperVelocityBin[];
+  lowSpeedThreshold: number; // mm/s, typically 50
+  maxRecordedVelocity: number; // peak rebound (+, mm/s)
+  minRecordedVelocity: number; // peak bump (-, mm/s)
+  avgVelocity: number;
+  stdDevVelocity: number;
+  bumpPct: number; // total compression %
+  reboundPct: number; // total extension %
+  zeroPct: number; // exactly 0 mm/s %
+  lowSpeedBumpPct: number; // -lowSpeedThreshold to 0
+  highSpeedBumpPct: number; // < -lowSpeedThreshold
+  lowSpeedReboundPct: number; // 0 to +lowSpeedThreshold
+  highSpeedReboundPct: number; // > +lowSpeedThreshold
+  bumpReboundRatio: number; // bumpPct / reboundPct
+  lowSpeedTotalPct: number; // low bump + low rebound %
+  highSpeedTotalPct: number; // high bump + high rebound %
+  isPackingDown: boolean;
+  isOverstiffLowSpeed: boolean;
+  isUnderdampedHighSpeed: boolean;
+  anomalyFlags: string[];
+}
+
+export interface DamperHistogramAnalysis {
+  corners: Record<DamperCorner, CornerDamperStats>;
+  isSynthesized: boolean;
+  lowSpeedThreshold: number;
+  binWidth: number;
+  velocityRange: [number, number]; // e.g. [-300, 300]
+  frontRearLowSpeedBalance: {
+    frontPct: number;
+    rearPct: number;
+    verdict: string;
+  };
+  overallVerdict: string;
+  engineerRecommendations: string[];
 }
 
 export interface KpiRating {
@@ -278,6 +340,7 @@ export interface TelemetryAnalysisResult {
   tyreOptimization?: TyreOptimizationReport;
   driverVsCar?: DriverVsCarDiagnostics;
   dataQuality?: TelemetryDataQuality;
+  damperHistograms?: DamperHistogramAnalysis;
 }
 
 export interface GeneratedSetupResult {

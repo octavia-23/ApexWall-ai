@@ -7,7 +7,9 @@ import { computeLapComparison } from "@/lib/telemetry-comparison";
 import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
 import { generateTrackMapData } from "@/lib/track-map-generator";
 import { GGFrictionCircle } from "./GGFrictionCircle";
+import { DamperHistogramViewer } from "./DamperHistogramViewer";
 import { TrackMap2D } from "./TrackMap2D";
+import { computeDamperHistograms } from "@/lib/damper-histogram-calculator";
 import {
   ParsedTelemetryFile,
   TelemetryAnalysisResult,
@@ -539,6 +541,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       setFrictionCircleData(gg);
     } catch (errGg) {
       console.warn("Could not compute G-G friction circle:", errGg);
+    }
+
+    if (!parsed.damperHistograms && parsed.points && parsed.points.length > 0) {
+      try {
+        parsed.damperHistograms = computeDamperHistograms(parsed.points);
+      } catch (errDamper) {
+        console.warn("Could not compute damper histograms:", errDamper);
+      }
     }
   };
 
@@ -2251,6 +2261,11 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {/* G-G Friction Circle & Grip Envelope Module */}
             {frictionCircleData && (
               <GGFrictionCircle data={frictionCircleData} hoverIndex={hoverIndex} />
+            )}
+
+            {/* MoTeC-Grade Damper Velocity Histograms */}
+            {parsedTelemetry?.damperHistograms && (
+              <DamperHistogramViewer data={parsedTelemetry.damperHistograms} />
             )}
 
             {/* 2b. Corner Phase Balance & Slip Dynamics */}

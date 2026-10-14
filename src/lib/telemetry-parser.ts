@@ -13,6 +13,7 @@ import {
   safeMin,
   safeMax,
 } from "./numeric-parser";
+import { computeDamperHistograms } from "./damper-histogram-calculator";
 
 export function parseTelemetryCSV(
   csvText: string,
@@ -69,6 +70,18 @@ export function parseTelemetryCSV(
     else if (lower.includes("fr") && lower.includes("press")) headerMap.pressFR = idx;
     else if (lower.includes("rl") && lower.includes("press")) headerMap.pressRL = idx;
     else if (lower.includes("rr") && lower.includes("press")) headerMap.pressRR = idx;
+    else if (lower.includes("damper") && lower.includes("vel") && lower.includes("fl")) headerMap.damperVelFL = idx;
+    else if (lower.includes("damper") && lower.includes("vel") && lower.includes("fr")) headerMap.damperVelFR = idx;
+    else if (lower.includes("damper") && lower.includes("vel") && lower.includes("rl")) headerMap.damperVelRL = idx;
+    else if (lower.includes("damper") && lower.includes("vel") && lower.includes("rr")) headerMap.damperVelRR = idx;
+    else if (lower.includes("susp") && (lower.includes("pos") || lower.includes("travel") || lower.includes("rideheight") || lower.includes("height")) && lower.includes("fl")) headerMap.suspFL = idx;
+    else if (lower.includes("susp") && (lower.includes("pos") || lower.includes("travel") || lower.includes("rideheight") || lower.includes("height")) && lower.includes("fr")) headerMap.suspFR = idx;
+    else if (lower.includes("susp") && (lower.includes("pos") || lower.includes("travel") || lower.includes("rideheight") || lower.includes("height")) && lower.includes("rl")) headerMap.suspRL = idx;
+    else if (lower.includes("susp") && (lower.includes("pos") || lower.includes("travel") || lower.includes("rideheight") || lower.includes("height")) && lower.includes("rr")) headerMap.suspRR = idx;
+    else if ((lower === "suspfl" || lower === "susp_fl") && !lower.includes("temp")) headerMap.suspFL = idx;
+    else if ((lower === "suspfr" || lower === "susp_fr") && !lower.includes("temp")) headerMap.suspFR = idx;
+    else if ((lower === "susprl" || lower === "susp_rl") && !lower.includes("temp")) headerMap.suspRL = idx;
+    else if ((lower === "susprr" || lower === "susp_rr") && !lower.includes("temp")) headerMap.suspRR = idx;
   });
 
   const parsedPoints: TelemetryPoint[] = [];
@@ -126,6 +139,16 @@ export function parseTelemetryCSV(
     let pressFR = headerMap.pressFR != null ? parseOptionalNumber(getRaw(headerMap.pressFR)) : null;
     let pressRL = headerMap.pressRL != null ? parseOptionalNumber(getRaw(headerMap.pressRL)) : null;
     let pressRR = headerMap.pressRR != null ? parseOptionalNumber(getRaw(headerMap.pressRR)) : null;
+
+    let suspFL = headerMap.suspFL != null ? parseOptionalNumber(getRaw(headerMap.suspFL)) : null;
+    let suspFR = headerMap.suspFR != null ? parseOptionalNumber(getRaw(headerMap.suspFR)) : null;
+    let suspRL = headerMap.suspRL != null ? parseOptionalNumber(getRaw(headerMap.suspRL)) : null;
+    let suspRR = headerMap.suspRR != null ? parseOptionalNumber(getRaw(headerMap.suspRR)) : null;
+
+    let damperVelFL = headerMap.damperVelFL != null ? parseOptionalNumber(getRaw(headerMap.damperVelFL)) : null;
+    let damperVelFR = headerMap.damperVelFR != null ? parseOptionalNumber(getRaw(headerMap.damperVelFR)) : null;
+    let damperVelRL = headerMap.damperVelRL != null ? parseOptionalNumber(getRaw(headerMap.damperVelRL)) : null;
+    let damperVelRR = headerMap.damperVelRR != null ? parseOptionalNumber(getRaw(headerMap.damperVelRR)) : null;
 
     // Normalize pedal inputs if 0..1 scale (CRITICAL: preserve genuine 0!)
     if (throttle != null) {
@@ -202,6 +225,14 @@ export function parseTelemetryCSV(
       pressFR,
       pressRL,
       pressRR,
+      suspFL,
+      suspFR,
+      suspRL,
+      suspRR,
+      damperVelFL,
+      damperVelFR,
+      damperVelRL,
+      damperVelRR,
       quality: {
         speed: speed != null ? "measured" : "missing",
         throttle: throttle != null ? "measured" : "missing",
@@ -615,6 +646,22 @@ export function parseTelemetryCSV(
     });
   }
 
+  const damperHistograms = computeDamperHistograms(parsedPoints);
+  if (damperHistograms.corners.FL.isPackingDown || damperHistograms.corners.FR.isPackingDown) {
+    detectedAnomalies.push({
+      location: "Front Axle Damping",
+      description: "Front dampers packing down under high-frequency kerb strikes; rebound damping recovery rate insufficient",
+      channel: "Suspension",
+    });
+  }
+  if (damperHistograms.corners.RL.isPackingDown || damperHistograms.corners.RR.isPackingDown) {
+    detectedAnomalies.push({
+      location: "Rear Axle Damping",
+      description: "Rear dampers ratcheting downward over traction zones; loss of dynamic ride height induces exit snap oversteer",
+      channel: "Suspension",
+    });
+  }
+
   return {
     filename,
     rawCount: parsedPoints.length,
@@ -633,6 +680,7 @@ export function parseTelemetryCSV(
     phaseBalance,
     tyreOptimization,
     driverVsCar,
+    damperHistograms,
     points: downsampled,
     channels: Object.keys(headerMap),
   };
