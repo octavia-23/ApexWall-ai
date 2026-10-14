@@ -80,7 +80,6 @@ export const Header: React.FC<HeaderProps> = ({ isLoading, onOpenAuth }) => {
                 <span className="text-slate-200 font-medium max-w-[110px] truncate hidden sm:inline">
                   {displayName}
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M6 9l6 6 6-6" />
                 </svg>
@@ -93,7 +92,6 @@ export const Header: React.FC<HeaderProps> = ({ isLoading, onOpenAuth }) => {
                     <div className="font-semibold text-slate-200 truncate">{displayName}</div>
                     <div className="text-[11px] text-slate-400 font-mono truncate">{user.email}</div>
                     <div className="mt-1.5 flex items-center gap-1.5 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 rounded w-fit">
-                      <span className="w-1 h-1 rounded-full bg-emerald-400"></span>
                       <span>TELEMETRY CLOUD SYNCED</span>
                     </div>
                   </div>

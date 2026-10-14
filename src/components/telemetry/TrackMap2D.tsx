@@ -606,7 +606,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
               {data.fiaGrade || "FIA GRADE 1 CERTIFIED"}
             </span>
             <span className="trackmap-dist-pill">
-              {data.country ? `${data.country.toUpperCase()} • ` : ""}
+              {data.country ? `${data.country.toUpperCase()} | ` : ""}
               {data.totalDistance.toLocaleString()}m
             </span>
             {data.drsZones && data.drsZones.length > 0 && (
@@ -630,7 +630,7 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
                   borderRadius: "6px",
                   fontSize: "11px",
                   padding: "4px 10px",
-                  fontFamily: "var(--font-jetbrains)",
+                  fontFamily: "var(--font-mono)",
                   cursor: "pointer",
                   maxWidth: "280px",
                 }}

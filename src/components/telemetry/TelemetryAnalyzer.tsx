@@ -1330,7 +1330,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   className={`seg-btn ${sessionType === st ? "active" : ""}`}
                   onClick={() => setSessionType(st)}
                 >
-                  <span className="seg-indicator"></span>{st.split(" ")[0]}
+                  {st.split(" ")[0]}
                 </button>
               ))}
             </div>
@@ -1353,7 +1353,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   className={`seg-btn ${weather === w.val ? "active" : ""}`}
                   onClick={() => setWeather(w.val)}
                 >
-                  <span className={`weather-indicator ${w.cls}`}></span>{w.val}
+                  {w.val}
                 </button>
               ))}
             </div>
@@ -1439,7 +1439,6 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           {liveRigStatus?.connected ? (
             <div className="mb-3 px-3.5 py-2 rounded-xl bg-emerald-950/25 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-2 shadow-sm">
               <div className="flex items-center gap-2.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs font-semibold text-emerald-400">Live Rig Active:</span>
                 <span className="text-xs font-mono font-medium text-slate-100 px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/30">
                   {liveRigStatus.game}
@@ -1469,9 +1468,8 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           ) : (
             <div className="mb-3 px-3.5 py-2 rounded-xl bg-slate-900/50 border border-slate-800 flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 text-xs text-slate-400">
-                <span className="w-2 h-2 rounded-full bg-slate-600" />
                 <span className="text-slate-300 font-medium text-[11px]">Rig Bridge Standby</span>
-                <span className="hidden sm:inline text-slate-500 text-[11px]">• Direct UDP from AMS2, Forza, F1 &amp; ACC</span>
+                <span className="hidden sm:inline text-slate-500 text-[11px]">/ Direct UDP from AMS2, Forza, F1 &amp; ACC</span>
               </div>
               <div className="flex items-center gap-3 text-xs">
                 <button
@@ -1593,7 +1591,6 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
           <div className="mt-3 pt-3 border-t border-white/5">
             <div className="text-[11px] text-slate-400 font-medium mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                 <span>Sample Telemetry Runs (1-Click Instant Demo):</span>
               </span>
               <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 border border-cyan-500/20 px-1.5 py-0.5 rounded">
@@ -1734,7 +1731,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   className={`seg-btn ${driverStyle === style ? "active" : ""}`}
                   onClick={() => setDriverStyle(style)}
                 >
-                  <span className="seg-indicator"></span>{style.split(" / ")[0]}
+                  {style.split(" / ")[0]}
                 </button>
               ))}
             </div>
@@ -2536,7 +2533,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-3 bg-zinc-900/50 rounded border border-zinc-800/60">
                     <div className="text-xs font-mono font-semibold text-sky-400 mb-2 flex items-center gap-1.5">
-                      <span>•</span> Driver Technique Limitations (Lap Time in Pedals)
+                      <span>Driver Technique Limitations (Lap Time in Pedals)</span>
                     </div>
                     <ul className="space-y-1.5 text-xs text-zinc-300">
                       {(result.driverVsCar?.driverTechniquePoints || parsedTelemetry?.driverVsCar?.driverTechniquePoints || []).map((pt, i) => (
@@ -2550,7 +2547,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
                   <div className="p-3 bg-zinc-900/50 rounded border border-zinc-800/60">
                     <div className="text-xs font-mono font-semibold text-amber-400 mb-2 flex items-center gap-1.5">
-                      <span>•</span> Mechanical Chassis Limitations (Requires Setup Intervention)
+                      <span>Mechanical Chassis Limitations (Requires Setup Intervention)</span>
                     </div>
                     <ul className="space-y-1.5 text-xs text-zinc-300">
                       {(result.driverVsCar?.mechanicalSetupPoints || parsedTelemetry?.driverVsCar?.mechanicalSetupPoints || []).map((pt, i) => (

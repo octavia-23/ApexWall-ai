@@ -1432,8 +1432,8 @@ const THEME_NAMES: AgentConsoleThemeName[] = ["apex", "night", "sage", "paper", 
 
 export const ACT_CSS = `
 .act-root {
-  --act-sans: "Inter", "Helvetica Neue", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  --act-mono: "JetBrains Mono", "IBM Plex Mono", "SF Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --act-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --act-mono: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --act-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --act-sbw: 0px;
   --act-pnw: 0px;

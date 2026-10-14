@@ -291,7 +291,6 @@ export const SetupMorphTool: React.FC<SetupMorphToolProps> = ({
                     }`}
                   >
                     <div className="text-xs flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`}></span>
                       <span>{item.label}</span>
                     </div>
                   </button>

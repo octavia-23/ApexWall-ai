@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { GeneratedSetupResult } from "@/types/telemetry";
 import { SetupExportModal } from "./SetupExportModal";
 import { SetupMorphModal } from "./SetupMorphModal";
+import { SetupIngestorModal } from "./SetupIngestorModal";
+import { ParsedSetupFile } from "@/lib/setup-importer";
 import { saveSetupToVault } from "@/lib/setup-vault";
 import { ACModIngestor } from "./ACModIngestor";
 import { AssettoCorsaModData } from "@/lib/ac-mod-parser";
@@ -87,6 +89,51 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [copied, setCopied] = useState(false);
   const [savedToVault, setSavedToVault] = useState(false);
   const [isMorphModalOpen, setIsMorphModalOpen] = useState(false);
+  const [isIngestorModalOpen, setIsIngestorModalOpen] = useState(false);
+  const [showBaselinePreview, setShowBaselinePreview] = useState(false);
+
+  const handleApplyImportedBaseline = (parsedSetup: ParsedSetupFile) => {
+    const selectedGame = parsedSetup.game || game;
+    const selectedCar = parsedSetup.car || car;
+    const selectedTrack = parsedSetup.track || track;
+
+    if (parsedSetup.game) setGame(parsedSetup.game);
+    if (parsedSetup.car) setCar(parsedSetup.car);
+    if (parsedSetup.track) setTrack(parsedSetup.track);
+
+    const baselineData = {
+      name: parsedSetup.setupName,
+      summary: parsedSetup.summary,
+      sections: parsedSetup.sections,
+      game: selectedGame,
+      car: selectedCar,
+      track: selectedTrack,
+    };
+
+    setActiveBaseline(baselineData);
+
+    onSetupGenerated?.({
+      game: selectedGame,
+      car: selectedCar,
+      track: selectedTrack,
+      sessionType,
+      weather,
+      trackTemp,
+      airTemp,
+      fuelLoad,
+      tyreCompound,
+      driverStyle,
+      summary: parsedSetup.summary,
+      engineerNotes: `Loaded existing setup: ${parsedSetup.setupName} (${parsedSetup.rawParameterCount} parameters). Ready for baseline tuning or race engineer debrief.`,
+      sections: parsedSetup.sections,
+    });
+
+    onSessionChange?.({
+      car: selectedCar,
+      track: selectedTrack,
+      game: selectedGame,
+    });
+  };
 
   // Sync initial values when transferred from Telemetry Analyzer or parent
   useEffect(() => {
@@ -243,13 +290,26 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
     <div className="layout">
       {/* FORM PANEL (INPUT BRIEF) */}
       <section className="panel form-panel glass-card">
-        <div className="panel-header">
+        <div className="panel-header flex flex-wrap items-center justify-between gap-2">
           <div className="panel-tag-group">
             <div className="panel-label-group">
               <span className="panel-label">Vehicle & Track Setup</span>
               <span className="panel-sublabel">Chassis configuration and environment</span>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setIsIngestorModalOpen(true)}
+            className="action-btn action-btn-accent"
+            title="Import an existing setup from ACC (.json), Assetto Corsa (.ini), or rF2/LMU (.svm)"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            <span>Import Existing Setup</span>
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
@@ -258,7 +318,6 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             <div className="mb-4 p-3 rounded-lg border border-cyan-500/30 bg-[var(--bg-inset)] text-xs font-mono">
               <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
                   <span className="font-semibold text-cyan-300 uppercase tracking-wide">
                     Telemetry Ingest Synced
                   </span>
@@ -313,7 +372,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   <div className="truncate mr-2">
                     <span className="text-cyan-400 font-semibold mr-1.5">Target Cold Pressures:</span>
                     <span className="text-slate-300 font-mono">
-                      FL {activeTelemetry.tyreOptimization.recommendedCold.FL} • FR {activeTelemetry.tyreOptimization.recommendedCold.FR} • RL {activeTelemetry.tyreOptimization.recommendedCold.RL} • RR {activeTelemetry.tyreOptimization.recommendedCold.RR} psi
+                      FL {activeTelemetry.tyreOptimization.recommendedCold.FL} | FR {activeTelemetry.tyreOptimization.recommendedCold.FR} | RL {activeTelemetry.tyreOptimization.recommendedCold.RL} | RR {activeTelemetry.tyreOptimization.recommendedCold.RR} psi
                     </span>
                   </div>
                   <button
@@ -334,18 +393,56 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
 
           {/* Active Baseline Status Banner */}
           {activeBaseline && (
-            <div className="mb-4 px-3 py-2 rounded-lg border border-emerald-500/30 bg-emerald-950/20 text-xs font-mono flex items-center justify-between text-emerald-300">
-              <span className="flex items-center gap-1.5 truncate mr-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
-                <span className="truncate">Active Baseline Synced: Preserving current setup; applying surgical 1–3 parameter diff</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => setActiveBaseline(null)}
-                className="text-slate-400 hover:text-emerald-200 text-[10.5px] shrink-0"
-              >
-                Reset to Default ✕
-              </button>
+            <div className="mb-4 p-3 rounded-lg border border-white/10 bg-white/[0.03] text-xs text-slate-300">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 truncate mr-2">
+                  <span className="font-semibold text-[#d4a373]">
+                    Active Baseline: {activeBaseline.name || activeBaseline.car || "Imported Setup"}
+                  </span>
+                  <span className="text-slate-400 text-[11px]">
+                    ({activeBaseline.sections?.reduce((a: number, s: any) => a + (s.items?.length || 0), 0) || 0} parameters locked)
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setShowBaselinePreview(!showBaselinePreview)}
+                    className="text-slate-400 hover:text-white underline text-[11px]"
+                  >
+                    {showBaselinePreview ? "Hide Sliders ▲" : "View Sliders ▼"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveBaseline(null)}
+                    className="text-slate-400 hover:text-rose-400 text-[11px] ml-1"
+                    title="Reset to procedural default"
+                  >
+                    Reset ✕
+                  </button>
+                </div>
+              </div>
+              {showBaselinePreview && activeBaseline.sections && (
+                <div className="mt-2.5 pt-2 border-t border-white/10 space-y-2 max-h-48 overflow-y-auto text-[11px]">
+                  {activeBaseline.sections.map((sec: any, i: number) => (
+                    <div key={i}>
+                      <span className="text-[#d4a373] font-semibold text-[10.5px] uppercase block mb-1">
+                        {sec.title}
+                      </span>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                        {sec.items?.map((it: any, j: number) => (
+                          <div
+                            key={j}
+                            className="flex justify-between bg-black/40 px-2 py-1 rounded border border-white/5"
+                          >
+                            <span className="text-slate-400 truncate mr-1.5">{it.label}</span>
+                            <span className="text-slate-200 font-medium shrink-0">{it.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -448,7 +545,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   className={`seg-btn ${sessionType === type ? "active" : ""}`}
                   onClick={() => setSessionType(type)}
                 >
-                  <span className="seg-indicator"></span>{type}
+                  {type}
                 </button>
               ))}
             </div>
@@ -471,7 +568,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                   className={`seg-btn ${weather === w.val ? "active" : ""}`}
                   onClick={() => setWeather(w.val)}
                 >
-                  <span className={`weather-indicator ${w.cls}`}></span>{w.val}
+                  {w.val}
                 </button>
               ))}
             </div>
@@ -791,13 +888,12 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
             {result.evidence && result.evidence.length > 0 && (
               <div className="p-3 rounded-md border border-cyan-500/20 bg-cyan-950/20 text-xs my-2.5">
                 <div className="flex items-center gap-1.5 text-cyan-400 font-mono font-semibold uppercase tracking-wider text-[10.5px] mb-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
                   <span>Empirical Telemetry Evidence Ingested</span>
                 </div>
                 <ul className="space-y-1 font-mono text-[11px] text-slate-300">
                   {result.evidence.map((ev, idx) => (
                     <li key={idx} className="flex items-start gap-1.5">
-                      <span className="text-cyan-400 shrink-0">•</span>
+                      <span className="text-cyan-400 shrink-0">-</span>
                       <span>{ev}</span>
                     </li>
                   ))}
@@ -899,6 +995,17 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           </div>
         )}
       </section>
+
+      {isIngestorModalOpen && (
+        <SetupIngestorModal
+          isOpen={isIngestorModalOpen}
+          onClose={() => setIsIngestorModalOpen(false)}
+          onApplyBaseline={handleApplyImportedBaseline}
+          onDiscussWithEngineer={(parsed) => {
+            onDiscussWithEngineer?.();
+          }}
+        />
+      )}
     </div>
   );
 };

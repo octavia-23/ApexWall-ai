@@ -313,6 +313,11 @@ I have your active session telemetry and chassis telemetry synced. How does the 
               <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded">
                 Session synced
               </span>
+              {currentSetup?.sections && currentSetup.sections.length > 0 && (
+                <span className="text-[10px] bg-white/[0.04] text-slate-300 border border-white/10 px-2 py-0.5 rounded">
+                  Setup loaded ({currentSetup.sections.reduce((a, s) => a + (s.items?.length || 0), 0)} params)
+                </span>
+              )}
             </div>
             <div className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
               <span className="text-slate-200 font-medium">{activeCar}</span>
@@ -409,7 +414,6 @@ I have your active session telemetry and chassis telemetry synced. How does the 
                   {isEngineer && (/anti-roll|arb|dampers|bump|rebound|toe|camber|diff|power|coast|pressure|psi|wing|rake|ride height|brake bias|click/i.test(msg.content)) && (
                     <div className="mt-3.5 pt-2.5 border-t border-white/[0.08] flex flex-wrap items-center justify-between gap-2 bg-black/20 -mx-4 -mb-4 p-3 rounded-b-lg">
                       <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-400">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
                         <span>Actionable setup parameter adjustments detected</span>
                       </div>
                       <button

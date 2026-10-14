@@ -1,0 +1,38 @@
+//[[gFID]] Setup File
+[CAR]
+Type="Ferrari 499P Hypercar"
+
+[GENERAL]
+Fuel="75.000000"
+FrontWing="2"
+RearWing="6"
+BrakeBias="53.500000"
+Track="Circuit de la Sarthe"
+
+[FRONTLEFT]
+Pressure="170.000000"
+Camber="-3.200000"
+Toe="-0.050000"
+SpringRate="180.000000"
+SlowBump="8"
+SlowRebound="7"
+RideHeight="48.000000"
+
+[FRONTRIGHT]
+Pressure="170.000000"
+Camber="-3.200000"
+
+[REARLEFT]
+Pressure="165.000000"
+Camber="-2.200000"
+SpringRate="150.000000"
+RideHeight="58.000000"
+
+[DRIVETRAIN]
+DifferentialPreload="55"
+DifferentialPower="35"
+DifferentialCoast="45"
+
+[SUSPENSION]
+FrontAntiRollBar="4"
+RearAntiRollBar="2"

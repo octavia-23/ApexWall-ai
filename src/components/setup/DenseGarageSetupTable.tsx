@@ -261,7 +261,7 @@ export const DenseGarageSetupTable: React.FC<DenseGarageSetupTableProps> = ({
             {/* Category Header */}
             <div className="px-4 py-2.5 bg-[#121417] border-b border-[#25282d] flex items-center justify-between">
               <span
-                style={{ fontFamily: "var(--font-display, 'Barlow Semi Condensed', sans-serif)" }}
+                style={{ fontFamily: "var(--font-sans, 'Plus Jakarta Sans', sans-serif)" }}
                 className="text-sm font-semibold tracking-wide text-[#c4c7cc]"
               >
                 {cat.title}

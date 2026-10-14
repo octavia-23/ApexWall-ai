@@ -1,0 +1,51 @@
+{
+  "carName": "porsche_992_gt3_r",
+  "basicSetup": {
+    "tyres": {
+      "tyreCompound": 0,
+      "tyrePressure": [65, 68, 62, 64]
+    },
+    "alignment": {
+      "staticCamber": [-3.5, -3.5, -2.8, -2.8],
+      "toeOutLinear": [-0.08, -0.08, 0.15, 0.15],
+      "casterLF": 15,
+      "casterRF": 15,
+      "steerRatio": 13
+    },
+    "electronics": {
+      "tC1": 4,
+      "tC2": 2,
+      "abs": 3,
+      "eCUMap": 1
+    },
+    "strategy": {
+      "fuel": 52
+    }
+  },
+  "advancedSetup": {
+    "mechanicalBalance": {
+      "aRBFront": 4,
+      "aRBRear": 2,
+      "wheelRate": [175000, 175000, 140000, 140000],
+      "bumpStopRateUp": [1200, 1200, 1000, 1000],
+      "bumpStopWindow": [15, 15, 20, 20],
+      "brakeTorque": 100,
+      "brakeBias": 54.5
+    },
+    "dampers": {
+      "bumpSlow": [7, 7, 5, 5],
+      "bumpFast": [13, 13, 10, 10],
+      "reboundSlow": [8, 8, 6, 6],
+      "reboundFast": [15, 15, 12, 12]
+    },
+    "aeroBalance": {
+      "rideHeight": [52, 52, 68, 68],
+      "splitter": 0,
+      "rearWing": 8,
+      "brakeDuct": [2, 2]
+    },
+    "drivetrain": {
+      "preload": 70
+    }
+  }
+}

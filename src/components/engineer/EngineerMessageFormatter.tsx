@@ -210,7 +210,6 @@ export const EngineerMessageContent: React.FC<FormatterProps> = ({ content, role
         if (block.type === "radio_opener") {
           return (
             <div key={idx} className="flex items-center gap-2 text-slate-300 font-mono text-xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
               <span className="font-semibold tracking-wide text-white uppercase text-[11px]">
                 Radio Comms
               </span>

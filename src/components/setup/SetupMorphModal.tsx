@@ -289,7 +289,6 @@ export const SetupMorphModal: React.FC<SetupMorphModalProps> = ({
                     }`}
                   >
                     <div className="text-xs font-semibold flex items-center gap-1.5">
-                      <span className={`w-1.5 h-1.5 rounded-full ${item.dot}`}></span>
                       <span>{item.label}</span>
                     </div>
                     <div className="text-[10px] text-slate-500 mt-0.5">{item.desc}</div>

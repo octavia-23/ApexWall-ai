@@ -383,7 +383,6 @@ export const DirectSetupInjector: React.FC<DirectSetupInjectorProps> = ({
             {detectedSetupsRoot && (
               <div className="sm:col-span-2 flex items-center justify-between bg-[#121818] border border-emerald-500/40 px-3 py-2 rounded-[4px]">
                 <div className="flex items-center gap-2 truncate">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
                   <span className="text-[10.5px] font-mono text-emerald-400 font-semibold shrink-0">
                     PC Setups Folder Detected:
                   </span>

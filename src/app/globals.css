@@ -138,6 +138,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+button, input, select, textarea, optgroup {
+  font-family: inherit;
+}
+
 /* Custom Scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
@@ -247,7 +251,21 @@ body {
   border-radius: 9999px;
 }
 
-.status-dot {
+.status-dot,
+.toggle-dot,
+.legend-dot,
+.demo-dot,
+.pulse-dot,
+.eco-dot,
+.notes-dot,
+.save-dot,
+.verdict-dot,
+.hover-dot-pulse,
+.seg-indicator,
+.weather-indicator,
+.badge-dot,
+.badge-dot-cyan,
+.spec-dot {
   display: none !important;
 }
 
@@ -282,25 +300,31 @@ body {
   padding: 7px 16px;
   border-radius: 6px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-secondary);
   font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  position: relative;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  transform: translateZ(0);
 }
 
 .mode-toggle-btn:hover {
   color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-toggle-btn:active {
+  transform: scale(0.98);
 }
 
 .mode-toggle-btn.active {
   background: var(--bg-surface-elevated);
   color: var(--text-primary);
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-default);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-color: var(--border-default);
 }
 
 .mode-toggle-btn .mode-badge {
@@ -520,51 +544,44 @@ textarea {
 
 .seg-btn {
   background: transparent;
-  border: none;
-  padding: 6px 8px;
-  border-radius: 4px;
+  border: 1px solid transparent;
+  padding: 6px 10px;
+  border-radius: 5px;
   color: var(--text-secondary);
   font-size: 11.5px;
   font-weight: 500;
   cursor: pointer;
   text-align: center;
-  transition: all var(--transition-fast);
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  user-select: none;
+  transform: translateZ(0);
 }
 
 .seg-btn:hover {
   color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.seg-btn:active {
+  transform: scale(0.97);
 }
 
 .seg-btn.active {
   background: var(--bg-surface-elevated);
   color: var(--text-primary);
   font-weight: 600;
-  box-shadow: var(--shadow-sm);
-  border: 1px solid var(--border-default);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  border-color: var(--border-default);
 }
 
-.seg-indicator {
-  display: inline-block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--status-emerald);
-  margin-right: 5px;
-}
-
+.seg-indicator,
 .weather-indicator {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  margin-right: 6px;
+  display: none !important;
 }
-.weather-indicator.dry { background: var(--status-amber); }
-.weather-indicator.damp { background: var(--status-cyan); }
-.weather-indicator.wet { background: var(--accent-blue); }
 
 /* ==========================================================================
    QUICK LOAD DEMO PRESETS (ELEGANT INTERACTIVE CARDS)
@@ -3053,12 +3070,17 @@ textarea {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(0);
 }
 
 .vault-nav-btn:hover {
   background: rgba(255, 255, 255, 0.1);
   border-color: var(--border-default);
+}
+
+.vault-nav-btn:active {
+  transform: scale(0.97);
 }
 
 .vault-badge-count {
