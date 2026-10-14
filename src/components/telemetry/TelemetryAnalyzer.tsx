@@ -9,6 +9,8 @@ import { generateTrackMapData } from "@/lib/track-map-generator";
 import { GGFrictionCircle } from "./GGFrictionCircle";
 import { DamperHistogramViewer } from "./DamperHistogramViewer";
 import { DynamicAeroMapViewer } from "./DynamicAeroMapViewer";
+import { EndurancePitStrategist } from "./EndurancePitStrategist";
+import { StintConsistencyAnalyzer } from "./StintConsistencyAnalyzer";
 import { TrackMap2D } from "./TrackMap2D";
 import { computeDamperHistograms } from "@/lib/damper-histogram-calculator";
 import { computeDynamicAeroMap } from "@/lib/aero-map-calculator";
@@ -92,7 +94,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   const [result, setResult] = useState<TelemetryAnalysisResult | null>(null);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
   const [workspaceTab, setWorkspaceTab] = useState<
-    "overview" | "dynamics" | "dampers" | "aero" | "setup" | "all"
+    "overview" | "dynamics" | "dampers" | "aero" | "strategy" | "setup" | "all"
   >("overview");
 
   // Chart State
@@ -197,7 +199,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       const tabParam = params.get("tab") as any;
       if (
         tabParam &&
-        ["overview", "dynamics", "dampers", "aero", "setup", "all"].includes(tabParam)
+        ["overview", "dynamics", "dampers", "aero", "strategy", "setup", "all"].includes(tabParam)
       ) {
         setWorkspaceTab(tabParam);
       }
@@ -2035,6 +2037,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   { id: "dynamics", label: "Grip & Dynamics", count: "G-G & Slip" },
                   { id: "dampers", label: "Suspension & Dampers", count: "4-Corner MoTeC" },
                   { id: "aero", label: "Aero & Ride Heights", count: "Aero Map" },
+                  { id: "strategy", label: "Strategy & Stint", count: "Fuel & Deg" },
                   { id: "setup", label: "Tyres & Setup", count: result ? "Calibrated Spec" : "HUD & AI" },
                   { id: "all", label: "All Modules", count: "Full View" },
                 ].map((tab) => {
@@ -2446,7 +2449,19 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </>
             )}
 
-            {/* 5. TYRES & SETUP WORKSHEET */}
+            {/* 5. STRATEGY & STINT WORKSHEET */}
+            {(workspaceTab === "strategy" || workspaceTab === "all") && (
+              <>
+                {parsedTelemetry?.enduranceStrategy && (
+                  <EndurancePitStrategist data={parsedTelemetry.enduranceStrategy} />
+                )}
+                {parsedTelemetry?.stintConsistency && (
+                  <StintConsistencyAnalyzer data={parsedTelemetry.stintConsistency} />
+                )}
+              </>
+            )}
+
+            {/* 6. TYRES & SETUP WORKSHEET */}
             {(workspaceTab === "setup" || workspaceTab === "all") && (
               <>
                 {/* 3. 4-Corner Tyre Thermal & Pressure Calibration HUD */}

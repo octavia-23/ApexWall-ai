@@ -154,6 +154,8 @@ export interface ParsedTelemetryFile {
   driverVsCar?: DriverVsCarDiagnostics;
   damperHistograms?: DamperHistogramAnalysis;
   aeroMap?: DynamicAeroMapAnalysis;
+  enduranceStrategy?: EnduranceStrategyAnalysis;
+  stintConsistency?: StintConsistencyAnalysis;
 }
 
 export interface AeroSpeedBin {
@@ -420,6 +422,8 @@ export interface TelemetryAnalysisResult {
   dataQuality?: TelemetryDataQuality;
   damperHistograms?: DamperHistogramAnalysis;
   aeroMap?: DynamicAeroMapAnalysis;
+  enduranceStrategy?: EnduranceStrategyAnalysis;
+  stintConsistency?: StintConsistencyAnalysis;
 }
 
 export interface GeneratedSetupResult {
@@ -516,3 +520,115 @@ export interface TrackMapData {
   sectors?: TrackSector[];
   bounds: { minX: number; maxX: number; minY: number; maxY: number };
 }
+
+// ----------------------------------------------------------------------------
+// ENDURANCE PIT STRATEGY & TYRE DEGRADATION TYPES
+// ----------------------------------------------------------------------------
+
+export interface StintLapForecast {
+  lap: number;
+  lapTime: string;
+  lapTimeSeconds: number;
+  fuelRemainingLiters: number;
+  tyreGripFrontPct: number;
+  tyreGripRearPct: number;
+  pressureFL: number;
+  pressureFR: number;
+  pressureRL: number;
+  pressureRR: number;
+  isPitWindow: boolean;
+  status: "cold" | "optimal" | "degraded" | "critical";
+}
+
+export interface LiftAndCoastAnalysis {
+  isRecommended: boolean;
+  liftDistanceMeters: number;
+  timeCostPerLapSeconds: number;
+  fuelSavedPerLapLiters: number;
+  stintLapsGained: number;
+  netTimeSavedSeconds: number;
+  pitStopSaved: boolean;
+  verdict: string;
+}
+
+export interface PitStrategyWindow {
+  tankCapacityLiters: number;
+  burnRatePerLapLiters: number;
+  maxStintLaps: number;
+  undercutLapStart: number;
+  idealPitLap: number;
+  maxOvercutLap: number;
+  fuelNeededToFinishLiters: number;
+  stintsRequired: number;
+  estimatedPitLaneDeltaSeconds: number;
+  strategyRecommendation: string;
+}
+
+export interface TyreDegradationAnalysis {
+  degradationRatePerLapSeconds: number;
+  wearLifespanLaps: number;
+  limitingTyreCorner: "FL" | "FR" | "RL" | "RR";
+  thermalDriftOnsetLap: number;
+  cliffLap: number;
+  verdict: string;
+}
+
+export interface EnduranceStrategyAnalysis {
+  raceDurationMinutes: number;
+  fuelWindow: PitStrategyWindow;
+  tyreDegradation: TyreDegradationAnalysis;
+  liftAndCoast: LiftAndCoastAnalysis;
+  stintForecast: StintLapForecast[];
+  executiveStrategyPlan: string;
+}
+
+// ----------------------------------------------------------------------------
+// MULTI-LAP CONSISTENCY & BRAKING POINT DRIFT TYPES
+// ----------------------------------------------------------------------------
+
+export interface BrakingMigrationCorner {
+  cornerName: string;
+  dist: number;
+  earlyStintBrakeDistMeters: number;
+  lateStintBrakeDistMeters: number;
+  migrationDeltaMeters: number;
+  decelerationPeakEarlyG: number;
+  decelerationPeakLateG: number;
+  verdict: "creeping_early" | "drifting_deep" | "rock_solid" | "inconsistent";
+  analysisText: string;
+}
+
+export interface StintLapPace {
+  lap: number;
+  lapTime: string;
+  lapTimeSeconds: number;
+  deltaFromBestSeconds: number;
+  consistencyScore: number;
+  sector1Time: number;
+  sector2Time: number;
+  sector3Time: number;
+  hasTraffic: boolean;
+}
+
+export interface ThermalEquilibriumTracking {
+  plateauLap: number;
+  optimalWindowLapsStart: number;
+  optimalWindowLapsEnd: number;
+  stabilizedPressureFrontPsi: number;
+  stabilizedPressureRearPsi: number;
+  stabilizedCoreTempC: number;
+  verdict: string;
+}
+
+export interface StintConsistencyAnalysis {
+  stintLapsAnalyzed: number;
+  overallConsistencyRatingPct: number;
+  lapTimeVarianceStdDev: number;
+  bestLapTime: string;
+  averageLapTime: string;
+  thermalEquilibrium: ThermalEquilibriumTracking;
+  brakingMigration: BrakingMigrationCorner[];
+  lapPaces: StintLapPace[];
+  driverConsistencyVerdict: string;
+}
+

@@ -15,6 +15,8 @@ import {
 } from "./numeric-parser";
 import { computeDamperHistograms } from "./damper-histogram-calculator";
 import { computeDynamicAeroMap } from "./aero-map-calculator";
+import { computeEndurancePitStrategy } from "./endurance-strategy-calculator";
+import { computeStintConsistencyAnalysis } from "./stint-consistency-analyzer";
 
 export function parseTelemetryCSV(
   csvText: string,
@@ -719,6 +721,8 @@ export function parseTelemetryCSV(
     driverVsCar,
     damperHistograms,
     aeroMap,
+    enduranceStrategy: computeEndurancePitStrategy(downsampled, lapTimeFormatted),
+    stintConsistency: computeStintConsistencyAnalysis(downsampled, lapTimeFormatted),
     points: downsampled,
     channels: Object.keys(headerMap),
   };
