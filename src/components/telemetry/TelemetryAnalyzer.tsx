@@ -8,8 +8,10 @@ import { computeGGFrictionCircle } from "@/lib/telemetry-friction-circle";
 import { generateTrackMapData } from "@/lib/track-map-generator";
 import { GGFrictionCircle } from "./GGFrictionCircle";
 import { DamperHistogramViewer } from "./DamperHistogramViewer";
+import { DynamicAeroMapViewer } from "./DynamicAeroMapViewer";
 import { TrackMap2D } from "./TrackMap2D";
 import { computeDamperHistograms } from "@/lib/damper-histogram-calculator";
+import { computeDynamicAeroMap } from "@/lib/aero-map-calculator";
 import {
   ParsedTelemetryFile,
   TelemetryAnalysisResult,
@@ -558,6 +560,14 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         parsed.damperHistograms = computeDamperHistograms(parsed.points);
       } catch (errDamper) {
         console.warn("Could not compute damper histograms:", errDamper);
+      }
+    }
+
+    if (!parsed.aeroMap && parsed.points && parsed.points.length > 0) {
+      try {
+        parsed.aeroMap = computeDynamicAeroMap(parsed.points);
+      } catch (errAero) {
+        console.warn("Could not compute aero map:", errAero);
       }
     }
   };
@@ -2276,6 +2286,11 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             {/* MoTeC-Grade Damper Velocity Histograms */}
             {parsedTelemetry?.damperHistograms && (
               <DamperHistogramViewer data={parsedTelemetry.damperHistograms} />
+            )}
+
+            {/* Dynamic Ride Height & Aero Balance Mapper */}
+            {parsedTelemetry?.aeroMap && (
+              <DynamicAeroMapViewer data={parsedTelemetry.aeroMap} />
             )}
 
             {/* 2b. Corner Phase Balance & Slip Dynamics */}

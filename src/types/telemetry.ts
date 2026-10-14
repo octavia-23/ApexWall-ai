@@ -43,6 +43,10 @@ export interface TelemetryPoint {
   damperVelFR?: number | null;
   damperVelRL?: number | null;
   damperVelRR?: number | null;
+  rideHeightFL?: number | null; // Dynamic ride height in mm
+  rideHeightFR?: number | null;
+  rideHeightRL?: number | null;
+  rideHeightRR?: number | null;
   understeerAngle?: number | null; // Steering angle minus Ackermann angle (positive = understeer, negative = oversteer)
   quality?: Partial<Record<string, SampleQuality>>;
 }
@@ -149,6 +153,80 @@ export interface ParsedTelemetryFile {
   tyreOptimization?: TyreOptimizationReport;
   driverVsCar?: DriverVsCarDiagnostics;
   damperHistograms?: DamperHistogramAnalysis;
+  aeroMap?: DynamicAeroMapAnalysis;
+}
+
+export interface AeroSpeedBin {
+  speedRange: string; // e.g. "0-80", "80-140", "140-200", "200-260", "260+"
+  minSpeedKmh: number;
+  maxSpeedKmh: number;
+  sampleCount: number;
+  avgFrontRideHeightMm: number;
+  avgRearRideHeightMm: number;
+  avgDynamicRakeMm: number;
+  avgAeroBalancePct: number; // % Front Aero
+  avgDownforceKg: number;
+  avgDragKg: number;
+  liftToDragRatio: number;
+}
+
+export interface AeroRideHeightPoint {
+  dist: number;
+  speed: number;
+  frontRideHeightMm: number;
+  rearRideHeightMm: number;
+  dynamicRakeMm: number;
+  aeroBalanceFrontPct: number;
+  downforceKg: number;
+  isSplitterGrounding: boolean;
+  isDiffuserStalling: boolean;
+}
+
+export interface AeroGroundingEvent {
+  dist: number;
+  speedKmh: number;
+  frontRideHeightMm: number;
+  severity: "mild" | "moderate" | "severe";
+  locationDescription: string;
+}
+
+export interface AeroDiffuserStallEvent {
+  dist: number;
+  speedKmh: number;
+  rearRideHeightMm: number;
+  rakeMm: number;
+  locationDescription: string;
+}
+
+export interface PorpoisingAnalysis {
+  isDetected: boolean;
+  peakFrequencyHz: number;
+  maxOscillationMm: number;
+  speedAtOnsetKmh: number;
+  severity: "none" | "mild" | "critical";
+  summary: string;
+}
+
+export interface DynamicAeroMapAnalysis {
+  carArchetype: string;
+  staticFrontRideHeightMm: number;
+  staticRearRideHeightMm: number;
+  staticRakeMm: number;
+  staticAeroBalancePct: number;
+  peakDownforceKg: number;
+  topSpeedKmh: number;
+  minFrontRideHeightMm: number;
+  maxRearRideHeightMm: number;
+  averageAeroBalanceFrontPct: number;
+  speedBins: AeroSpeedBin[];
+  sampledProfile: AeroRideHeightPoint[];
+  groundingEvents: AeroGroundingEvent[];
+  diffuserStallEvents: AeroDiffuserStallEvent[];
+  porpoising: PorpoisingAnalysis;
+  pitchSensitivityVerdict: string;
+  aerodynamicEfficiencyScore: number; // 0 - 100
+  overallVerdict: string;
+  setupRecommendations: string[];
 }
 
 export type DamperCorner = "FL" | "FR" | "RL" | "RR";
@@ -341,6 +419,7 @@ export interface TelemetryAnalysisResult {
   driverVsCar?: DriverVsCarDiagnostics;
   dataQuality?: TelemetryDataQuality;
   damperHistograms?: DamperHistogramAnalysis;
+  aeroMap?: DynamicAeroMapAnalysis;
 }
 
 export interface GeneratedSetupResult {

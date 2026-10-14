@@ -14,6 +14,7 @@ import {
   safeMax,
 } from "./numeric-parser";
 import { computeDamperHistograms } from "./damper-histogram-calculator";
+import { computeDynamicAeroMap } from "./aero-map-calculator";
 
 export function parseTelemetryCSV(
   csvText: string,
@@ -82,6 +83,10 @@ export function parseTelemetryCSV(
     else if ((lower === "suspfr" || lower === "susp_fr") && !lower.includes("temp")) headerMap.suspFR = idx;
     else if ((lower === "susprl" || lower === "susp_rl") && !lower.includes("temp")) headerMap.suspRL = idx;
     else if ((lower === "susprr" || lower === "susp_rr") && !lower.includes("temp")) headerMap.suspRR = idx;
+    else if ((lower.includes("rideheight") || lower.includes("ride_height") || lower.startsWith("rh_")) && lower.includes("fl")) headerMap.rideHeightFL = idx;
+    else if ((lower.includes("rideheight") || lower.includes("ride_height") || lower.startsWith("rh_")) && lower.includes("fr")) headerMap.rideHeightFR = idx;
+    else if ((lower.includes("rideheight") || lower.includes("ride_height") || lower.startsWith("rh_")) && lower.includes("rl")) headerMap.rideHeightRL = idx;
+    else if ((lower.includes("rideheight") || lower.includes("ride_height") || lower.startsWith("rh_")) && lower.includes("rr")) headerMap.rideHeightRR = idx;
   });
 
   const parsedPoints: TelemetryPoint[] = [];
@@ -149,6 +154,11 @@ export function parseTelemetryCSV(
     let damperVelFR = headerMap.damperVelFR != null ? parseOptionalNumber(getRaw(headerMap.damperVelFR)) : null;
     let damperVelRL = headerMap.damperVelRL != null ? parseOptionalNumber(getRaw(headerMap.damperVelRL)) : null;
     let damperVelRR = headerMap.damperVelRR != null ? parseOptionalNumber(getRaw(headerMap.damperVelRR)) : null;
+
+    let rideHeightFL = headerMap.rideHeightFL != null ? parseOptionalNumber(getRaw(headerMap.rideHeightFL)) : null;
+    let rideHeightFR = headerMap.rideHeightFR != null ? parseOptionalNumber(getRaw(headerMap.rideHeightFR)) : null;
+    let rideHeightRL = headerMap.rideHeightRL != null ? parseOptionalNumber(getRaw(headerMap.rideHeightRL)) : null;
+    let rideHeightRR = headerMap.rideHeightRR != null ? parseOptionalNumber(getRaw(headerMap.rideHeightRR)) : null;
 
     // Normalize pedal inputs if 0..1 scale (CRITICAL: preserve genuine 0!)
     if (throttle != null) {
@@ -233,6 +243,10 @@ export function parseTelemetryCSV(
       damperVelFR,
       damperVelRL,
       damperVelRR,
+      rideHeightFL,
+      rideHeightFR,
+      rideHeightRL,
+      rideHeightRR,
       quality: {
         speed: speed != null ? "measured" : "missing",
         throttle: throttle != null ? "measured" : "missing",
@@ -662,6 +676,29 @@ export function parseTelemetryCSV(
     });
   }
 
+  const aeroMap = computeDynamicAeroMap(parsedPoints);
+  if (aeroMap.groundingEvents.some((g) => g.severity === "severe" || g.severity === "moderate")) {
+    detectedAnomalies.push({
+      location: "Front Splitter Floor Aerodynamics",
+      description: "Splitter strikes and floor grounding under peak aerodynamic downforce; downforce choking risk",
+      channel: "Aerodynamics",
+    });
+  }
+  if (aeroMap.diffuserStallEvents.length > 0) {
+    detectedAnomalies.push({
+      location: "Rear Diffuser Underfloor Aerodynamics",
+      description: "Diffuser expansion stall observed during trail-braking pitch dive; rear downforce shed",
+      channel: "Aerodynamics",
+    });
+  }
+  if (aeroMap.porpoising.isDetected) {
+    detectedAnomalies.push({
+      location: "High-Speed Aero Platform",
+      description: `Porpoising heave oscillation (${aeroMap.porpoising.maxOscillationMm}mm @ ${aeroMap.porpoising.peakFrequencyHz} Hz) detected above ${aeroMap.porpoising.speedAtOnsetKmh} km/h`,
+      channel: "Aerodynamics",
+    });
+  }
+
   return {
     filename,
     rawCount: parsedPoints.length,
@@ -681,6 +718,7 @@ export function parseTelemetryCSV(
     tyreOptimization,
     driverVsCar,
     damperHistograms,
+    aeroMap,
     points: downsampled,
     channels: Object.keys(headerMap),
   };
