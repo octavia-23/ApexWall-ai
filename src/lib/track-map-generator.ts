@@ -137,14 +137,19 @@ export function generateTrackMapData(
 
       return {
         dist: pt.dist,
+        time: pt.time,
         x: coord.x,
         y: coord.y,
         speed: pt.speed,
         throttle: pt.throttle,
         brake: pt.brake,
+        steer: pt.steer,
+        gear: pt.gear,
         latG: pt.latG,
         timeDelta: deltaPt ? deltaPt.timeDelta : undefined,
         refSpeed: deltaPt ? deltaPt.refSpeed : undefined,
+        refThrottle: deltaPt ? deltaPt.refThrottle : undefined,
+        refBrake: deltaPt ? deltaPt.refBrake : undefined,
       };
     });
 
@@ -256,14 +261,19 @@ export function generateTrackMapData(
 
     return {
       dist: pt.dist,
+      time: pt.time,
       x: normX,
       y: normY,
       speed: pt.speed,
       throttle: pt.throttle,
       brake: pt.brake,
+      steer: pt.steer,
+      gear: pt.gear,
       latG: pt.latG,
       timeDelta: deltaPt ? deltaPt.timeDelta : undefined,
       refSpeed: deltaPt ? deltaPt.refSpeed : undefined,
+      refThrottle: deltaPt ? deltaPt.refThrottle : undefined,
+      refBrake: deltaPt ? deltaPt.refBrake : undefined,
     };
   });
 

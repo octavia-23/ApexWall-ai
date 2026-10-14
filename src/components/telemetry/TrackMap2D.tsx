@@ -8,6 +8,12 @@ import {
   LapComparisonSummary,
 } from "@/types/telemetry";
 import { REAL_CIRCUITS, getCircuitsByCategory } from "@/lib/circuit-geometries";
+import {
+  calculateVehicleHeading,
+  formatLapTimestamp,
+  findSampleIndexAtTime,
+  calculateGhostPosition,
+} from "@/lib/ghost-replay-engine";
 
 interface TrackMap2DProps {
   data: TrackMapData;
@@ -39,6 +45,91 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
   const [showCorners, setShowCorners] = useState(true);
   const [showDrsSectors, setShowDrsSectors] = useState(true);
   const [hoveredCorner, setHoveredCorner] = useState<TrackCorner | null>(null);
+
+  // Synchronized Telemetry Replay & Virtual Ghost State
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
+  const [isLooping, setIsLooping] = useState(true);
+  const [showGhost, setShowGhost] = useState(true);
+  const [replayTimeSec, setReplayTimeSec] = useState<number>(0);
+
+  const animFrameRef = useRef<number | null>(null);
+  const lastTimestampRef = useRef<number | null>(null);
+
+  const totalLapTimeSec = useMemo(() => {
+    if (!data?.points || data.points.length === 0) return 90;
+    const lastPt = data.points[data.points.length - 1];
+    if (lastPt.time != null && lastPt.time > 0) return lastPt.time;
+    return data.totalDistance / 55;
+  }, [data]);
+
+  // Synchronize playback loop via requestAnimationFrame
+  useEffect(() => {
+    if (!isPlaying || !data?.points?.length) {
+      lastTimestampRef.current = null;
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+      return;
+    }
+
+    const step = (now: number) => {
+      if (lastTimestampRef.current === null) {
+        lastTimestampRef.current = now;
+      }
+      const dt = (now - lastTimestampRef.current) / 1000;
+      lastTimestampRef.current = now;
+
+      setReplayTimeSec((prev) => {
+        let next = prev + dt * playbackSpeed;
+        if (next >= totalLapTimeSec) {
+          if (isLooping) {
+            next = 0;
+          } else {
+            setIsPlaying(false);
+            next = totalLapTimeSec;
+          }
+        }
+
+        const targetIdx = findSampleIndexAtTime(data.points, next);
+        onHoverPoint?.(targetIdx);
+
+        return next;
+      });
+
+      animFrameRef.current = requestAnimationFrame(step);
+    };
+
+    animFrameRef.current = requestAnimationFrame(step);
+
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
+      }
+    };
+  }, [isPlaying, playbackSpeed, isLooping, totalLapTimeSec, data.points, onHoverPoint]);
+
+  const togglePlayback = () => {
+    if (isPlaying) {
+      setIsPlaying(false);
+    } else {
+      if (hoverIndex >= data.points.length - 2 || replayTimeSec >= totalLapTimeSec - 0.5) {
+        setReplayTimeSec(0);
+        onHoverPoint?.(0);
+      } else if (hoverIndex >= 0 && data.points[hoverIndex]?.time != null) {
+        setReplayTimeSec(data.points[hoverIndex].time!);
+      }
+      setIsPlaying(true);
+    }
+  };
+
+  const handleResetReplay = () => {
+    setIsPlaying(false);
+    setReplayTimeSec(0);
+    onHoverPoint?.(0);
+  };
 
   // Active corner resolved from hovered state or external activeCornerId
   const activeCorner = useMemo(() => {
@@ -457,36 +548,207 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
       });
     }
 
-    // 7. Active Car Position Dot (Synchronized with hoverIndex)
+    // 7. Active Driver Car, Virtual Ghost & Dynamic Tether
     if (hoverIndex >= 0 && hoverIndex < data.points.length) {
       const curPt = data.points[hoverIndex];
       const carX = toCanvasX(curPt.x);
       const carY = toCanvasY(curPt.y);
+      const driverHeading = calculateVehicleHeading(data.points, hoverIndex);
 
-      // Outer pulse glow
+      // 7A. Virtual Ghost Car & Elastic Telemetry Tether
+      if (showGhost) {
+        const ghostState = calculateGhostPosition(data.points, hoverIndex);
+        if (ghostState) {
+          const gx = toCanvasX(ghostState.x);
+          const gy = toCanvasY(ghostState.y);
+          const distBetweenPx = Math.hypot(gx - carX, gy - carY);
+
+          // Draw dynamic tether line if cars have separated
+          if (distBetweenPx > 10) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.moveTo(carX, carY);
+            ctx.lineTo(gx, gy);
+            ctx.strokeStyle = ghostState.distDelta > 0 ? "rgba(244, 63, 94, 0.65)" : "rgba(56, 189, 248, 0.65)";
+            ctx.lineWidth = 1.6;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Tether midpoint delta badge
+            const midX = (carX + gx) / 2;
+            const midY = (carY + gy) / 2;
+            const gapText = ghostState.distDelta > 0
+              ? `Ghost +${Math.abs(ghostState.distDelta)}m (+${Math.abs(ghostState.timeDelta)}s)`
+              : `Driver +${Math.abs(ghostState.distDelta)}m (-${Math.abs(ghostState.timeDelta)}s)`;
+
+            ctx.font = "bold 8.5px sans-serif";
+            const gtw = ctx.measureText(gapText).width + 10;
+            ctx.fillStyle = "rgba(10, 10, 15, 0.92)";
+            ctx.strokeStyle = ghostState.distDelta > 0 ? "rgba(244, 63, 94, 0.6)" : "rgba(56, 189, 248, 0.6)";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(midX - gtw / 2, midY - 7, gtw, 14, 3);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = ghostState.distDelta > 0 ? "#fca5a5" : "#7dd3fc";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(gapText, midX, midY + 0.5);
+            ctx.restore();
+          }
+
+          // Render Virtual Ghost Vehicle Silhouette
+          ctx.save();
+          ctx.translate(gx, gy);
+          ctx.rotate(ghostState.heading);
+
+          // Slipstream wake trails
+          ctx.strokeStyle = "rgba(212, 163, 115, 0.3)";
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(-10, -4);
+          ctx.lineTo(-24, -6);
+          ctx.moveTo(-10, 4);
+          ctx.lineTo(-24, 6);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Ghost body
+          ctx.fillStyle = "rgba(212, 163, 115, 0.35)";
+          ctx.strokeStyle = "#d4a373";
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(14, 0);
+          ctx.lineTo(8, -4);
+          ctx.lineTo(-6, -5);
+          ctx.lineTo(-11, -7);
+          ctx.lineTo(-13, -7);
+          ctx.lineTo(-13, 7);
+          ctx.lineTo(-11, 7);
+          ctx.lineTo(-6, 5);
+          ctx.lineTo(8, 4);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Ghost Front wing
+          ctx.beginPath();
+          ctx.moveTo(10, -7);
+          ctx.lineTo(10, 7);
+          ctx.strokeStyle = "#d4a373";
+          ctx.lineWidth = 2.2;
+          ctx.stroke();
+
+          // Core
+          ctx.beginPath();
+          ctx.arc(0, 0, 3, 0, Math.PI * 2);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.fill();
+          ctx.restore();
+
+          // Floating Ghost Speed Tag
+          ctx.save();
+          ctx.translate(gx, gy - 20);
+          const gText = `Ghost: ${Math.round(ghostState.speed)} km/h`;
+          ctx.font = "bold 9px sans-serif";
+          const gtw = ctx.measureText(gText).width + 10;
+          ctx.fillStyle = "rgba(24, 24, 27, 0.88)";
+          ctx.strokeStyle = "rgba(212, 163, 115, 0.7)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(-gtw / 2, -7.5, gtw, 15, 3);
+          ctx.fill();
+          ctx.stroke();
+          ctx.fillStyle = "#d4a373";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(gText, 0, 0.5);
+          ctx.restore();
+        }
+      }
+
+      // 7B. Render Driver Car
+      ctx.save();
+      ctx.translate(carX, carY);
+      ctx.rotate(driverHeading);
+
+      // Forward directional apex illumination beam
+      const beamGrad = ctx.createLinearGradient(0, 0, 34, 0);
+      beamGrad.addColorStop(0, "rgba(56, 189, 248, 0.45)");
+      beamGrad.addColorStop(1, "rgba(56, 189, 248, 0.0)");
+      ctx.fillStyle = beamGrad;
       ctx.beginPath();
-      ctx.arc(carX, carY, 15, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(56, 189, 248, 0.28)";
+      ctx.moveTo(12, 0);
+      ctx.lineTo(36, -11);
+      ctx.lineTo(36, 11);
+      ctx.closePath();
       ctx.fill();
 
-      // Mid ring
+      // Chassis body
+      ctx.fillStyle = "#0F172A";
+      ctx.strokeStyle = "#38BDF8";
+      ctx.lineWidth = 2.0;
       ctx.beginPath();
-      ctx.arc(carX, carY, 8.5, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(56, 189, 248, 0.55)";
+      ctx.moveTo(14, 0);
+      ctx.lineTo(8, -4);
+      ctx.lineTo(-6, -5);
+      ctx.lineTo(-11, -7);
+      ctx.lineTo(-13, -7);
+      ctx.lineTo(-13, 7);
+      ctx.lineTo(-11, 7);
+      ctx.lineTo(-6, 5);
+      ctx.lineTo(8, 4);
+      ctx.closePath();
       ctx.fill();
-
-      // Center solid core
-      ctx.beginPath();
-      ctx.arc(carX, carY, 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fill();
-      ctx.strokeStyle = "#0284C7";
-      ctx.lineWidth = 1.8;
       ctx.stroke();
+
+      // Front wing
+      ctx.beginPath();
+      ctx.moveTo(10, -8);
+      ctx.lineTo(10, 8);
+      ctx.strokeStyle = "#FFFFFF";
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      // Wheels
+      ctx.fillStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.fillRect(5, -9, 5, 2.5);
+      ctx.fillRect(5, 6.5, 5, 2.5);
+      ctx.fillRect(-9, -9.5, 6, 2.5);
+      ctx.fillRect(-9, 7, 6, 2.5);
+
+      // Cockpit Halo Core
+      ctx.beginPath();
+      ctx.arc(0, 0, 3.5, 0, Math.PI * 2);
+      ctx.fillStyle = "#38BDF8";
+      ctx.fill();
+      ctx.restore();
+
+      // Floating Driver Telemetry Tag
+      ctx.save();
+      ctx.translate(carX, carY - 20);
+      const dText = `Driver: ${Math.round(curPt.speed || 0)} km/h${curPt.gear ? ` • G${curPt.gear}` : ""}`;
+      ctx.font = "bold 9px sans-serif";
+      const dtw = ctx.measureText(dText).width + 10;
+      ctx.fillStyle = "rgba(15, 23, 42, 0.92)";
+      ctx.strokeStyle = "rgba(56, 189, 248, 0.7)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.roundRect(-dtw / 2, -7.5, dtw, 15, 3);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = "#38BDF8";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(dText, 0, 0.5);
+      ctx.restore();
     }
 
     ctx.restore();
-  }, [data, colorMode, showCorners, showDrsSectors, hoverIndex, activeCorner]);
+  }, [data, colorMode, showCorners, showDrsSectors, hoverIndex, activeCorner, showGhost]);
 
   // Handle user scrubbing on the track map canvas
   const handleCanvasMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -868,6 +1130,129 @@ export const TrackMap2D: React.FC<TrackMap2DProps> = ({
             </button>
           </div>
         )}
+      </div>
+
+      {/* Synced Telemetry Replay & Virtual Ghost Deck */}
+      <div className="trackmap-replay-deck">
+        <div className="replay-deck-left">
+          <button
+            type="button"
+            className={`replay-btn replay-play-btn ${isPlaying ? "active" : ""}`}
+            onClick={togglePlayback}
+            title={isPlaying ? "Pause Telemetry Replay" : "Play Synced Telemetry Replay"}
+          >
+            {isPlaying ? (
+              <>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1" />
+                  <rect x="14" y="4" width="4" height="16" rx="1" />
+                </svg>
+                <span>PAUSE</span>
+              </>
+            ) : (
+              <>
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+                  <polygon points="5 3 19 12 5 21 5 3" />
+                </svg>
+                <span>PLAY REPLAY</span>
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className="replay-btn replay-reset-btn"
+            onClick={handleResetReplay}
+            title="Rewind to Start / Finish"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2.4">
+              <polygon points="19 20 9 12 19 4 19 20" />
+              <line x1="5" y1="19" x2="5" y2="5" />
+            </svg>
+          </button>
+
+          {/* Speed Multipliers */}
+          <div className="replay-speed-group">
+            {[0.5, 1.0, 2.0, 4.0].map((spd) => (
+              <button
+                key={spd}
+                type="button"
+                className={`replay-speed-btn ${playbackSpeed === spd ? "active" : ""}`}
+                onClick={() => setPlaybackSpeed(spd)}
+              >
+                {spd === 1.0 ? "1x Real-Time" : `${spd}x`}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Center: Live Scrubber & Time Display */}
+        <div className="replay-deck-center">
+          <div className="replay-time-display font-sans">
+            <span className="replay-time-cur text-sky-400 font-medium">
+              {formatLapTimestamp(
+                currentHoverPoint?.time != null
+                  ? currentHoverPoint.time
+                  : hoverIndex >= 0 && data.points.length > 0
+                  ? (hoverIndex / (data.points.length - 1)) * totalLapTimeSec
+                  : replayTimeSec
+              )}
+            </span>
+            <span className="text-zinc-500">/</span>
+            <span className="replay-time-total text-zinc-400">
+              {formatLapTimestamp(totalLapTimeSec)}
+            </span>
+            <span className="replay-dist-tag text-zinc-400 text-[11px] ml-1">
+              ({Math.round(currentHoverPoint?.dist ?? 0)}m / {Math.round(data.totalDistance)}m)
+            </span>
+          </div>
+
+          <input
+            type="range"
+            min={0}
+            max={Math.max(1, data.points.length - 1)}
+            value={hoverIndex >= 0 ? hoverIndex : 0}
+            onChange={(e) => {
+              const idx = parseInt(e.target.value, 10);
+              onHoverPoint?.(idx);
+              if (data.points[idx]?.time != null) {
+                setReplayTimeSec(data.points[idx].time!);
+              }
+            }}
+            className="replay-progress-slider"
+          />
+        </div>
+
+        {/* Right: Ghost & Loop Toggles */}
+        <div className="replay-deck-right">
+          <button
+            type="button"
+            className={`replay-pill-toggle ${showGhost ? "active-ghost" : ""}`}
+            onClick={() => setShowGhost(!showGhost)}
+            title="Toggle Virtual Ghost Car on track"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            <span>{showGhost ? "Ghost Car ON" : "Ghost Car OFF"}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`replay-pill-toggle ${isLooping ? "active-loop" : ""}`}
+            onClick={() => setIsLooping(!isLooping)}
+            title="Toggle automatic lap replay looping"
+          >
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="17 1 21 5 17 9" />
+              <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+              <polyline points="7 23 3 19 7 15" />
+              <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+            </svg>
+            <span>{isLooping ? "Loop Lap" : "Once"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Legend & Quick Corner Navigation Bar */}

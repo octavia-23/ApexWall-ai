@@ -476,14 +476,19 @@ export interface TrackCorner {
 
 export interface TrackMapPoint {
   dist: number;
+  time?: number;
   x: number;
   y: number;
   speed: number | null;
   throttle: number | null;
   brake: number | null;
+  steer?: number | null;
+  gear?: number | null;
   latG: number | null;
   timeDelta?: number;
   refSpeed?: number | null;
+  refThrottle?: number | null;
+  refBrake?: number | null;
   cornerName?: string;
 }
 
