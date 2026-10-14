@@ -91,6 +91,9 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   const [errorMessage, setErrorMessage] = useState("");
   const [result, setResult] = useState<TelemetryAnalysisResult | null>(null);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
+  const [workspaceTab, setWorkspaceTab] = useState<
+    "overview" | "dynamics" | "dampers" | "aero" | "setup" | "all"
+  >("overview");
 
   // Chart State
   const [activeChannel, setActiveChannel] = useState<
@@ -190,6 +193,13 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       const presetParam = params.get("preset");
       if (presetParam) {
         loadPreset(presetParam);
+      }
+      const tabParam = params.get("tab") as any;
+      if (
+        tabParam &&
+        ["overview", "dynamics", "dampers", "aero", "setup", "all"].includes(tabParam)
+      ) {
+        setWorkspaceTab(tabParam);
       }
     }
 
@@ -2017,8 +2027,60 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </div>
             )}
 
-            {/* Pro Benchmark / Autonomous Corner Analysis Strip */}
-            {lapComparison && (
+            {/* MoTeC / WinDARAB-Grade Worksheet Navigation Tabs */}
+            <div className="sticky top-2 z-20 flex items-center justify-between gap-2 p-1.5 rounded-lg bg-zinc-950/95 backdrop-blur-md border border-white/10 shadow-xl my-3">
+              <div className="flex items-center gap-1 overflow-x-auto scrollbar-none py-0.5">
+                {[
+                  { id: "overview", label: "Overview & GPS", count: "4 Views" },
+                  { id: "dynamics", label: "Grip & Dynamics", count: "G-G & Slip" },
+                  { id: "dampers", label: "Suspension & Dampers", count: "4-Corner MoTeC" },
+                  { id: "aero", label: "Aero & Ride Heights", count: "Aero Map" },
+                  { id: "setup", label: "Tyres & Setup", count: result ? "Calibrated Spec" : "HUD & AI" },
+                  { id: "all", label: "All Modules", count: "Full View" },
+                ].map((tab) => {
+                  const isActive = workspaceTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => {
+                        setWorkspaceTab(tab.id as any);
+                        if (typeof window !== "undefined") {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set("tab", tab.id);
+                          window.history.replaceState({}, "", url.toString());
+                        }
+                      }}
+                      className={`flex items-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-sans font-medium transition-all duration-150 whitespace-nowrap ${
+                        isActive
+                          ? "bg-[#d4a373] text-black shadow-sm font-semibold"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <span>{tab.label}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.5 rounded font-sans ${
+                          isActive
+                            ? "bg-black/20 text-black/90 font-medium"
+                            : "bg-white/[0.06] text-zinc-400"
+                        }`}
+                      >
+                        {tab.count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="hidden sm:flex items-center gap-2 px-2 text-[11px] text-zinc-400 font-sans border-l border-white/10 shrink-0">
+                <span>MoTeC M1 Telemetry Workspace</span>
+              </div>
+            </div>
+
+            {/* 1. OVERVIEW & GPS WORKSHEET */}
+            {(workspaceTab === "overview" || workspaceTab === "all") && (
+              <>
+                {/* Pro Benchmark / Autonomous Corner Analysis Strip */}
+                {lapComparison && (
               <div className="benchmark-strip">
                 <div className="benchmark-info">
                   <span className="benchmark-badge">
@@ -2277,100 +2339,120 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 </div>
               </div>
             )}
-
-            {/* G-G Friction Circle & Grip Envelope Module */}
-            {frictionCircleData && (
-              <GGFrictionCircle data={frictionCircleData} hoverIndex={hoverIndex} />
+              </>
             )}
 
-            {/* MoTeC-Grade Damper Velocity Histograms */}
-            {parsedTelemetry?.damperHistograms && (
-              <DamperHistogramViewer data={parsedTelemetry.damperHistograms} />
-            )}
+            {/* 2. GRIP & DYNAMICS WORKSHEET */}
+            {(workspaceTab === "dynamics" || workspaceTab === "all") && (
+              <>
+                {/* G-G Friction Circle & Grip Envelope Module */}
+                {frictionCircleData && (
+                  <GGFrictionCircle data={frictionCircleData} hoverIndex={hoverIndex} />
+                )}
 
-            {/* Dynamic Ride Height & Aero Balance Mapper */}
-            {parsedTelemetry?.aeroMap && (
-              <DynamicAeroMapViewer data={parsedTelemetry.aeroMap} />
-            )}
-
-            {/* 2b. Corner Phase Balance & Slip Dynamics */}
-            {parsedTelemetry?.phaseBalance && (
-              <div className="telemetry-balance-module glass-card-nested">
-                <div className="module-header">
-                  <span className="module-title">Corner Phase Balance (Steering vs Ackermann Slip)</span>
-                  <span className="module-badge">Dynamic Vehicle Balance</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3">
-                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
-                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Entry Phase</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-sm font-semibold ${
-                        parsedTelemetry.phaseBalance.entry === "Understeer"
-                          ? "text-amber-400"
-                          : parsedTelemetry.phaseBalance.entry === "Oversteer"
-                          ? "text-rose-400"
-                          : "text-emerald-400"
-                      }`}>
-                        {parsedTelemetry.phaseBalance.entry}
-                      </span>
-                      <span className="text-xs font-mono text-zinc-400">
-                        {parsedTelemetry.phaseBalance.entryDeltaDeg > 0 ? "+" : ""}
-                        {parsedTelemetry.phaseBalance.entryDeltaDeg.toFixed(1)}° slip
-                      </span>
+                {/* Corner Phase Balance & Slip Dynamics */}
+                {parsedTelemetry?.phaseBalance && (
+                  <div className="telemetry-balance-module glass-card-nested">
+                    <div className="module-header">
+                      <span className="module-title">Corner Phase Balance (Steering vs Ackermann Slip)</span>
+                      <span className="module-badge">Dynamic Vehicle Balance</span>
                     </div>
-                    <div className="text-[11px] text-zinc-400 mt-1">Trail-braking yaw response</div>
-                  </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 p-3">
+                      <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                        <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Entry Phase</div>
+                        <div className="flex items-baseline justify-between">
+                          <span className={`text-sm font-semibold ${
+                            parsedTelemetry.phaseBalance.entry === "Understeer"
+                              ? "text-amber-400"
+                              : parsedTelemetry.phaseBalance.entry === "Oversteer"
+                              ? "text-rose-400"
+                              : "text-emerald-400"
+                          }`}>
+                            {parsedTelemetry.phaseBalance.entry}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-400">
+                            {parsedTelemetry.phaseBalance.entryDeltaDeg > 0 ? "+" : ""}
+                            {parsedTelemetry.phaseBalance.entryDeltaDeg.toFixed(1)}° slip
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-zinc-400 mt-1">Trail-braking yaw response</div>
+                      </div>
 
-                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
-                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Mid-Corner (Apex)</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-sm font-semibold ${
-                        parsedTelemetry.phaseBalance.mid === "Understeer"
-                          ? "text-amber-400"
-                          : parsedTelemetry.phaseBalance.mid === "Oversteer"
-                          ? "text-rose-400"
-                          : "text-emerald-400"
-                      }`}>
-                        {parsedTelemetry.phaseBalance.mid}
-                      </span>
-                      <span className="text-xs font-mono text-zinc-400">
-                        {parsedTelemetry.phaseBalance.midDeltaDeg > 0 ? "+" : ""}
-                        {parsedTelemetry.phaseBalance.midDeltaDeg.toFixed(1)}° slip
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-400 mt-1">Mechanical roll stiffness balance</div>
-                  </div>
+                      <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                        <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Mid-Corner (Apex)</div>
+                        <div className="flex items-baseline justify-between">
+                          <span className={`text-sm font-semibold ${
+                            parsedTelemetry.phaseBalance.mid === "Understeer"
+                              ? "text-amber-400"
+                              : parsedTelemetry.phaseBalance.mid === "Oversteer"
+                              ? "text-rose-400"
+                              : "text-emerald-400"
+                          }`}>
+                            {parsedTelemetry.phaseBalance.mid}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-400">
+                            {parsedTelemetry.phaseBalance.midDeltaDeg > 0 ? "+" : ""}
+                            {parsedTelemetry.phaseBalance.midDeltaDeg.toFixed(1)}° slip
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-zinc-400 mt-1">Mechanical roll stiffness balance</div>
+                      </div>
 
-                  <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
-                    <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Exit Phase</div>
-                    <div className="flex items-baseline justify-between">
-                      <span className={`text-sm font-semibold ${
-                        parsedTelemetry.phaseBalance.exit === "Understeer"
-                          ? "text-amber-400"
-                          : parsedTelemetry.phaseBalance.exit === "Oversteer"
-                          ? "text-rose-400"
-                          : "text-emerald-400"
-                      }`}>
-                        {parsedTelemetry.phaseBalance.exit}
-                      </span>
-                      <span className="text-xs font-mono text-zinc-400">
-                        {parsedTelemetry.phaseBalance.exitDeltaDeg > 0 ? "+" : ""}
-                        {parsedTelemetry.phaseBalance.exitDeltaDeg.toFixed(1)}° slip
-                      </span>
+                      <div className="p-3 bg-zinc-900/60 rounded border border-zinc-800/80">
+                        <div className="text-[11px] text-zinc-400 font-mono uppercase tracking-wider mb-1">Exit Phase</div>
+                        <div className="flex items-baseline justify-between">
+                          <span className={`text-sm font-semibold ${
+                            parsedTelemetry.phaseBalance.exit === "Understeer"
+                              ? "text-amber-400"
+                              : parsedTelemetry.phaseBalance.exit === "Oversteer"
+                              ? "text-rose-400"
+                              : "text-emerald-400"
+                          }`}>
+                            {parsedTelemetry.phaseBalance.exit}
+                          </span>
+                          <span className="text-xs font-mono text-zinc-400">
+                            {parsedTelemetry.phaseBalance.exitDeltaDeg > 0 ? "+" : ""}
+                            {parsedTelemetry.phaseBalance.exitDeltaDeg.toFixed(1)}° slip
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-zinc-400 mt-1">Throttle pickup & diff lock</div>
+                      </div>
                     </div>
-                    <div className="text-[11px] text-zinc-400 mt-1">Throttle pickup & diff lock</div>
+                    <div className="px-3 pb-3 text-xs text-zinc-400 font-mono">
+                      Verdict: <span className="text-zinc-200">{parsedTelemetry.phaseBalance.verdict}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="px-3 pb-3 text-xs text-zinc-400 font-mono">
-                  Verdict: <span className="text-zinc-200">{parsedTelemetry.phaseBalance.verdict}</span>
-                </div>
-              </div>
+                )}
+              </>
             )}
 
-            {/* 3. 4-Corner Tyre Thermal & Pressure Calibration HUD */}
-            {parsedTelemetry?.tyreStats && (
-              <div className="telemetry-tyres-module glass-card-nested">
-                <div className="module-header">
+            {/* 3. SUSPENSION & DAMPERS WORKSHEET */}
+            {(workspaceTab === "dampers" || workspaceTab === "all") && (
+              <>
+                {/* MoTeC-Grade Damper Velocity Histograms */}
+                {parsedTelemetry?.damperHistograms && (
+                  <DamperHistogramViewer data={parsedTelemetry.damperHistograms} />
+                )}
+              </>
+            )}
+
+            {/* 4. AERO & RIDE HEIGHTS WORKSHEET */}
+            {(workspaceTab === "aero" || workspaceTab === "all") && (
+              <>
+                {/* Dynamic Ride Height & Aero Balance Mapper */}
+                {parsedTelemetry?.aeroMap && (
+                  <DynamicAeroMapViewer data={parsedTelemetry.aeroMap} />
+                )}
+              </>
+            )}
+
+            {/* 5. TYRES & SETUP WORKSHEET */}
+            {(workspaceTab === "setup" || workspaceTab === "all") && (
+              <>
+                {/* 3. 4-Corner Tyre Thermal & Pressure Calibration HUD */}
+                {parsedTelemetry?.tyreStats && (
+                  <div className="telemetry-tyres-module glass-card-nested">
+                    <div className="module-header">
                   <span className="module-title">Tyre Pressures & Temperatures</span>
                   <span className="module-badge">
                     {parsedTelemetry.tyreOptimization ? "Empirical Cold Calibration" : "4-Corner Thermal Spread"}
@@ -2723,24 +2805,6 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 <p>{result.pitRadioMessage}</p>
               </div>
             </div>
-
-            {/* 10. Footer Reset Button */}
-            <div className="result-footer-actions">
-              <button
-                type="button"
-                className="reset-btn"
-                onClick={() => {
-                  setState("empty");
-                  setResult(null);
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M1 4v6h6M23 20v-6h-6" />
-                  <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
-                </svg>
-                <span>Analyze another telemetry stint</span>
-              </button>
-            </div>
           </>
         ) : (
           <div className="p-5 rounded-lg border border-slate-700/60 bg-slate-900/40 flex flex-col md:flex-row items-center justify-between gap-4 my-4">
@@ -2762,6 +2826,26 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
             </button>
           </div>
         )}
+              </>
+            )}
+
+            {/* Universal Footer Reset Button */}
+            <div className="result-footer-actions">
+              <button
+                type="button"
+                className="reset-btn"
+                onClick={() => {
+                  setState("empty");
+                  setResult(null);
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M1 4v6h6M23 20v-6h-6" />
+                  <path d="M20.49 9A9 9 0 005.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
+                </svg>
+                <span>Analyze another telemetry stint</span>
+              </button>
+            </div>
       </div>
     )}
       </section>
