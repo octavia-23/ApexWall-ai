@@ -181,6 +181,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
 
     checkRigStatus();
     const interval = setInterval(checkRigStatus, 3000);
+
+    // Auto-load preset from URL query parameter (e.g. ?preset=spa)
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const presetParam = params.get("preset");
+      if (presetParam) {
+        loadPreset(presetParam);
+      }
+    }
+
     return () => {
       isMounted = false;
       clearInterval(interval);
