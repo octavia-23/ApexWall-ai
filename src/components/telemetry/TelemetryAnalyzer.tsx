@@ -15,6 +15,8 @@ import { TrackMap2D } from "./TrackMap2D";
 import { CornerLedgerViewer } from "./CornerLedgerViewer";
 import { AeroTrimCalculator } from "./AeroTrimCalculator";
 import { TrailBrakingMaster } from "./TrailBrakingMaster";
+import { SuspensionKinematicsVisualizer } from "./SuspensionKinematicsVisualizer";
+import { LapTimeSimulatorViewer } from "./LapTimeSimulatorViewer";
 import { computeDamperHistograms } from "@/lib/damper-histogram-calculator";
 import { computeDynamicAeroMap } from "@/lib/aero-map-calculator";
 import {
@@ -97,7 +99,7 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
   const [result, setResult] = useState<TelemetryAnalysisResult | null>(null);
   const [loadingTextIndex, setLoadingTextIndex] = useState(0);
   const [workspaceTab, setWorkspaceTab] = useState<
-    "overview" | "dynamics" | "dampers" | "aero" | "strategy" | "setup" | "all"
+    "overview" | "dynamics" | "dampers" | "kinematics" | "aero" | "strategy" | "simulation" | "setup" | "all"
   >("overview");
 
   // Chart State
@@ -2107,9 +2109,11 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 {[
                   { id: "overview", label: "Overview & GPS", count: "4 Views" },
                   { id: "dynamics", label: "Grip & Dynamics", count: "G-G & Slip" },
-                  { id: "dampers", label: "Suspension & Dampers", count: "4-Corner MoTeC" },
+                  { id: "dampers", label: "Damper Histograms", count: "4-Corner" },
+                  { id: "kinematics", label: "Roll Center 2D", count: "Geometry" },
                   { id: "aero", label: "Aero & Ride Heights", count: "Aero Map" },
                   { id: "strategy", label: "Strategy & Stint", count: "Fuel & Deg" },
+                  { id: "simulation", label: "Lap Simulator", count: "QSS Solver" },
                   { id: "setup", label: "Tyres & Setup", count: result ? "Calibrated Spec" : "HUD & AI" },
                   { id: "all", label: "All Modules", count: "Full View" },
                 ].map((tab) => {
@@ -2556,6 +2560,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               </>
             )}
 
+            {/* 3b. SUSPENSION ROLL CENTER & KINEMATICS WORKSHEET */}
+            {(workspaceTab === "kinematics" || workspaceTab === "all") && (
+              <SuspensionKinematicsVisualizer
+                initialArchetype="gt3"
+                onApplyCamberToSetup={(camber, axle) => {
+                  console.info(`Applied ${camber}° dynamic camber to ${axle} setup.`);
+                }}
+              />
+            )}
+
             {/* 4. AERO & RIDE HEIGHTS WORKSHEET */}
             {(workspaceTab === "aero" || workspaceTab === "all") && (
               <>
@@ -2586,6 +2600,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <StintConsistencyAnalyzer data={parsedTelemetry.stintConsistency} />
                 )}
               </>
+            )}
+
+            {/* 5b. LAP TIME SIMULATOR & SETUP SENSITIVITY */}
+            {(workspaceTab === "simulation" || workspaceTab === "all") && (
+              <LapTimeSimulatorViewer
+                initialTrack={track || "Autodromo Nazionale Monza"}
+                onApplyTrimToSetup={(sens) => {
+                  console.info(`Applied sensitivity trim ${sens} to active setup.`);
+                }}
+              />
             )}
 
             {/* 6. TYRES & SETUP WORKSHEET */}

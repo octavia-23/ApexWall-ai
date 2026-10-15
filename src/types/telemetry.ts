@@ -743,4 +743,115 @@ export interface TrailBrakingAnalysis {
   techniqueSummary: string;
 }
 
+// ----------------------------------------------------------------------------
+// SUSPENSION ROLL CENTER & CAMBER GAIN KINEMATICS TYPES
+// ----------------------------------------------------------------------------
+
+export interface Point2D {
+  y: number; // lateral position from centerline (mm)
+  z: number; // vertical height above ground (mm)
+}
+
+export interface SuspensionHardpoints {
+  upperInboard: Point2D;
+  upperOutboard: Point2D;
+  lowerInboard: Point2D;
+  lowerOutboard: Point2D;
+  wheelCenter: Point2D;
+  contactPatch: Point2D;
+}
+
+export interface AxleKinematicsResult {
+  axle: "front" | "rear";
+  staticRollCenterHeightMm: number;
+  instantCenter: Point2D;
+  virtualSwingArmLengthMm: number;
+  camberGainDegPerMm: number; // deg/mm of vertical wheel displacement
+  jackingForceRatio: number; // F_jack / F_y
+  rollAngleDeg: number;
+  dynamicRollCenter: Point2D;
+  rollCenterLateralMigrationMm: number;
+  rollCenterVerticalMigrationMm: number;
+  dynamicCamberOutsideDeg: number;
+  dynamicCamberInsideDeg: number;
+  contactPatchGripEfficiencyPct: number; // 0-100%
+  hardpoints: SuspensionHardpoints;
+}
+
+export interface SuspensionKinematicsAnalysis {
+  carArchetype: string;
+  chassisMassKg: number;
+  cgHeightMm: number;
+  lateralAccG: number;
+  rollAngleDeg: number;
+  rollStiffnessTotalNmPerDeg: number;
+  frontRollStiffnessDistributionPct: number;
+  front: AxleKinematicsResult;
+  rear: AxleKinematicsResult;
+  rollAxisInclinationAngleDeg: number; // roll axis slope from front to rear
+  camberRecoveryVerdict: string;
+  rollCenterStabilityVerdict: string;
+  raceEngineerRecommendation: string;
+}
+
+// ----------------------------------------------------------------------------
+// CLOSED-LOOP QUASI-STATIC LAP TIME SIMULATOR TYPES
+// ----------------------------------------------------------------------------
+
+export interface VehicleSimParameters {
+  massKg: number;
+  enginePowerBhp: number;
+  dragCdA: number;
+  downforceClA: number;
+  aeroBalanceFrontPct: number;
+  tireMuX: number;
+  tireMuY: number;
+  weightDistributionFrontPct: number;
+  drivetrainEfficiency: number;
+}
+
+export interface LapSimulationPoint {
+  dist: number;
+  speedKmh: number;
+  targetSpeedKmh: number;
+  accelG: number;
+  latG: number;
+  throttlePct: number;
+  brakePct: number;
+  gear: number;
+  downforceN: number;
+  dragN: number;
+  timeSeconds: number;
+}
+
+export interface LapSimSectorBreakdown {
+  sector: number;
+  timeSeconds: number;
+  minSpeedKmh: number;
+  topSpeedKmh: number;
+}
+
+export interface SetupSensitivityDelta {
+  parameterName: string;
+  deltaSetting: string;
+  lapTimeDeltaSeconds: number; // negative = faster, positive = slower
+  topSpeedDeltaKmh: number;
+  minCornerSpeedDeltaKmh: number;
+  verdict: string;
+}
+
+export interface LapSimulationResult {
+  trackName: string;
+  trackLengthMeters: number;
+  lapTimeSeconds: number;
+  lapTimeFormatted: string;
+  topSpeedKmh: number;
+  averageSpeedKmh: number;
+  sectors: LapSimSectorBreakdown[];
+  points: LapSimulationPoint[];
+  baselineParameters: VehicleSimParameters;
+  sensitivities: SetupSensitivityDelta[];
+  executiveSummary: string;
+}
+
 
