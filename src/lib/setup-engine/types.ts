@@ -1,4 +1,5 @@
 import { SetupSection } from "@/types/telemetry";
+import { SimResearchReport } from "../web-research";
 
 export type ParameterRuleSource = "HARD_FACT" | "VERIFIED_GAME_RULE" | "ENGINEERING_HEURISTIC" | "UNCERTAIN";
 
@@ -91,6 +92,7 @@ export interface SetupEngineRequest {
   baselineSetup?: { summary?: string; sections: SetupSection[] };
   telemetryContext?: any;
   fullBaselineRequested?: boolean;
+  enableWebResearch?: boolean;
 }
 
 export interface SetupEngineResult {
@@ -109,4 +111,5 @@ export interface SetupEngineResult {
   knownLimitations: string[];
   engineerNotes: string;
   validationStatus: SetupValidationReport;
+  webResearch?: SimResearchReport;
 }

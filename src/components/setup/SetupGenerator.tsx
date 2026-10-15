@@ -91,6 +91,8 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [isMorphModalOpen, setIsMorphModalOpen] = useState(false);
   const [isIngestorModalOpen, setIsIngestorModalOpen] = useState(false);
   const [showBaselinePreview, setShowBaselinePreview] = useState(false);
+  const [enableWebResearch, setEnableWebResearch] = useState(true);
+  const [showWebResearchSources, setShowWebResearchSources] = useState(true);
 
   const handleApplyImportedBaseline = (parsedSetup: ParsedSetupFile) => {
     const selectedGame = parsedSetup.game || game;
@@ -202,6 +204,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           customModProfile: acModData,
           baselineSetup: activeBaseline,
           telemetryContext: activeTelemetry,
+          enableWebResearch,
         }),
       });
 
@@ -297,19 +300,42 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
               <span className="panel-sublabel">Chassis configuration and environment</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsIngestorModalOpen(true)}
-            className="action-btn action-btn-accent"
-            title="Import an existing setup from ACC (.json), Assetto Corsa (.ini), or rF2/LMU (.svm)"
-          >
-            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
-            <span>Import Existing Setup</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setEnableWebResearch(!enableWebResearch)}
+              className={`action-btn transition-all ${
+                enableWebResearch
+                  ? "bg-[#d4a373]/15 border-[#d4a373]/40 text-[#f7ebe1]"
+                  : "bg-white/5 border-white/10 text-slate-400 hover:text-slate-200"
+              }`}
+              title="Toggle Live Web Research: Searches live sim-racing benchmarks, community setups, BOP, and patch notes"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" className={enableWebResearch ? "text-[#d4a373]" : "text-slate-500"}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="2" y1="12" x2="22" y2="12"></line>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+              </svg>
+              <span>Live Web Research</span>
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${enableWebResearch ? "bg-[#d4a373]/25 text-[#f7ebe1]" : "bg-white/10 text-slate-400"}`}>
+                {enableWebResearch ? "ON" : "OFF"}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsIngestorModalOpen(true)}
+              className="action-btn action-btn-accent"
+              title="Import an existing setup from ACC (.json), Assetto Corsa (.ini), or rF2/LMU (.svm)"
+            >
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="17 8 12 3 7 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+              <span>Import Existing Setup</span>
+            </button>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} autoComplete="off">
@@ -883,6 +909,69 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 </div>
               )}
             </div>
+
+            {/* LIVE SIM WEB RESEARCH & BENCHMARKS */}
+            {result.webResearch?.sources && result.webResearch.sources.length > 0 && (
+              <div className="p-3.5 rounded-xl border border-[#d4a373]/25 bg-[#d4a373]/[0.03] text-xs my-2.5 font-sans">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 rounded-md bg-[#d4a373]/15 border border-[#d4a373]/30 flex items-center justify-center text-[#d4a373]">
+                      <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="font-semibold text-slate-100 tracking-tight">Live Web Intelligence & Sim Benchmarks</span>
+                      <span className="text-[10.5px] text-[#d4a373] ml-2 font-mono">({result.webResearch.sources.length} sources verified)</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowWebResearchSources(!showWebResearchSources)}
+                    className="text-[11px] text-slate-400 hover:text-[#e5c29f] transition-colors"
+                  >
+                    {showWebResearchSources ? "Hide Sources ▲" : "View Sources ▼"}
+                  </button>
+                </div>
+
+                {showWebResearchSources && (
+                  <div className="space-y-2 mt-2.5 pt-2 border-t border-white/10">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {result.webResearch.sources.map((src, idx) => (
+                        <a
+                          key={idx}
+                          href={src.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-2.5 rounded-lg border border-white/5 bg-black/40 hover:bg-black/60 hover:border-[#d4a373]/30 transition-all flex flex-col justify-between group text-left"
+                        >
+                          <div>
+                            <div className="flex items-center justify-between gap-2 mb-1">
+                              <span className="text-[10px] font-mono text-[#d4a373] bg-[#d4a373]/10 px-1.5 py-0.5 rounded">
+                                {src.domain}
+                              </span>
+                              <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="2" className="text-slate-500 group-hover:text-[#d4a373] transition-colors">
+                                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <line x1="10" y1="14" x2="21" y2="3"></line>
+                              </svg>
+                            </div>
+                            <div className="text-slate-200 font-medium text-[11.5px] line-clamp-1 group-hover:text-white">
+                              {src.title}
+                            </div>
+                            <p className="text-slate-400 text-[11px] mt-1 line-clamp-2 leading-relaxed">
+                              {src.snippet}
+                            </p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* TELEMETRY EVIDENCE GROUNDING */}
             {result.evidence && result.evidence.length > 0 && (

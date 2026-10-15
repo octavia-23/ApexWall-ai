@@ -7,6 +7,7 @@ import { callGroqWithFallback } from "../groq";
 import { getGameSetupProfile } from "../game-setup-profiles";
 import { detectChassisArchetype } from "../chassis-archetypes";
 import { getCircuitAeroProfile } from "../circuit-aero-profiles";
+import { researchSimSetup, SimResearchReport } from "../web-research";
 import { SetupSection } from "@/types/telemetry";
 
 /**
@@ -16,9 +17,10 @@ import { SetupSection } from "@/types/telemetry";
  * Coordinates:
  * 1. Deterministic baseline establishment
  * 2. Causal vehicle-dynamics diagnosis
- * 3. Bounded LLM reasoning & trade-off explanation
- * 4. Deterministic post-generation validation, step-snapping, and repair
- * 5. Comprehensive structured diff calculation and test protocol
+ * 3. Live sim-racing web research & community benchmark RAG
+ * 4. Bounded LLM reasoning & trade-off explanation
+ * 5. Deterministic post-generation validation, step-snapping, and repair
+ * 6. Comprehensive structured diff calculation and test protocol
  * ============================================================================
  */
 
@@ -42,6 +44,7 @@ export async function generateCalibratedSetup(
     baselineSetup,
     telemetryContext,
     fullBaselineRequested = false,
+    enableWebResearch = true,
   } = request;
 
   // 1. Resolve Authoritative Simulator Knowledge Base
@@ -84,7 +87,26 @@ export async function generateCalibratedSetup(
     engineerNotes = `Driver coaching note: ${diagnosticPlan.driverTechniqueFlag} Before making aggressive mechanical setup changes, prioritize smoother pedal modulation. `;
   }
 
-  // 4. Bounded LLM Prompt Formulation
+  // 4. Live Sim Web Research (RAG)
+  let webResearch: SimResearchReport = { enabled: false, query: "", sources: [] };
+  if (enableWebResearch) {
+    try {
+      webResearch = await researchSimSetup({
+        sim: game,
+        car,
+        track,
+        handlingIssue,
+        weather,
+        enabled: true,
+      });
+    } catch (_webErr) {
+      console.warn("Live web research non-fatal error:", _webErr);
+    }
+  }
+
+  const webBrief = webResearch.synthesizedContext ? `\n${webResearch.synthesizedContext}\n` : "";
+
+  // 5. Bounded LLM Prompt Formulation
   // Instead of asking the LLM to invent 50 numbers, we give it the exact 1-3 target parameters
   // and require it to explain the causal trade-offs.
   const targetDefSummary = diagnosticPlan.primaryTargetParams
@@ -136,6 +158,7 @@ Weather: ${weather || "Dry"}, Track Temp: ${trackTemp || "30°C"}, Air Temp: ${a
 Handling Issue / Target: ${handlingIssue}
 Driver Technique Context: ${driverStyle || "Standard"}
 ${telemetryBrief}
+${webBrief}
 `.trim();
 
   let proposedAdjustments: any[] = [];
@@ -506,5 +529,6 @@ ${telemetryBrief}
     knownLimitations,
     engineerNotes,
     validationStatus: validation.report,
+    webResearch,
   };
 }

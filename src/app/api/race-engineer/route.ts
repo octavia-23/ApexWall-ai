@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callGroqChatText } from "@/lib/groq";
 import { detectChassisArchetype } from "@/lib/chassis-archetypes";
+import { researchSimSetup } from "@/lib/web-research";
 import {
   RaceEngineerRequestSchema,
   RaceEngineerRequest,
@@ -73,6 +74,7 @@ export async function POST(req: NextRequest) {
     telemetryContext,
     setupContext,
     activeSim = "Assetto Corsa Competizione",
+    enableWebResearch = true,
   }: RaceEngineerRequest = parseResult.data;
 
   const lastUserMessage = messages[messages.length - 1]?.content || "";
@@ -122,14 +124,34 @@ export async function POST(req: NextRequest) {
   }
 
   const detectedCar = setupContext?.car || telemetryContext?.car || "GT3";
+  const detectedTrack = setupContext?.track || telemetryContext?.track || "";
   const archetype = detectChassisArchetype(detectedCar, activeSim);
+
+  // 2. Perform live sim web research if enabled
+  let webResearchContext = "";
+  if (enableWebResearch && detectedCar && detectedTrack) {
+    try {
+      const webReport = await researchSimSetup({
+        sim: activeSim,
+        car: detectedCar,
+        track: detectedTrack,
+        handlingIssue: lastUserMessage,
+        enabled: true,
+      });
+      if (webReport.synthesizedContext) {
+        webResearchContext = `\n${webReport.synthesizedContext}\n`;
+      }
+    } catch (_webErr) {
+      // Non-fatal
+    }
+  }
 
   const systemPrompt = `You are the Chief Race Engineer on the pit wall for an elite sim racing driver, communicating live over the team radio and pit-lane telemetry debrief.
 Your tone is professional, direct, analytical, and supportive—modeled after premier F1 and WEC race engineers (like Peter Bonnington "Bono" or Gianpiero Lambiase "GP").
 
 Driver's Session Data:
 ${sessionContextText}
-
+${webResearchContext}
 VEHICLE ARCHETYPE PHYSICS RULES FOR "${detectedCar}" (${archetype.displayName}):
 ${archetype.promptGuidance}
 

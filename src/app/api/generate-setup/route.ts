@@ -84,6 +84,7 @@ export async function POST(req: NextRequest) {
     baselineSetup,
     telemetryContext,
     fullBaselineRequested,
+    enableWebResearch,
   }: GenerateSetupRequest = parseResult.data;
 
   try {
@@ -104,6 +105,7 @@ export async function POST(req: NextRequest) {
       baselineSetup: baselineSetup ?? undefined,
       telemetryContext,
       fullBaselineRequested,
+      enableWebResearch: enableWebResearch ?? true,
     });
 
     return NextResponse.json(setupResult);

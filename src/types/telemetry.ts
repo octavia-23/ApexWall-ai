@@ -466,6 +466,17 @@ export interface GeneratedSetupResult {
     rejected: Array<{ param: string; reason: string }>;
     coherenceWarnings: string[];
   };
+  webResearch?: {
+    enabled: boolean;
+    query: string;
+    sources: Array<{
+      title: string;
+      url: string;
+      snippet: string;
+      domain: string;
+    }>;
+    synthesizedContext?: string;
+  };
 }
 
 export interface TrackCorner {
