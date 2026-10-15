@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
     setupContext,
     activeSim = "Assetto Corsa Competizione",
     enableWebResearch = true,
+    deepResearchMode = false,
   }: RaceEngineerRequest = parseResult.data;
 
   const lastUserMessage = messages[messages.length - 1]?.content || "";
@@ -137,6 +138,7 @@ export async function POST(req: NextRequest) {
         track: detectedTrack,
         handlingIssue: lastUserMessage,
         enabled: true,
+        deepMode: deepResearchMode,
       });
       if (webReport.synthesizedContext) {
         webResearchContext = `\n${webReport.synthesizedContext}\n`;

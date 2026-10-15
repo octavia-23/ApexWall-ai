@@ -92,6 +92,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
   const [isIngestorModalOpen, setIsIngestorModalOpen] = useState(false);
   const [showBaselinePreview, setShowBaselinePreview] = useState(false);
   const [enableWebResearch, setEnableWebResearch] = useState(true);
+  const [deepResearchMode, setDeepResearchMode] = useState(false);
   const [showWebResearchSources, setShowWebResearchSources] = useState(true);
 
   const handleApplyImportedBaseline = (parsedSetup: ParsedSetupFile) => {
@@ -205,6 +206,7 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
           baselineSetup: activeBaseline,
           telemetryContext: activeTelemetry,
           enableWebResearch,
+          deepResearchMode,
         }),
       });
 
@@ -321,6 +323,28 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 {enableWebResearch ? "ON" : "OFF"}
               </span>
             </button>
+
+            {enableWebResearch && (
+              <button
+                type="button"
+                onClick={() => setDeepResearchMode(!deepResearchMode)}
+                className={`action-btn transition-all ${
+                  deepResearchMode
+                    ? "bg-[#d4a373]/20 border-[#d4a373] text-[#f7ebe1] shadow-[0_0_12px_rgba(212,163,115,0.2)]"
+                    : "bg-white/5 border-white/10 text-slate-400 hover:text-slate-200"
+                }`}
+                title="Deep Research Mode: Crawls full web pages, extracts garage setup tables, wheel rates, and community patch notes"
+              >
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2" className={deepResearchMode ? "text-[#d4a373]" : "text-slate-500"}>
+                  <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                  <circle cx="10" cy="10" r="3"></circle>
+                </svg>
+                <span>Deep Crawl</span>
+                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${deepResearchMode ? "bg-[#d4a373]/30 text-white" : "bg-white/10 text-slate-400"}`}>
+                  {deepResearchMode ? "DEEP" : "STD"}
+                </span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -923,8 +947,15 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                       </svg>
                     </div>
                     <div>
-                      <span className="font-semibold text-slate-100 tracking-tight">Live Web Intelligence & Sim Benchmarks</span>
-                      <span className="text-[10.5px] text-[#d4a373] ml-2 font-mono">({result.webResearch.sources.length} sources verified)</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-100 tracking-tight">Live Web Intelligence & Sim Benchmarks</span>
+                        {result.webResearch.deepMode && (
+                          <span className="text-[9.5px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-200">
+                            🔬 Deep Crawl Active
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[10.5px] text-[#d4a373] font-mono">({result.webResearch.sources.length} sources verified{result.webResearch.deepExtracts ? `, ${result.webResearch.deepExtracts.length} deep-crawled` : ""})</span>
                     </div>
                   </div>
                   <button
@@ -937,7 +968,43 @@ export const SetupGenerator: React.FC<SetupGeneratorProps> = ({
                 </div>
 
                 {showWebResearchSources && (
-                  <div className="space-y-2 mt-2.5 pt-2 border-t border-white/10">
+                  <div className="space-y-2.5 mt-2.5 pt-2 border-t border-white/10">
+                    {/* Deep-Crawled Garage Tables & Technical Excerpts */}
+                    {result.webResearch.deepExtracts && result.webResearch.deepExtracts.length > 0 && (
+                      <div className="space-y-2 mb-2">
+                        <div className="text-[10.5px] font-semibold text-[#e5c29f] flex items-center gap-1.5 uppercase tracking-wide">
+                          <span>🔬 Deep-Crawled Setup Tables & Technical Excerpts</span>
+                        </div>
+                        <div className="space-y-1.5">
+                          {result.webResearch.deepExtracts.map((ext, eIdx) => (
+                            <div key={eIdx} className="p-2.5 rounded-lg bg-black/60 border border-[#d4a373]/25 text-[11px]">
+                              <div className="flex items-center justify-between gap-2 mb-1.5">
+                                <span className="font-semibold text-white truncate">{ext.title}</span>
+                                <span className="text-[10px] font-mono text-[#d4a373] bg-[#d4a373]/15 px-1.5 py-0.5 rounded shrink-0">{ext.domain}</span>
+                              </div>
+                              {ext.extractedParameters && (
+                                <div className="flex flex-wrap gap-1.5 mb-1.5">
+                                  {Object.entries(ext.extractedParameters).map(([k, v], pIdx) => (
+                                    <span key={pIdx} className="text-[10.5px] font-mono bg-white/5 border border-white/10 px-2 py-0.5 rounded text-amber-200">
+                                      <strong className="text-slate-300 font-sans mr-1">{k}:</strong> {v}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <ul className="space-y-1 text-slate-300 italic">
+                                {ext.keyExcerpts.slice(0, 2).map((exc, xIdx) => (
+                                  <li key={xIdx} className="flex items-start gap-1">
+                                    <span className="text-[#d4a373] shrink-0 font-bold not-italic">“</span>
+                                    <span>{exc}”</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       {result.webResearch.sources.map((src, idx) => (
                         <a

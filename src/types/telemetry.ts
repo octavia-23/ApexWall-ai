@@ -468,12 +468,21 @@ export interface GeneratedSetupResult {
   };
   webResearch?: {
     enabled: boolean;
+    deepMode?: boolean;
     query: string;
+    queries?: string[];
     sources: Array<{
       title: string;
       url: string;
       snippet: string;
       domain: string;
+    }>;
+    deepExtracts?: Array<{
+      url: string;
+      domain: string;
+      title: string;
+      keyExcerpts: string[];
+      extractedParameters?: Record<string, string>;
     }>;
     synthesizedContext?: string;
   };

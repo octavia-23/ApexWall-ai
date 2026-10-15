@@ -85,6 +85,7 @@ export async function POST(req: NextRequest) {
     telemetryContext,
     fullBaselineRequested,
     enableWebResearch,
+    deepResearchMode,
   }: GenerateSetupRequest = parseResult.data;
 
   try {
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
       telemetryContext,
       fullBaselineRequested,
       enableWebResearch: enableWebResearch ?? true,
+      deepResearchMode: deepResearchMode ?? false,
     });
 
     return NextResponse.json(setupResult);

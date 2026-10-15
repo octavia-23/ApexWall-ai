@@ -93,6 +93,7 @@ export interface SetupEngineRequest {
   telemetryContext?: any;
   fullBaselineRequested?: boolean;
   enableWebResearch?: boolean;
+  deepResearchMode?: boolean;
 }
 
 export interface SetupEngineResult {

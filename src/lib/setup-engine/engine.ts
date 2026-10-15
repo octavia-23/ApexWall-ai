@@ -45,6 +45,7 @@ export async function generateCalibratedSetup(
     telemetryContext,
     fullBaselineRequested = false,
     enableWebResearch = true,
+    deepResearchMode = false,
   } = request;
 
   // 1. Resolve Authoritative Simulator Knowledge Base
@@ -88,7 +89,7 @@ export async function generateCalibratedSetup(
   }
 
   // 4. Live Sim Web Research (RAG)
-  let webResearch: SimResearchReport = { enabled: false, query: "", sources: [] };
+  let webResearch: SimResearchReport = { enabled: false, deepMode: false, query: "", sources: [] };
   if (enableWebResearch) {
     try {
       webResearch = await researchSimSetup({
@@ -98,6 +99,7 @@ export async function generateCalibratedSetup(
         handlingIssue,
         weather,
         enabled: true,
+        deepMode: deepResearchMode,
       });
     } catch (_webErr) {
       console.warn("Live web research non-fatal error:", _webErr);
