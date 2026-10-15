@@ -453,9 +453,23 @@ export function parseAssettoCorsaINI(iniText: string, fileName: string = "setup.
   const w0 = getNum("WING_0");
   const w1 = getNum("WING_1");
   const w2 = getNum("WING_2");
-  if (w0 !== undefined) aeroItems.push({ label: "Front Splitter [Wing 0]", value: `${w0}` });
-  if (w1 !== undefined) aeroItems.push({ label: "Front Wing [Wing 1]", value: `${w1}` });
-  if (w2 !== undefined) aeroItems.push({ label: "Rear Wing [Wing 2]", value: `${w2}` });
+
+  if (w0 !== undefined && w1 !== undefined && w2 !== undefined) {
+    aeroItems.push({ label: "Front Splitter [Wing 0]", value: `${w0}` });
+    aeroItems.push({ label: "Front Wing [Wing 1]", value: `${w1}` });
+    aeroItems.push({ label: "Rear Wing [Wing 2]", value: `${w2}` });
+  } else if (w0 !== undefined && w2 !== undefined) {
+    aeroItems.push({ label: "Front Splitter [Wing 0]", value: `${w0}` });
+    aeroItems.push({ label: "Rear Wing [Wing 2]", value: `${w2}` });
+  } else if (w0 !== undefined && w1 !== undefined) {
+    // Formula / Open-wheel / Prototype: WING_0 is Front Wing, WING_1 is Rear Wing
+    aeroItems.push({ label: "Front Wing [Wing 0]", value: `${w0}` });
+    aeroItems.push({ label: "Rear Wing [Wing 1]", value: `${w1}` });
+  } else {
+    if (w0 !== undefined) aeroItems.push({ label: "Front Wing / Splitter [Wing 0]", value: `${w0}` });
+    if (w1 !== undefined) aeroItems.push({ label: "Rear Wing [Wing 1]", value: `${w1}` });
+    if (w2 !== undefined) aeroItems.push({ label: "Rear Wing [Wing 2]", value: `${w2}` });
+  }
 
   if (aeroItems.length > 0) {
     sections.push({ title: "AERO", items: aeroItems });
