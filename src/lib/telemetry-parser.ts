@@ -17,6 +17,9 @@ import { computeDamperHistograms } from "./damper-histogram-calculator";
 import { computeDynamicAeroMap } from "./aero-map-calculator";
 import { computeEndurancePitStrategy } from "./endurance-strategy-calculator";
 import { computeStintConsistencyAnalysis } from "./stint-consistency-analyzer";
+import { computeCornerLedger } from "./corner-ledger-calculator";
+import { computeAeroTrim } from "./aero-trim-calculator";
+import { computeTrailBrakingAnalysis } from "./trail-braking-profiler";
 
 export function parseTelemetryCSV(
   csvText: string,
@@ -723,6 +726,14 @@ export function parseTelemetryCSV(
     aeroMap,
     enduranceStrategy: computeEndurancePitStrategy(downsampled, lapTimeFormatted),
     stintConsistency: computeStintConsistencyAnalysis(downsampled, lapTimeFormatted),
+    cornerLedger: computeCornerLedger(downsampled, null, "Circuit de Spa-Francorchamps"),
+    aeroTrim: computeAeroTrim({
+      frontRideHeightMm: aeroMap?.staticFrontRideHeightMm || 52,
+      rearRideHeightMm: aeroMap?.staticRearRideHeightMm || 72,
+      rearWingAngleDeg: 8,
+      speedKmh: 250,
+    }),
+    trailBrakingAnalysis: computeTrailBrakingAnalysis(downsampled, "Circuit de Spa-Francorchamps"),
     points: downsampled,
     channels: Object.keys(headerMap),
   };

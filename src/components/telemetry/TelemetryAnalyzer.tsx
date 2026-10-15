@@ -12,6 +12,9 @@ import { DynamicAeroMapViewer } from "./DynamicAeroMapViewer";
 import { EndurancePitStrategist } from "./EndurancePitStrategist";
 import { StintConsistencyAnalyzer } from "./StintConsistencyAnalyzer";
 import { TrackMap2D } from "./TrackMap2D";
+import { CornerLedgerViewer } from "./CornerLedgerViewer";
+import { AeroTrimCalculator } from "./AeroTrimCalculator";
+import { TrailBrakingMaster } from "./TrailBrakingMaster";
 import { computeDamperHistograms } from "@/lib/damper-histogram-calculator";
 import { computeDynamicAeroMap } from "@/lib/aero-map-calculator";
 import {
@@ -2304,6 +2307,29 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               />
             )}
 
+            {/* Corner Performance Ledger (Phase-by-Phase Time Loss Breakdown) */}
+            {parsedTelemetry?.cornerLedger && (
+              <CornerLedgerViewer
+                ledger={parsedTelemetry.cornerLedger}
+                activeCornerId={activeCornerId}
+                onSelectCorner={(corner) => {
+                  setActiveCornerId(corner.id);
+                  if (parsedTelemetry?.points) {
+                    let closestIdx = 0;
+                    let minDiff = Infinity;
+                    for (let i = 0; i < parsedTelemetry.points.length; i++) {
+                      const diff = Math.abs(parsedTelemetry.points[i].dist - corner.dist);
+                      if (diff < minDiff) {
+                        minDiff = diff;
+                        closestIdx = i;
+                      }
+                    }
+                    setHoverIndex(closestIdx);
+                  }
+                }}
+              />
+            )}
+
             {/* Turn-by-Turn Benchmark / Autonomous Corner Analysis Table */}
             {lapComparison && lapComparison.cornerComparisons && lapComparison.cornerComparisons.length > 0 && (
               <div className="delta-table-module glass-card-nested">
@@ -2422,6 +2448,28 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                   <GGFrictionCircle data={frictionCircleData} hoverIndex={hoverIndex} />
                 )}
 
+                {/* Trail-Braking & Deceleration Envelope Profiler */}
+                {parsedTelemetry?.trailBrakingAnalysis && (
+                  <TrailBrakingMaster
+                    analysis={parsedTelemetry.trailBrakingAnalysis}
+                    onSelectZone={(zone) => {
+                      setActiveCornerId(zone.id);
+                      if (parsedTelemetry?.points) {
+                        let closestIdx = 0;
+                        let minDiff = Infinity;
+                        for (let i = 0; i < parsedTelemetry.points.length; i++) {
+                          const diff = Math.abs(parsedTelemetry.points[i].dist - zone.endDist);
+                          if (diff < minDiff) {
+                            minDiff = diff;
+                            closestIdx = i;
+                          }
+                        }
+                        setHoverIndex(closestIdx);
+                      }
+                    }}
+                  />
+                )}
+
                 {/* Corner Phase Balance & Slip Dynamics */}
                 {parsedTelemetry?.phaseBalance && (
                   <div className="telemetry-balance-module glass-card-nested">
@@ -2515,6 +2563,16 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
                 {parsedTelemetry?.aeroMap && (
                   <DynamicAeroMapViewer data={parsedTelemetry.aeroMap} />
                 )}
+
+                {/* Aerodynamic Rake & Wing Trim Calculator */}
+                <AeroTrimCalculator
+                  initialParams={{
+                    frontRideHeightMm: parsedTelemetry?.aeroMap?.staticFrontRideHeightMm || 52,
+                    rearRideHeightMm: parsedTelemetry?.aeroMap?.staticRearRideHeightMm || 72,
+                    rearWingAngleDeg: 8,
+                  }}
+                  carArchetype={car}
+                />
               </>
             )}
 

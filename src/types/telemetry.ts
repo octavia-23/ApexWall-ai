@@ -156,6 +156,9 @@ export interface ParsedTelemetryFile {
   aeroMap?: DynamicAeroMapAnalysis;
   enduranceStrategy?: EnduranceStrategyAnalysis;
   stintConsistency?: StintConsistencyAnalysis;
+  cornerLedger?: CornerLedgerAnalysis;
+  aeroTrim?: AeroTrimResult;
+  trailBrakingAnalysis?: TrailBrakingAnalysis;
 }
 
 export interface AeroSpeedBin {
@@ -424,6 +427,9 @@ export interface TelemetryAnalysisResult {
   aeroMap?: DynamicAeroMapAnalysis;
   enduranceStrategy?: EnduranceStrategyAnalysis;
   stintConsistency?: StintConsistencyAnalysis;
+  cornerLedger?: CornerLedgerAnalysis;
+  aeroTrim?: AeroTrimResult;
+  trailBrakingAnalysis?: TrailBrakingAnalysis;
 }
 
 export interface GeneratedSetupResult {
@@ -631,4 +637,110 @@ export interface StintConsistencyAnalysis {
   lapPaces: StintLapPace[];
   driverConsistencyVerdict: string;
 }
+
+// ----------------------------------------------------------------------------
+// CORNER PERFORMANCE LEDGER TYPES
+// ----------------------------------------------------------------------------
+
+export interface CornerLedgerItem {
+  id: string;
+  cornerNumber: number;
+  name: string;
+  dist: number;
+  // Entry Phase
+  brakeStartDistMeters: number;
+  brakeDeltaMeters: number; // positive = braked earlier, negative = braked later
+  entryPeakDecelG: number;
+  entryTimeDeltaSeconds: number;
+  // Apex Phase
+  driverApexSpeedKmh: number;
+  refApexSpeedKmh: number;
+  apexSpeedDeltaKmh: number;
+  apexLatG: number;
+  apexTimeDeltaSeconds: number;
+  // Exit Phase
+  throttleCommitDistMeters: number;
+  throttleCommitDeltaMeters: number; // positive = earlier throttle, negative = delayed
+  exitSpeedKmh: number;
+  exitTimeDeltaSeconds: number;
+  // Summary
+  totalCornerTimeDeltaSeconds: number;
+  status: "gained" | "lost" | "neutral";
+  verdictBadge: string;
+  coachingCue: string;
+}
+
+export interface CornerLedgerAnalysis {
+  corners: CornerLedgerItem[];
+  totalTimeLostInCornersSeconds: number;
+  biggestLossCorner: string;
+  biggestGainCorner: string;
+  averageApexSpeedDeltaKmh: number;
+  brakingConsistencyScore: number;
+  overallCorneringEfficiencyPct: number;
+}
+
+// ----------------------------------------------------------------------------
+// AERODYNAMIC RAKE & WING BALANCE CALCULATOR TYPES
+// ----------------------------------------------------------------------------
+
+export interface AeroTrimParameters {
+  frontRideHeightMm: number;
+  rearRideHeightMm: number;
+  rearWingAngleDeg: number;
+  speedKmh?: number; // default 250 km/h
+}
+
+export interface AeroTrimResult {
+  rakeAngleDeg: number;
+  rakeHeightMm: number;
+  frontAeroBalancePct: number; // % front downforce
+  rearAeroBalancePct: number;
+  totalDownforceKg150: number;
+  totalDownforceKg250: number;
+  totalDragKg250: number;
+  liftToDragRatio: number; // L/D efficiency
+  projectedTopSpeedKmh: number;
+  dynamicFrontRideHeight250Mm: number;
+  dynamicRearRideHeight250Mm: number;
+  highSpeedBalanceShiftPct: number; // delta % from static to 250 km/h
+  balanceRating: "oversteer_bias" | "optimal_neutral" | "understeer_bias";
+  efficiencyRating: "low_drag" | "balanced_high_df" | "high_drag_monza_stall";
+  engineerAdvice: string;
+}
+
+// ----------------------------------------------------------------------------
+// TRAIL-BRAKING & DECELERATION ENVELOPE TYPES
+// ----------------------------------------------------------------------------
+
+export interface BrakingZoneProfile {
+  id: string;
+  cornerName: string;
+  entrySpeedKmh: number;
+  minSpeedKmh: number;
+  speedDropKmh: number;
+  startDist: number;
+  endDist: number;
+  lengthMeters: number;
+  peakDecelG: number;
+  initialHitRatePctPerSec: number;
+  releaseShape: "ideal_exponential" | "progressive_linear" | "stepped" | "abrupt_chop";
+  trailBrakingScore: number; // 0-100
+  steeringOverlapDeg: number;
+  frontLockupRisk: boolean;
+  rearInstabilityRisk: boolean;
+  verdict: string;
+}
+
+export interface TrailBrakingAnalysis {
+  overallTrailScore: number; // 0-100
+  brakingZones: BrakingZoneProfile[];
+  averagePeakDecelG: number;
+  idealReleasePct: number;
+  recommendedBrakeBiasDeltaPct: number;
+  recommendedBrakeBiasDirection: "forward" | "rearward" | "optimal";
+  biasRecommendationRationale: string;
+  techniqueSummary: string;
+}
+
 
