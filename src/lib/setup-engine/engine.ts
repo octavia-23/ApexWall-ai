@@ -71,7 +71,8 @@ export async function generateCalibratedSetup(
       skillLevel,
     },
     baselineSetup,
-    fullBaselineRequested
+    fullBaselineRequested,
+    customModProfile
   );
 
   // 3. Formulate Causal Diagnostic Plan (Enforce Anti-Shotgun & Causal Ordering)
@@ -107,6 +108,30 @@ export async function generateCalibratedSetup(
   }
 
   const webBrief = webResearch.synthesizedContext ? `\n${webResearch.synthesizedContext}\n` : "";
+
+  let modPhysicsBrief = "";
+  if (customModProfile) {
+    const lines: string[] = ["AUTHORITATIVE CUSTOM MOD VEHICLE SPECS (PARSED FROM ASSETTO CORSA MOD ARCHIVE):"];
+    if (customModProfile.name) lines.push(`• Vehicle: ${customModProfile.name} (${customModProfile.brand || "Custom"} by ${customModProfile.author || "Community"})`);
+    if (customModProfile.weightKg) lines.push(`• Total Mass: ${customModProfile.weightKg} kg`);
+    if (customModProfile.frontWeightRatio) lines.push(`• Static Weight Distribution: ${(customModProfile.frontWeightRatio * 100).toFixed(1)}% Front`);
+    if (customModProfile.fuelTankCapacity) lines.push(`• Fuel Tank Capacity: ${customModProfile.fuelTankCapacity} L`);
+    if (customModProfile.idealTyrePressures) {
+      const f = customModProfile.idealTyrePressures.front ? `${customModProfile.idealTyrePressures.front} psi` : "N/A";
+      const r = customModProfile.idealTyrePressures.rear ? `${customModProfile.idealTyrePressures.rear} psi` : "N/A";
+      lines.push(`• Ideal Operating Tyre Pressures (tyres.ini): Front ${f}, Rear ${r}`);
+    }
+    if (customModProfile.aeroWings && customModProfile.aeroWings.length > 0) {
+      lines.push(`• Aerodynamic Elements (aero.ini): ${customModProfile.aeroWings.map((w: any) => `[Wing ${w.index}] ${w.name}`).join(", ")}`);
+    }
+    if (customModProfile.sliders && customModProfile.sliders.length > 0) {
+      lines.push(`• Garage Setup Sliders (setup.ini - Total ${customModProfile.sliders.length} sliders):`);
+      customModProfile.sliders.slice(0, 30).forEach((s: any) => {
+        lines.push(`   - [${s.category}] ${s.name}: Range [${s.min} to ${s.max}], Step: ${s.step}`);
+      });
+    }
+    modPhysicsBrief = `\n${lines.join("\n")}\n`;
+  }
 
   // 5. Bounded LLM Prompt Formulation
   // Instead of asking the LLM to invent 50 numbers, we give it the exact 1-3 target parameters
@@ -159,6 +184,7 @@ Track: ${track} (${aeroProfile.tierName})
 Weather: ${weather || "Dry"}, Track Temp: ${trackTemp || "30°C"}, Air Temp: ${airTemp || "22°C"}
 Handling Issue / Target: ${handlingIssue}
 Driver Technique Context: ${driverStyle || "Standard"}
+${modPhysicsBrief}
 ${telemetryBrief}
 ${webBrief}
 `.trim();

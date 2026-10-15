@@ -25,11 +25,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Early Content-Length check (reject payloads > 32KB before parsing)
+  // 2. Early Content-Length check (reject payloads > 128KB before parsing)
   const contentLength = req.headers.get("content-length");
   if (contentLength && parseInt(contentLength, 10) > MAX_PAYLOAD_BYTES) {
     return NextResponse.json(
-      { error: "Payload too large. Maximum allowed size is 32KB." },
+      { error: "Payload too large. Maximum allowed size is 128KB." },
       { status: 413 }
     );
   }
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   if (Buffer.byteLength(rawBodyText, "utf8") > MAX_PAYLOAD_BYTES) {
     return NextResponse.json(
-      { error: "Payload too large. Maximum allowed size is 32KB." },
+      { error: "Payload too large. Maximum allowed size is 128KB." },
       { status: 413 }
     );
   }

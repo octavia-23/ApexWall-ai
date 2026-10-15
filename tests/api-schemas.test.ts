@@ -213,8 +213,8 @@ describe("Phase 5 - API Schemas & Abuse Guard Characterization Tests", () => {
       expect(getClientIp(headers)).toBe("127.0.0.1");
     });
 
-    it("defines MAX_PAYLOAD_BYTES as 32KB", () => {
-      expect(MAX_PAYLOAD_BYTES).toBe(32768);
+    it("defines MAX_PAYLOAD_BYTES as 128KB", () => {
+      expect(MAX_PAYLOAD_BYTES).toBe(131072);
     });
   });
 });

@@ -62,9 +62,9 @@ export class MemoryRateLimiter {
 }
 
 /**
- * 32KB payload size limit in bytes (belt-and-braces cap)
+ * 128KB payload size limit in bytes (supports rich mod profiles with complete garage sliders)
  */
-export const MAX_PAYLOAD_BYTES = 32 * 1024; // 32,768 bytes
+export const MAX_PAYLOAD_BYTES = 128 * 1024; // 131,072 bytes
 
 /**
  * Helper to get client IP from request headers or default to loopback
