@@ -504,21 +504,19 @@ export function computeLapComparison(
     let spdDelta: number | null = null;
 
     if (driverApexSpd != null) {
-      if (cand.targetRadius && cand.targetRadius > 0) {
-        const theoretical = Math.sqrt(gripCapacity * 9.81 * cand.targetRadius) * 3.6;
-        targetApexSpd = Math.round(
-          Math.min(driverApexSpd + 12, Math.max(driverApexSpd + 1.5, theoretical))
-        );
-      } else {
-        const gripRatio = cornerMaxLatG > 0 ? cornerMaxLatG / gripCapacity : 0.8;
-        if (gripRatio < 0.82) {
-          targetApexSpd = Math.round(driverApexSpd + Math.min(9, Math.max(3, (0.95 - gripRatio) * 22)));
-        } else if (maxUndersteer > 2.5) {
-          targetApexSpd = Math.round(driverApexSpd + Math.min(6, maxUndersteer * 1.4));
-        } else {
-          targetApexSpd = Math.round(driverApexSpd + 1.8);
-        }
-      }
+      const vDriverMs = Math.max(8.0, driverApexSpd / 3.6);
+      const measuredLatAccMs2 = Math.max(3.5, cornerMaxLatG * 9.80665);
+      const calculatedRadiusM = cand.targetRadius && cand.targetRadius > 0
+        ? cand.targetRadius
+        : Math.max(12, Math.pow(vDriverMs, 2) / measuredLatAccMs2);
+
+      // Theoretical limit from peak friction circle: v_opt = sqrt(a_lat_max * R)
+      const peakLatAccMs2 = Math.max(measuredLatAccMs2, gripCapacity * 9.80665);
+      const theoreticalLimitKmh = Math.sqrt(peakLatAccMs2 * calculatedRadiusM) * 3.6;
+
+      targetApexSpd = Math.round(
+        Math.min(driverApexSpd + 14, Math.max(driverApexSpd + 1.2, theoreticalLimitKmh))
+      );
       spdDelta = +(driverApexSpd - targetApexSpd).toFixed(1);
     }
 

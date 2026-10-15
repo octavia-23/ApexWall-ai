@@ -147,12 +147,56 @@ export function computeEndurancePitStrategy(
   const thermalDriftOnsetLap = Math.max(12, Math.round(maxStintLaps * 0.52));
   const cliffLap = Math.max(18, Math.round(maxStintLaps * 0.85));
 
-  // Determine limiting tyre corner based on lateral load bias
+  // Determine limiting tyre corner mathematically from telemetry load and thermal integrals
+  let workFL = 0;
+  let workFR = 0;
+  let workRL = 0;
+  let workRR = 0;
+  let hasTempObservations = false;
+  let sumTempFL = 0, sumTempFR = 0, sumTempRL = 0, sumTempRR = 0;
+
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    const lat = p.latG ?? 0;
+    const lon = p.longG ?? 0;
+
+    const latWork = Math.pow(Math.abs(lat), 2);
+    const brakeWork = lon < 0 ? Math.pow(lon, 2) : 0;
+    const accelWork = lon > 0 ? Math.pow(lon, 2) : 0;
+
+    // Weight transfer distribution: ~58% front brake bias, ~60% rear traction bias
+    if (lat > 0) {
+      // Right-hand turn: outside left tyres take primary dynamic load
+      workFL += latWork * 1.0 + brakeWork * 0.58;
+      workRL += latWork * 0.9 + accelWork * 0.60;
+    } else {
+      // Left-hand turn: outside right tyres take primary dynamic load
+      workFR += latWork * 1.0 + brakeWork * 0.58;
+      workRR += latWork * 0.9 + accelWork * 0.60;
+    }
+
+    if (p.tempFL != null && p.tempFR != null && p.tempRL != null && p.tempRR != null) {
+      hasTempObservations = true;
+      sumTempFL += p.tempFL;
+      sumTempFR += p.tempFR;
+      sumTempRL += p.tempRL;
+      sumTempRR += p.tempRR;
+    }
+  }
+
   let limitingCorner: "FL" | "FR" | "RL" | "RR" = "FL";
-  if (options.track && options.track.toLowerCase().includes("spa")) {
-    limitingCorner = "FR"; // High-speed right-hand loads in Blanchimont & Raidillon
-  } else if (options.track && options.track.toLowerCase().includes("monza")) {
-    limitingCorner = "RL"; // Traction out of chicanes
+  if (hasTempObservations) {
+    const maxT = Math.max(sumTempFL, sumTempFR, sumTempRL, sumTempRR);
+    if (maxT === sumTempFR) limitingCorner = "FR";
+    else if (maxT === sumTempRL) limitingCorner = "RL";
+    else if (maxT === sumTempRR) limitingCorner = "RR";
+    else limitingCorner = "FL";
+  } else {
+    const maxW = Math.max(workFL, workFR, workRL, workRR);
+    if (maxW === workFR) limitingCorner = "FR";
+    else if (maxW === workRL) limitingCorner = "RL";
+    else if (maxW === workRR) limitingCorner = "RR";
+    else limitingCorner = "FL";
   }
 
   const tyreDegradation: TyreDegradationAnalysis = {
@@ -181,13 +225,39 @@ export function computeEndurancePitStrategy(
   const stintForecast: StintLapForecast[] = [];
   const forecastLaps = Math.min(40, maxStintLaps + 2);
 
-  // Cold baseline pressures
+  // Baseline thermodynamic pressures
   const coldP = 23.8;
   const targetP = 27.2;
 
+  // Vehicle mass and fuel sensitivity: dLapTime/dm_fuel = t_lap / (2 * m_vehicle)
+  const vehicleMassKg = 1320;
+  const fuelBurnKgPerLap = burnRatePerLapLiters * 0.743; // Petrol density: 0.743 kg/L
+  const fuelSensitivitySecPerLap = (baseLapSeconds / (2.0 * vehicleMassKg)) * fuelBurnKgPerLap;
+
+  // Normalized 4-corner thermal work multipliers
+  const totalCornerWork = workFL + workFR + workRL + workRR;
+  let workRatioFL = 1.0;
+  let workRatioFR = 1.0;
+  let workRatioRL = 0.95;
+  let workRatioRR = 0.95;
+
+  if (hasTempObservations && (sumTempFL + sumTempFR + sumTempRL + sumTempRR) > 0) {
+    const meanTemp = (sumTempFL + sumTempFR + sumTempRL + sumTempRR) / 4.0;
+    workRatioFL = sumTempFL / meanTemp;
+    workRatioFR = sumTempFR / meanTemp;
+    workRatioRL = sumTempRL / meanTemp;
+    workRatioRR = sumTempRR / meanTemp;
+  } else if (totalCornerWork > 0) {
+    const meanWork = totalCornerWork / 4.0;
+    workRatioFL = workFL / meanWork;
+    workRatioFR = workFR / meanWork;
+    workRatioRL = (workRL / meanWork) * 0.96;
+    workRatioRR = (workRR / meanWork) * 0.96;
+  }
+
   for (let lap = 1; lap <= forecastLaps; lap++) {
-    // A. Fuel weight lightening effect: -0.032s per burned lap
-    const fuelEffect = -(lap - 1) * 0.032;
+    // A. Fuel weight lightening effect: derived from vehicle dynamics mass sensitivity
+    const fuelEffect = -(lap - 1) * fuelSensitivitySecPerLap;
 
     // B. Tyre degradation wear effect
     const wearEffect = (lap - 1) * degRatePerLap;
@@ -211,16 +281,16 @@ export function computeEndurancePitStrategy(
     const frontGrip = Math.max(40, Math.round(100 - gripDecay * 1.05));
     const rearGrip = Math.max(40, Math.round(100 - gripDecay * 0.95));
 
-    // Core pressures build to target and plateau
-    let pressFL: number;
-    if (lap <= 5) {
-      pressFL = +(coldP + ((targetP - coldP) * lap) / 5).toFixed(1);
-    } else {
-      pressFL = +(targetP + (lap - 5) * 0.035).toFixed(1);
-    }
-    const pressFR = +(pressFL + 0.2).toFixed(1);
-    const pressRL = +(pressFL - 0.4).toFixed(1);
-    const pressRR = +(pressFL - 0.3).toFixed(1);
+    // Core pressures build via first-order thermodynamic saturation: P(n) = P_cold + Delta P * (1 - e^(-n/tau))
+    const tauThermal = 2.6; // Thermodynamic time constant in laps
+    const thermalFraction = 1.0 - Math.exp(-lap / tauThermal);
+    const driftOverheatPsi = lap > thermalDriftOnsetLap ? (lap - thermalDriftOnsetLap) * 0.035 : 0;
+    const baseThermalRise = (targetP - coldP) * thermalFraction;
+
+    const pressFL = +(coldP + baseThermalRise * workRatioFL + (limitingCorner === "FL" ? driftOverheatPsi : 0)).toFixed(1);
+    const pressFR = +(coldP + baseThermalRise * workRatioFR + (limitingCorner === "FR" ? driftOverheatPsi : 0)).toFixed(1);
+    const pressRL = +(coldP - 0.3 + (baseThermalRise - 0.2) * workRatioRL + (limitingCorner === "RL" ? driftOverheatPsi : 0)).toFixed(1);
+    const pressRR = +(coldP - 0.3 + (baseThermalRise - 0.2) * workRatioRR + (limitingCorner === "RR" ? driftOverheatPsi : 0)).toFixed(1);
 
     const isPitWindow = lap >= undercutLapStart && lap <= maxOvercutLap;
 

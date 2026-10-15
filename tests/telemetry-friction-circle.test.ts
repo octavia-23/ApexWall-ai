@@ -378,7 +378,7 @@ describe("src/lib/telemetry-friction-circle characterization tests", () => {
     expect(driver.lapTime).toBe("2:11.080");
     expect(driver.topSpeed).toBe(258);
     expect(driver.minSpeed).toBe(69);
-    expect(driver.trailBrakingScore).toBe(90);
+    expect(driver.trailBrakingScore).toBe(83);
     expect(result.envelopeHull).toHaveLength(36);
     expect(result.gripUtilizationPct).toBe(44);
     expect(result.trailBrakingTransitionEfficiency).toBe(63);

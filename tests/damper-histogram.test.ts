@@ -202,4 +202,58 @@ describe("MoTeC Damper Velocity Histogram Engine", () => {
     expect(singlePointAnalysis.corners.FL.sampleCount).toBe(1);
     expect(singlePointAnalysis.corners.FL.bins.length).toBe(24);
   });
+
+  it("verifies chassis jerk vector kinematic excitation invariant on synthesized suspension", () => {
+    // Generate smooth gentle acceleration trace (low jerk)
+    const smoothPoints: TelemetryPoint[] = Array.from({ length: 100 }, (_, i) => ({
+      time: i * 0.05,
+      dist: i * 10,
+      speed: 100 + i * 0.5,
+      throttle: 50,
+      brake: 0,
+      steer: 0,
+      gear: 3,
+      rpm: 5000,
+      latG: 0.1,
+      longG: 0.2, // constant gentle acceleration (zero jerk)
+      tempFL: 80,
+      tempFR: 80,
+      tempRL: 80,
+      tempRR: 80,
+      pressFL: 27,
+      pressFR: 27,
+      pressRL: 27,
+      pressRR: 27,
+    }));
+
+    // Generate high jerk trace (rapid curb strikes / alternating G transients)
+    const highJerkPoints: TelemetryPoint[] = Array.from({ length: 100 }, (_, i) => ({
+      time: i * 0.05,
+      dist: i * 10,
+      speed: 100,
+      throttle: 50,
+      brake: 0,
+      steer: 0,
+      gear: 3,
+      rpm: 5000,
+      latG: (i % 2 === 0 ? 1.5 : -1.5), // extreme lateral jerk (+/- 60 G/s)
+      longG: (i % 2 === 0 ? 1.0 : -1.0), // extreme longitudinal jerk
+      tempFL: 80,
+      tempFR: 80,
+      tempRL: 80,
+      tempRR: 80,
+      pressFL: 27,
+      pressFR: 27,
+      pressRL: 27,
+      pressRR: 27,
+    }));
+
+    const smoothAnalysis = computeDamperHistograms(smoothPoints);
+    const jerkAnalysis = computeDamperHistograms(highJerkPoints);
+
+    // High jerk trace MUST activate high-speed damper velocity regime (> 100 mm/s)
+    expect(jerkAnalysis.corners.FL.highSpeedTotalPct).toBeGreaterThan(
+      smoothAnalysis.corners.FL.highSpeedTotalPct
+    );
+  });
 });

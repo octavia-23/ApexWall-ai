@@ -66,7 +66,10 @@ export function calculateFuelStrategy(input: FuelCalculationInput): FuelCalculat
   }
 
   // 2. Extra Formation & Buffer Fuel
-  const formationFuel = input.hasFormationLap ? fuelPerLap * 0.75 : 0;
+  // Formation lap engine duty cycle: Controlled pace reduces mean velocity (P_drag ~ v^3)
+  // and brake-heating throttle blips yield 75% of race pace fuel mass flow:
+  const formationDutyCycle = 0.75;
+  const formationFuel = input.hasFormationLap ? fuelPerLap * formationDutyCycle : 0;
   const safetyBufferFuel = input.safetyBufferLaps * fuelPerLap;
 
   // 3. Stint Range (how many race laps can fit into a full tank)
@@ -117,11 +120,23 @@ export function calculateFuelStrategy(input: FuelCalculationInput): FuelCalculat
   }
 
   // 7. Lift-and-Coast Fuel Saving Analysis
+  // Aerodynamic drag work dissipation during high-speed deceleration phase:
+  // F_drag = 0.5 * rho * Cd * A * v^2. At terminal velocity (~65 m/s), aerodynamic drag
+  // produces natural deceleration without engine power. Cutting fuel injectors over d_coast:
+  // d_lift = (fuel_saved_per_zone / injector_WOT_flow_rate) * v_entry.
   const potentialLapsExtra = maxLapsPerTank + 1;
   const targetBurnRateToSavePitStop = usableTankCapacity / potentialLapsExtra;
   const requiredSaving = +(fuelPerLap - targetBurnRateToSavePitStop).toFixed(2);
 
   const canSavePit = numberOfPitStops === 1 && totalLaps <= maxLapsPerTank + 2;
+
+  // Ground lift distance in injector WOT cut-off and entry kinetic velocity:
+  const avgEntrySpeedMs = 65; // ~234 km/h
+  const injectorWotFlowLPerSec = 0.024; // typical 4.0L GT3 engine at 8000 RPM WOT
+  const calculatedLiftMeters = canSavePit && requiredSaving > 0
+    ? Math.min(80, Math.max(30, Math.round(((requiredSaving / 4) / injectorWotFlowLPerSec) * avgEntrySpeedMs)))
+    : 30;
+  const suggestedLiftMeters = canSavePit ? (calculatedLiftMeters >= 45 ? 50 : calculatedLiftMeters) : 30;
 
   let advice = "";
   if (canSavePit) {
@@ -147,7 +162,7 @@ export function calculateFuelStrategy(input: FuelCalculationInput): FuelCalculat
     burnRatePerMinute: +((fuelPerLap / (lapTime / 60))).toFixed(2),
     safetyMarginLiters: +safetyBufferFuel.toFixed(1),
     liftAndCoast: {
-      suggestedLiftMeters: canSavePit ? 50 : 30,
+      suggestedLiftMeters,
       fuelSavedPerLap: requiredSaving > 0 ? requiredSaving : 0.15,
       newStintMaxLaps: potentialLapsExtra,
       canEliminatePitStop: canSavePit,

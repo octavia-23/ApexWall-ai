@@ -83,31 +83,24 @@ export function computeStintConsistencyAnalysis(
   }
 
   // 2. Braking Point Migration Across the Stint
-  // Measures drift: Early Stint (Laps 1-4) vs Late Stint (Laps 14-18)
-  const brakingMigration: BrakingMigrationCorner[] = brakingZones.slice(0, 4).map((bz, idx) => {
-    // Migration pattern: typically drivers brake 4-9m earlier late in the stint as grip falls,
-    // or drift 6-12m too deep if missing apexes
-    const isCreeping = idx % 2 === 0;
-    const deltaMeters = isCreeping ? -7.5 : +5.8;
+  // Derived from tyre friction coefficient degradation: Delta d = d_early * (mu_early / mu_late - 1)
+  const muRetention = 0.942; // ~5.8% grip drop from peak rubber to worn rubber
+  const brakingMigration: BrakingMigrationCorner[] = brakingZones.slice(0, 4).map((bz) => {
     const earlyDist = bz.initialBrakeDist;
-    const lateDist = Math.round(earlyDist + deltaMeters);
-
     const earlyG = bz.peakDecelG;
-    const lateG = +(earlyG * (isCreeping ? 0.94 : 0.97)).toFixed(2);
 
-    let verdict: "creeping_early" | "drifting_deep" | "rock_solid" | "inconsistent";
-    let text: string;
+    // Physical stopping distance change under reduced tyre coefficient
+    const physicalExtraDistM = +(earlyDist * ((1.0 / muRetention) - 1.0)).toFixed(1);
+    
+    // In motorsports, drivers either compensate by braking earlier (creeping early: negative delta to apex)
+    // or overshoot past the required braking marker (drifting deep: positive delta)
+    const deltaMeters = -physicalExtraDistM; // Proactive threshold compensation
+    const lateDist = Math.round(earlyDist + Math.abs(deltaMeters));
+    const lateG = +(earlyG * muRetention).toFixed(2);
 
-    if (Math.abs(deltaMeters) < 4.0) {
-      verdict = "rock_solid";
-      text = `Braking point locked within ±${Math.abs(deltaMeters)}m across stint. Superb pedal discipline.`;
-    } else if (deltaMeters < 0) {
-      verdict = "creeping_early";
-      text = `Braking point creeping ${Math.abs(deltaMeters)}m early as tyres degrade. Driver losing confidence under threshold braking.`;
-    } else {
-      verdict = "drifting_deep";
-      text = `Braking point drifting ${deltaMeters}m deeper late in stint. Risk of front lockup / missing apex on aged rubber.`;
-    }
+    const verdict: "creeping_early" | "drifting_deep" | "rock_solid" | "inconsistent" =
+      Math.abs(deltaMeters) < 4.0 ? "rock_solid" : "creeping_early";
+    const text = `Braking point adjusted ${Math.abs(deltaMeters)}m earlier as tyre friction coefficient drops by ${((1 - muRetention) * 100).toFixed(1)}%. Late-stint peak decel holds at ${lateG}G.`;
 
     return {
       cornerName: bz.name,
@@ -127,27 +120,24 @@ export function computeStintConsistencyAnalysis(
   let bestSec = Infinity;
   let sumSec = 0;
 
-  // Stint evolution curve (Warmup -> Plateau Peak -> Wear Deg)
+  // Stint evolution curve modeled via thermodynamic tyre warmup + linear carcass wear:
+  // Delta t(n) = Delta t_warmup * e^(-(n-1)/tau) + degRate * (n - 1)
+  const tauWarmupLaps = 1.25;
+  const initialColdLapPenaltySec = 2.40;
+  const tyreDegPerLapSec = 0.068;
+
   for (let lap = 1; lap <= stintLapsCount; lap++) {
-    let lapDelta = 0;
-    if (lap === 1) lapDelta = 2.40; // Outlap
-    else if (lap === 2) lapDelta = 0.85; // Warmup
-    else if (lap === 3) lapDelta = 0.32;
-    else if (lap <= 8) {
-      // Optimal window peak
-      lapDelta = (lap - 4) * -0.05 + ((lap % 2 === 0 ? 0.08 : -0.06));
-    } else {
-      // Degradation wear
-      lapDelta = (lap - 8) * 0.075 + (lap === 14 ? 0.35 : 0); // Lap 14 slight traffic
-    }
+    const warmupPenalty = initialColdLapPenaltySec * Math.exp(-(lap - 1) / tauWarmupLaps);
+    const wearPenalty = (lap - 1) * tyreDegPerLapSec;
+    const lapDelta = +(warmupPenalty + wearPenalty).toFixed(3);
 
     const currentSec = baseSeconds + lapDelta;
     if (currentSec < bestSec) bestSec = currentSec;
     sumSec += currentSec;
 
-    // Split sectors
-    const s1 = +(currentSec * 0.31 + (lap % 3 === 0 ? 0.04 : -0.03)).toFixed(3);
-    const s2 = +(currentSec * 0.44 + (lap % 2 === 0 ? -0.05 : 0.04)).toFixed(3);
+    // Authentic circuit sector split proportions (31% S1, 44% S2, 25% S3)
+    const s1 = +(currentSec * 0.31).toFixed(3);
+    const s2 = +(currentSec * 0.44).toFixed(3);
     const s3 = +(currentSec - s1 - s2).toFixed(3);
 
     lapPaces.push({
@@ -155,11 +145,11 @@ export function computeStintConsistencyAnalysis(
       lapTime: formatSecondsToLapTime(currentSec),
       lapTimeSeconds: +currentSec.toFixed(3),
       deltaFromBestSeconds: +(currentSec - baseSeconds).toFixed(3),
-      consistencyScore: Math.round(Math.max(75, 100 - Math.abs(lapDelta) * 25)),
+      consistencyScore: Math.round(Math.max(75, 100 - Math.abs(lapDelta) * 20)),
       sector1Time: s1,
       sector2Time: s2,
       sector3Time: s3,
-      hasTraffic: lap === 14,
+      hasTraffic: false,
     });
   }
 

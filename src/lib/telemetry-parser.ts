@@ -20,6 +20,7 @@ import { computeStintConsistencyAnalysis } from "./stint-consistency-analyzer";
 import { computeCornerLedger } from "./corner-ledger-calculator";
 import { computeAeroTrim } from "./aero-trim-calculator";
 import { computeTrailBrakingAnalysis } from "./trail-braking-profiler";
+import { getAuthenticTrackGeometry } from "./circuit-geometries";
 
 export function parseTelemetryCSV(
   csvText: string,
@@ -510,22 +511,60 @@ export function parseTelemetryCSV(
     };
   }
 
-  // Derive scores only when required channels were measured
+  // Derive scores strictly from mathematical derivatives and physical work integrals
   const hasBrakeData = channelQualityMap.brake.validSamples > totalRows * 0.1;
   const hasThrottleData = channelQualityMap.throttle.validSamples > totalRows * 0.1;
   const hasSteerData =
     channelQualityMap.steer.validSamples > totalRows * 0.1 &&
     channelQualityMap.latG.validSamples > totalRows * 0.1;
 
-  const trailBrakingScore = hasBrakeData
-    ? Math.max(50, Math.min(95, 90 - abruptBrakeDrops * 10))
-    : null;
-  const throttleSmoothness = hasThrottleData
-    ? Math.max(55, Math.min(96, 92 - throttleHesitations * 8))
-    : null;
-  const steeringScrub = hasSteerData
-    ? Math.max(50, Math.min(94, 88 - steeringScrubEvents * 7))
-    : null;
+  // 1. Trail-Braking Score: Recomputed directly via exponential pressure decay profiler
+  const endLapDist = downsampled.length > 0 ? downsampled[downsampled.length - 1].dist : undefined;
+  const detectedCircuit = getAuthenticTrackGeometry(filename, endLapDist);
+  const detectedTrackName = detectedCircuit?.name || "Circuit de Spa-Francorchamps";
+  const trailBrakingAnalysis = computeTrailBrakingAnalysis(downsampled, detectedTrackName);
+  const trailBrakingScore = hasBrakeData ? trailBrakingAnalysis.overallTrailScore : null;
+
+  // 2. Throttle Smoothness: Evaluated via negative derivative jerk on corner exits
+  let throttleSmoothness: number | null = null;
+  if (hasThrottleData) {
+    let severeHesitationJerkSum = 0;
+    let throttleSamples = 0;
+    for (let i = 1; i < downsampled.length; i++) {
+      const prevT = downsampled[i - 1].throttle;
+      const currT = downsampled[i].throttle;
+      const dt = Math.max(0.01, downsampled[i].time - downsampled[i - 1].time);
+      if (prevT != null && currT != null && (prevT > 15 || currT > 15)) {
+        const dThrottleDt = (currT - prevT) / dt;
+        // Severe throttle chop during traction acceleration indicates unstable rear platform
+        if (dThrottleDt < -180) {
+          severeHesitationJerkSum += Math.abs(dThrottleDt) * dt;
+        }
+        throttleSamples++;
+      }
+    }
+    const jerkPenalty = throttleSamples > 0 ? (severeHesitationJerkSum / throttleSamples) * 0.40 : 0;
+    throttleSmoothness = Math.max(45, Math.min(98, Math.round(96 - jerkPenalty)));
+  }
+
+  // 3. Steering Scrub: Evaluated via integrated excess understeer angle over cornering phases
+  let steeringScrub: number | null = null;
+  if (hasSteerData) {
+    let excessUndersteerAngleSum = 0;
+    let corneringSamples = 0;
+    for (let i = 0; i < downsampled.length; i++) {
+      const u = downsampled[i].understeerAngle;
+      const latG = downsampled[i].latG;
+      if (u != null && latG != null && Math.abs(latG) > 0.6) {
+        if (u > 1.4) {
+          excessUndersteerAngleSum += (u - 1.4);
+        }
+        corneringSamples++;
+      }
+    }
+    const scrubIntensity = corneringSamples > 0 ? (excessUndersteerAngleSum / corneringSamples) * 7.5 : 0;
+    steeringScrub = Math.max(45, Math.min(98, Math.round(94 - scrubIntensity)));
+  }
 
   // Resolve tyre stats from non-null observations
   const lastPoint = downsampled[Math.floor(downsampled.length * 0.75)] || downsampled[0];
@@ -724,16 +763,16 @@ export function parseTelemetryCSV(
     driverVsCar,
     damperHistograms,
     aeroMap,
-    enduranceStrategy: computeEndurancePitStrategy(downsampled, lapTimeFormatted),
+    enduranceStrategy: computeEndurancePitStrategy(downsampled, lapTimeFormatted, { track: detectedTrackName }),
     stintConsistency: computeStintConsistencyAnalysis(downsampled, lapTimeFormatted),
-    cornerLedger: computeCornerLedger(downsampled, null, "Circuit de Spa-Francorchamps"),
+    cornerLedger: computeCornerLedger(downsampled, null, detectedTrackName),
     aeroTrim: computeAeroTrim({
       frontRideHeightMm: aeroMap?.staticFrontRideHeightMm || 52,
       rearRideHeightMm: aeroMap?.staticRearRideHeightMm || 72,
       rearWingAngleDeg: 8,
       speedKmh: 250,
     }),
-    trailBrakingAnalysis: computeTrailBrakingAnalysis(downsampled, "Circuit de Spa-Francorchamps"),
+    trailBrakingAnalysis,
     points: downsampled,
     channels: Object.keys(headerMap),
   };

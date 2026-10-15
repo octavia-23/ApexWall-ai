@@ -86,21 +86,17 @@ function reconstruct4CornerDamperVelocities(points: TelemetryPoint[]): Record<Da
     const dSpeed_dt = (speedMs - prevSpeedMs) / dt;
     const aeroHeaveRate = -dSpeed_dt * (speedMs / 60) * 3.5;
 
-    // Kerb & track texture micro-excitations (deterministic, frequency based on distance and lateral load)
-    const dist = curr.dist || i * 15;
-    const roadRipple = Math.sin(dist * 0.45) * 8.0 + Math.cos(dist * 1.1) * 5.0;
-    
-    // Kerb strike spikes when high lateral load or rapid steering correction
-    const kerbSpike = Math.abs(latG) > 1.2
-      ? Math.sin(dist * 2.5) * (Math.abs(latG) * 38.0)
-      : 0;
+    // High-frequency surface and curb transient excitation derived from total chassis jerk vector:
+    // ||J|| = sqrt( (dax/dt)^2 + (day/dt)^2 )
+    const totalChassisJerk = Math.sqrt(dLongG_dt * dLongG_dt + dLatG_dt * dLatG_dt);
+    const jerkTransientVelocity = Math.min(45, totalChassisJerk * 1.8);
 
     // Assemble 4 corners (Negative = Bump / Compression, Positive = Rebound / Extension)
     // Left side: FL, RL | Right side: FR, RR
-    velocities.FL[i] = pitchFactorFront - rollFactor + aeroHeaveRate + roadRipple + (latG > 0.8 ? kerbSpike : 0);
-    velocities.FR[i] = pitchFactorFront + rollFactor + aeroHeaveRate + roadRipple + (latG < -0.8 ? kerbSpike : 0);
-    velocities.RL[i] = pitchFactorRear - (rollFactor * 0.9) + aeroHeaveRate + roadRipple + (latG > 0.8 ? kerbSpike * 0.8 : 0);
-    velocities.RR[i] = pitchFactorRear + (rollFactor * 0.9) + aeroHeaveRate + roadRipple + (latG < -0.8 ? kerbSpike * 0.8 : 0);
+    velocities.FL[i] = pitchFactorFront - rollFactor + aeroHeaveRate - (latG > 0.4 ? jerkTransientVelocity : 0);
+    velocities.FR[i] = pitchFactorFront + rollFactor + aeroHeaveRate - (latG < -0.4 ? jerkTransientVelocity : 0);
+    velocities.RL[i] = pitchFactorRear - (rollFactor * 0.9) + aeroHeaveRate - (latG > 0.4 ? jerkTransientVelocity * 0.8 : 0);
+    velocities.RR[i] = pitchFactorRear + (rollFactor * 0.9) + aeroHeaveRate - (latG < -0.4 ? jerkTransientVelocity * 0.8 : 0);
   }
 
   // Smooth velocities using a 3-point moving average to eliminate discrete step artifacts

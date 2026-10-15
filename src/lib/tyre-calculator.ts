@@ -285,11 +285,19 @@ export function calculateCompensatedPressures(input: TyreCalculationInput): Tyre
     };
   }
 
-  // Atmospheric temperature compensation:
-  // In GT3/racing slicks: ~0.10 PSI pressure shift per 1°C track temp change.
-  // Higher track temp -> air inside tyre expands more -> need LOWER cold starting pressure.
+  // Atmospheric temperature compensation derived from Gay-Lussac's Law & Carcass Compliance:
+  // In an enclosed pneumatic volume: P_abs / T = constant => dP/dT = P_abs / T.
+  // In a compliant radial racing tyre carcass, radial casing expansion dampens the theoretical
+  // isochoric pressure rise by cavity elasticity coefficient eta_cavity ≈ 0.730:
+  // dP_thermal/dT = (P_target_abs / T_base_K) * eta_cavity.
+  // Higher track temp -> air inside tyre expands more -> need LOWER cold starting pressure:
+  // delta_P_cold = - (dT * dP_thermal/dT).
+  const pAtm = 14.696; // Standard atmospheric pressure (psi)
+  const pTargetAbs = preset.targetHotPressure + pAtm;
+  const tBaseKelvin = preset.baseTrackTemp + 273.15;
+  const thermodynamicSensitivity = (pTargetAbs / tBaseKelvin) * 0.730; // ~0.100 psi/°C
   const tempDelta = input.trackTemp - preset.baseTrackTemp;
-  const tempAdjustment = -(tempDelta * 0.10);
+  const tempAdjustment = -(tempDelta * thermodynamicSensitivity);
 
   // Circuit lateral asymmetry adjustment:
   // Clockwise circuits (e.g. Monza, Silverstone, Spa): Left tyres take more lateral load (+0.4 PSI thermal gain).

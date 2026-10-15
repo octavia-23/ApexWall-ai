@@ -80,4 +80,89 @@ describe("Endurance Pit Strategy & Tyre Degradation Calculator", () => {
     // Core pressures should be higher after warmup
     expect(lap15.pressureFL).toBeGreaterThan(lap1.pressureFL);
   });
+
+  it("verifies 4-corner lateral load integral asymmetry invariant (e.g. pure clockwise circuit loads left tyres)", () => {
+    // Pure clockwise track: constant positive lateral acceleration (turns right, loading left tyres)
+    const clockwisePoints: TelemetryPoint[] = Array.from({ length: 100 }, (_, i) => ({
+      time: i * 0.5,
+      dist: i * 50,
+      speed: 180,
+      throttle: 80,
+      brake: 0,
+      steer: 25,
+      gear: 4,
+      rpm: 7000,
+      latG: 1.8, // positive latG = right turn = loads FL and RL
+      longG: 0,
+      tempFL: 92,
+      tempFR: 75,
+      tempRL: 90,
+      tempRR: 74,
+      pressFL: 27.5,
+      pressFR: 26.6,
+      pressRL: 27.1,
+      pressRR: 26.4,
+    }));
+
+    const strategy = computeEndurancePitStrategy(clockwisePoints, "1:40.000", {
+      track: "Custom Clockwise Circuit",
+      raceDurationMinutes: 60,
+    });
+
+    // The limiting tyre MUST be Left (FL or RL) because lateral work is concentrated on the outside
+    expect(strategy.tyreDegradation.limitingTyreCorner).toMatch(/^(FL|RL)$/);
+    expect(strategy.stintForecast[10].pressureFL).toBeGreaterThan(strategy.stintForecast[10].pressureFR);
+  });
+
+  it("verifies fuel mass burn rate and vehicle mass sensitivity invariant", () => {
+    const highFuelPoints: TelemetryPoint[] = Array.from({ length: 100 }, (_, i) => ({
+      time: i * 0.8,
+      dist: i * 50,
+      speed: 200,
+      throttle: 100, // 100% WOT
+      brake: 0,
+      steer: 0,
+      gear: 5,
+      rpm: 8000,
+      latG: 0,
+      longG: 0.5,
+      tempFL: 85,
+      tempFR: 85,
+      tempRL: 85,
+      tempRR: 85,
+      pressFL: 27,
+      pressFR: 27,
+      pressRL: 27,
+      pressRR: 27,
+    }));
+
+    const lowFuelPoints: TelemetryPoint[] = Array.from({ length: 100 }, (_, i) => ({
+      time: i * 0.8,
+      dist: i * 50,
+      speed: 120,
+      throttle: 25, // Light cruising
+      brake: 0,
+      steer: 0,
+      gear: 3,
+      rpm: 4000,
+      latG: 0,
+      longG: 0.1,
+      tempFL: 85,
+      tempFR: 85,
+      tempRL: 85,
+      tempRR: 85,
+      pressFL: 27,
+      pressFR: 27,
+      pressRL: 27,
+      pressRR: 27,
+    }));
+
+    const stratHigh = computeEndurancePitStrategy(highFuelPoints, "1:50.000");
+    const stratLow = computeEndurancePitStrategy(lowFuelPoints, "1:50.000");
+
+    // Full throttle burn rate MUST strictly exceed light throttle burn rate
+    expect(stratHigh.fuelWindow.burnRatePerLapLiters).toBeGreaterThan(
+      stratLow.fuelWindow.burnRatePerLapLiters
+    );
+  });
 });

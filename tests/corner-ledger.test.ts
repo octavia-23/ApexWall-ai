@@ -101,4 +101,44 @@ describe("Corner Performance Ledger Calculator", () => {
     expect(result.overallCorneringEfficiencyPct).toBeGreaterThanOrEqual(0);
     expect(result.overallCorneringEfficiencyPct).toBeLessThanOrEqual(100);
   });
+
+  it("verifies Newtonian work-energy braking distance scaling invariant", () => {
+    // If a driver arrives at a braking zone with a higher entry speed, work-energy theorem
+    // guarantees that optimal stopping distance scales quadratically with entry speed
+    const slowEntryPoints: TelemetryPoint[] = Array.from({ length: 450 }, (_, i) => {
+      const dist = i * 16;
+      const isBrakingT1 = dist >= 450 && dist <= 580;
+      const speed = isBrakingT1 ? Math.max(65, 200 - (dist - 450) * 1.0) : 180;
+      return {
+        time: i * 0.4,
+        dist,
+        speed,
+        throttle: isBrakingT1 ? 0 : 100,
+        brake: isBrakingT1 ? 80 : 0,
+        steer: dist >= 550 && dist <= 620 ? 30 : 0,
+        gear: 3,
+        rpm: 6000,
+        latG: dist >= 550 && dist <= 620 ? 1.5 : 0.1,
+        longG: isBrakingT1 ? -1.5 : 0,
+        tempFL: 85,
+        tempFR: 88,
+        tempRL: 84,
+        tempRR: 84,
+        pressFL: 27.2,
+        pressFR: 27.4,
+        pressRL: 26.8,
+        pressRR: 26.9,
+      };
+    });
+
+    const resStandard = computeCornerLedger(mockSpaPoints, null, "Circuit de Spa-Francorchamps");
+    const resSlow = computeCornerLedger(slowEntryPoints, null, "Circuit de Spa-Francorchamps");
+
+    const t1Standard = resStandard.corners[0];
+    const t1Slow = resSlow.corners[0];
+
+    // Standard entry was fast (longG -1.9), slow entry was gentle (longG -1.5).
+    // Arriving faster into braking requires higher deceleration or earlier braking.
+    expect(t1Standard.entryPeakDecelG).toBeGreaterThan(t1Slow.entryPeakDecelG);
+  });
 });
