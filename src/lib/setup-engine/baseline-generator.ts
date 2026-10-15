@@ -3,7 +3,7 @@ import { ParameterDefinition } from "./types";
 import { getGameSetupProfile } from "../game-setup-profiles";
 import { detectChassisArchetype, getCalibratedAdaptiveSetup } from "../chassis-archetypes";
 import { getCircuitAeroProfile } from "../circuit-aero-profiles";
-import { parseNumericValue, findParameterDefinition } from "./parameter-catalog";
+import { parseNumericValue, findParameterDefinition, getAuthoritativeCatalog } from "./parameter-catalog";
 
 /**
  * ============================================================================
@@ -43,18 +43,27 @@ export function buildBaselineSetup(
   existingBaseline?: { summary?: string; sections: SetupSection[] },
   fullBaselineRequested?: boolean
 ): BaselineContext {
+  const catalog = getAuthoritativeCatalog(game, car);
+
   // 1. If an existing baseline setup was supplied and full baseline was NOT requested: PRESERVE IT!
   if (existingBaseline && existingBaseline.sections?.length > 0 && !fullBaselineRequested) {
     const paramMap = new Map<string, { label: string; value: string; numericVal: number | null; sectionTitle: string }>();
 
     existingBaseline.sections.forEach((sec) => {
       sec.items.forEach((it) => {
-        paramMap.set(it.label.toLowerCase().trim(), {
+        const itemData = {
           label: it.label,
           value: it.value,
           numericVal: parseNumericValue(it.value),
           sectionTitle: sec.title,
-        });
+        };
+        paramMap.set(it.label.toLowerCase().trim(), itemData);
+        const def = findParameterDefinition(catalog, it.label);
+        if (def) {
+          paramMap.set(def.label.toLowerCase().trim(), itemData);
+          paramMap.set(def.id.toLowerCase().trim(), itemData);
+          def.aliases.forEach((a) => paramMap.set(a.toLowerCase().trim(), itemData));
+        }
       });
     });
 
@@ -91,12 +100,19 @@ export function buildBaselineSetup(
 
   procedural.sections.forEach((sec) => {
     sec.items.forEach((it) => {
-      paramMap.set(it.label.toLowerCase().trim(), {
+      const itemData = {
         label: it.label,
         value: it.value,
         numericVal: parseNumericValue(it.value),
         sectionTitle: sec.title,
-      });
+      };
+      paramMap.set(it.label.toLowerCase().trim(), itemData);
+      const def = findParameterDefinition(catalog, it.label);
+      if (def) {
+        paramMap.set(def.label.toLowerCase().trim(), itemData);
+        paramMap.set(def.id.toLowerCase().trim(), itemData);
+        def.aliases.forEach((a) => paramMap.set(a.toLowerCase().trim(), itemData));
+      }
     });
   });
 

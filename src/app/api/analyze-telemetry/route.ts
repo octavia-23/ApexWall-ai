@@ -29,6 +29,10 @@ export async function POST(req: NextRequest) {
       anomalies,
       lapComparison,
       frictionCircle,
+      damperHistograms,
+      aeroMap,
+      enduranceStrategy,
+      stintConsistency,
     } = body;
 
     if (!game || !car || !track) {
@@ -63,6 +67,45 @@ Diagnosis: ${frictionCircle.verdict || "Standard envelope"}
 `
       : "";
 
+    const damperHistogramsText = damperHistograms?.corners
+      ? `
+=== MOTEC-GRADE DAMPER HISTOGRAMS ===
+FL: ${damperHistograms.corners.FL?.bumpPct != null ? `${damperHistograms.corners.FL.bumpPct.toFixed(1)}% Bump / ${damperHistograms.corners.FL.reboundPct?.toFixed(1)}% Rebound` : "N/A"} (${damperHistograms.corners.FL?.isPackingDown ? "PACKING DOWN" : "Nominal"})
+FR: ${damperHistograms.corners.FR?.bumpPct != null ? `${damperHistograms.corners.FR.bumpPct.toFixed(1)}% Bump / ${damperHistograms.corners.FR.reboundPct?.toFixed(1)}% Rebound` : "N/A"} (${damperHistograms.corners.FR?.isPackingDown ? "PACKING DOWN" : "Nominal"})
+RL: ${damperHistograms.corners.RL?.bumpPct != null ? `${damperHistograms.corners.RL.bumpPct.toFixed(1)}% Bump / ${damperHistograms.corners.RL.reboundPct?.toFixed(1)}% Rebound` : "N/A"} (${damperHistograms.corners.RL?.isPackingDown ? "PACKING DOWN" : "Nominal"})
+RR: ${damperHistograms.corners.RR?.bumpPct != null ? `${damperHistograms.corners.RR.bumpPct.toFixed(1)}% Bump / ${damperHistograms.corners.RR.reboundPct?.toFixed(1)}% Rebound` : "N/A"} (${damperHistograms.corners.RR?.isPackingDown ? "PACKING DOWN" : "Nominal"})
+Verdict: ${damperHistograms.overallVerdict || "Standard damping balance"}
+`
+      : "";
+
+    const aeroMapText = aeroMap
+      ? `
+=== DYNAMIC AERO & RIDE HEIGHT MAP ===
+Min Front Ride Height: ${aeroMap.minFrontRideHeightMm != null ? `${aeroMap.minFrontRideHeightMm.toFixed(1)} mm` : "N/A"} | Max Rear: ${aeroMap.maxRearRideHeightMm != null ? `${aeroMap.maxRearRideHeightMm.toFixed(1)} mm` : "N/A"} | Dynamic Rake: ${aeroMap.staticRakeMm != null ? `${aeroMap.staticRakeMm.toFixed(1)} mm` : "N/A"}
+Avg Aero Balance Front: ${aeroMap.averageAeroBalanceFrontPct != null ? `${aeroMap.averageAeroBalanceFrontPct.toFixed(1)}%` : "N/A"} (Static: ${aeroMap.staticAeroBalancePct != null ? `${aeroMap.staticAeroBalancePct.toFixed(1)}%` : "N/A"})
+Grounding Events: ${aeroMap.groundingEvents?.length ?? 0} (${(aeroMap.groundingEvents?.length ?? 0) > 0 ? "CRITICAL SPLITTER BOTTOMING" : "Clear clearance"})
+Verdict: ${aeroMap.overallVerdict || "Stable platform"}
+`
+      : "";
+
+    const enduranceText = enduranceStrategy
+      ? `
+=== ENDURANCE PIT STRATEGY & TYRE DEGRADATION ===
+Burn Rate: ${enduranceStrategy.fuelWindow?.burnRatePerLapLiters != null ? `${enduranceStrategy.fuelWindow.burnRatePerLapLiters.toFixed(2)} L/lap` : "N/A"} | Ideal Pit Lap: ${enduranceStrategy.fuelWindow?.idealPitLap ?? "N/A"}
+Tyre Deg Rate: ${enduranceStrategy.tyreDegradation?.degradationRatePerLapSeconds != null ? `${enduranceStrategy.tyreDegradation.degradationRatePerLapSeconds.toFixed(3)} s/lap` : "N/A"} | Limiting Corner: ${enduranceStrategy.tyreDegradation?.limitingTyreCorner ?? "N/A"}
+Lift-and-Coast: ${enduranceStrategy.liftAndCoast?.isRecommended ? `Recommended (${enduranceStrategy.liftAndCoast.verdict})` : "Not required"}
+`
+      : "";
+
+    const consistencyText = stintConsistency
+      ? `
+=== STINT CONSISTENCY & BRAKING DRIFT ===
+Consistency: ${stintConsistency.overallConsistencyRatingPct != null ? `${stintConsistency.overallConsistencyRatingPct.toFixed(1)}%` : "N/A"} | Pace StdDev: ±${stintConsistency.lapTimeVarianceStdDev != null ? `${stintConsistency.lapTimeVarianceStdDev.toFixed(3)}s` : "N/A"}
+Thermal Equilibrium Plateau: Lap ${stintConsistency.thermalEquilibrium?.plateauLap ?? "4"}
+Braking Migration: ${(stintConsistency.brakingMigration || []).slice(0, 4).map((b: any) => `${b.cornerName}: ${b.verdict}`).join(", ") || "Stable"}
+`
+      : "";
+
     // Compact telemetry slice (12 key telemetry points)
     const compactTelemetrySlice = (sampledPoints || [])
       .filter((_: any, idx: number) => idx % 3 === 0)
@@ -86,6 +129,10 @@ Peak Braking Decel: ${summaryMetrics?.maxDecelG ?? 1.8} G | Peak Lat Accel: ${su
 Tyres (FL/FR/RL/RR): ${summaryMetrics?.tyres?.FL?.temp || "84°C"}/${summaryMetrics?.tyres?.FR?.temp || "86°C"}/${summaryMetrics?.tyres?.RL?.temp || "82°C"}/${summaryMetrics?.tyres?.RR?.temp || "83°C"}
 ${comparisonText}
 ${frictionCircleText}
+${damperHistogramsText}
+${aeroMapText}
+${enduranceText}
+${consistencyText}
 Telemetry Traces: ${compactTelemetrySlice}
 `.trim();
 
@@ -101,6 +148,11 @@ ${archetype.promptGuidance}
 
 CRITICAL CIRCUIT AERODYNAMIC DOWNFORCE & WING CONSTRAINTS FOR "${track}" (${aeroProfile.tierName}):
 ${aeroProfile.promptGuidance}
+
+CLOSED-LOOP TELEMETRY INTEGRATION DIRECTIVES:
+1. DAMPER HISTOGRAMS: If compression bump exceeds 56% or packing down is flagged, recommend softening slow bump by 1-2 clicks or stiffening rebound.
+2. DYNAMIC AERO MAP: If min front ride height is below 5.5mm or splitter grounding occurs, prioritize raising front static ride height (+1 to +2mm) or stiffening front packers to prevent splitter stall.
+3. ENDURANCE DEGRADATION: If tyre degradation exceeds 0.07s/lap or front scrub is excessive, recommend trimming front camber or softening front anti-roll bar to protect the tread.
 
 Output ONLY valid JSON matching this schema:
 {

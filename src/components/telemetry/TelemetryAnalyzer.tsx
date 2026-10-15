@@ -1072,6 +1072,10 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
               verdict: frictionCircleData.gripDeficitVerdict,
             }
           : undefined,
+        damperHistograms: parsedTelemetry.damperHistograms,
+        aeroMap: parsedTelemetry.aeroMap,
+        enduranceStrategy: parsedTelemetry.enduranceStrategy,
+        stintConsistency: parsedTelemetry.stintConsistency,
       };
 
       const res = await fetch("/api/analyze-telemetry", {
@@ -1099,6 +1103,18 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
       }
       if (parsedTelemetry?.driverVsCar && !data.driverVsCar) {
         data.driverVsCar = parsedTelemetry.driverVsCar;
+      }
+      if (parsedTelemetry?.damperHistograms && !data.damperHistograms) {
+        data.damperHistograms = parsedTelemetry.damperHistograms;
+      }
+      if (parsedTelemetry?.aeroMap && !data.aeroMap) {
+        data.aeroMap = parsedTelemetry.aeroMap;
+      }
+      if (parsedTelemetry?.enduranceStrategy && !data.enduranceStrategy) {
+        data.enduranceStrategy = parsedTelemetry.enduranceStrategy;
+      }
+      if (parsedTelemetry?.stintConsistency && !data.stintConsistency) {
+        data.stintConsistency = parsedTelemetry.stintConsistency;
       }
 
       setResult(data);
@@ -1234,6 +1250,59 @@ export const TelemetryAnalyzer: React.FC<TelemetryAnalyzerProps> = ({
         speedDelta: c.speedDelta,
       })),
       tyres: parsedTelemetry?.tyreStats,
+      damperHistograms: parsedTelemetry?.damperHistograms
+        ? {
+            corners: {
+              FL: {
+                bumpPct: parsedTelemetry.damperHistograms.corners.FL?.bumpPct,
+                reboundPct: parsedTelemetry.damperHistograms.corners.FL?.reboundPct,
+                isPackingDown: parsedTelemetry.damperHistograms.corners.FL?.isPackingDown,
+              },
+              FR: {
+                bumpPct: parsedTelemetry.damperHistograms.corners.FR?.bumpPct,
+                reboundPct: parsedTelemetry.damperHistograms.corners.FR?.reboundPct,
+                isPackingDown: parsedTelemetry.damperHistograms.corners.FR?.isPackingDown,
+              },
+              RL: {
+                bumpPct: parsedTelemetry.damperHistograms.corners.RL?.bumpPct,
+                reboundPct: parsedTelemetry.damperHistograms.corners.RL?.reboundPct,
+                isPackingDown: parsedTelemetry.damperHistograms.corners.RL?.isPackingDown,
+              },
+              RR: {
+                bumpPct: parsedTelemetry.damperHistograms.corners.RR?.bumpPct,
+                reboundPct: parsedTelemetry.damperHistograms.corners.RR?.reboundPct,
+                isPackingDown: parsedTelemetry.damperHistograms.corners.RR?.isPackingDown,
+              },
+            },
+            overallVerdict: parsedTelemetry.damperHistograms.overallVerdict,
+          }
+        : undefined,
+      aeroMap: parsedTelemetry?.aeroMap
+        ? {
+            minFrontRideHeightMm: parsedTelemetry.aeroMap.minFrontRideHeightMm,
+            maxRearRideHeightMm: parsedTelemetry.aeroMap.maxRearRideHeightMm,
+            staticRakeMm: parsedTelemetry.aeroMap.staticRakeMm,
+            staticAeroBalancePct: parsedTelemetry.aeroMap.staticAeroBalancePct,
+            averageAeroBalanceFrontPct: parsedTelemetry.aeroMap.averageAeroBalanceFrontPct,
+            groundingEvents: parsedTelemetry.aeroMap.groundingEvents?.slice(0, 3),
+            overallVerdict: parsedTelemetry.aeroMap.overallVerdict,
+          }
+        : undefined,
+      enduranceStrategy: parsedTelemetry?.enduranceStrategy
+        ? {
+            fuelWindow: parsedTelemetry.enduranceStrategy.fuelWindow,
+            tyreDegradation: parsedTelemetry.enduranceStrategy.tyreDegradation,
+            liftAndCoast: parsedTelemetry.enduranceStrategy.liftAndCoast,
+          }
+        : undefined,
+      stintConsistency: parsedTelemetry?.stintConsistency
+        ? {
+            overallConsistencyRatingPct: parsedTelemetry.stintConsistency.overallConsistencyRatingPct,
+            lapTimeVarianceStdDev: parsedTelemetry.stintConsistency.lapTimeVarianceStdDev,
+            thermalEquilibrium: parsedTelemetry.stintConsistency.thermalEquilibrium,
+            brakingMigration: parsedTelemetry.stintConsistency.brakingMigration?.slice(0, 5),
+          }
+        : undefined,
     };
 
     onApplyToSetup({

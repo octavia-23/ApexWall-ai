@@ -100,6 +100,90 @@ export function extractTelemetryEvidence(telemetryContext: any): TelemetryEviden
     }
   }
 
+  // 8. Check MoTeC-Grade Damper Histograms
+  if (telemetryContext.damperHistograms?.corners) {
+    const dh = telemetryContext.damperHistograms.corners;
+    const flBump = dh.FL?.bumpPct != null ? Math.round(dh.FL.bumpPct) : null;
+    const frBump = dh.FR?.bumpPct != null ? Math.round(dh.FR.bumpPct) : null;
+    const rlBump = dh.RL?.bumpPct != null ? Math.round(dh.RL.bumpPct) : null;
+    const rrBump = dh.RR?.bumpPct != null ? Math.round(dh.RR.bumpPct) : null;
+
+    if (flBump != null && frBump != null) {
+      if (flBump > 56 || frBump > 56 || dh.FL?.isPackingDown || dh.FR?.isPackingDown) {
+        observed.push(
+          `MoTeC Damper Histogram: Front compression over-damping detected (${flBump}% FL / ${frBump}% FR bump) - suspension packing down over road undulations`
+        );
+      } else if (flBump < 44 || frBump < 44) {
+        observed.push(
+          `MoTeC Damper Histogram: Front rebound bias detected (${100 - flBump}% FL / ${100 - frBump}% FR rebound)`
+        );
+      } else {
+        observed.push(`MoTeC Damper Histogram: Front dampers symmetric (FL ${flBump}% / FR ${frBump}% bump)`);
+      }
+    }
+
+    if (rlBump != null && rrBump != null) {
+      if (rlBump > 56 || rrBump > 56 || dh.RL?.isPackingDown || dh.RR?.isPackingDown) {
+        observed.push(
+          `MoTeC Damper Histogram: Rear compression over-damping detected (${rlBump}% RL / ${rrBump}% RR bump)`
+        );
+      } else {
+        observed.push(`MoTeC Damper Histogram: Rear dampers in nominal window (RL ${rlBump}% / RR ${rrBump}% bump)`);
+      }
+    }
+  }
+
+  // 9. Check Dynamic Aero Balance & Ride Height Platform
+  if (telemetryContext.aeroMap) {
+    const am = telemetryContext.aeroMap;
+    const minFront = am.minFrontRideHeightMm != null ? Number(am.minFrontRideHeightMm) : null;
+    const maxRear = am.maxRearRideHeightMm != null ? Number(am.maxRearRideHeightMm) : null;
+    const staticRake = am.staticRakeMm != null ? Number(am.staticRakeMm) : null;
+    const groundingCount = Array.isArray(am.groundingEvents) ? am.groundingEvents.length : 0;
+
+    if (minFront != null && minFront < 5.5) {
+      observed.push(
+        `Dynamic Aero Map: Critical front ride height collapse (${minFront.toFixed(1)}mm min front, ${groundingCount} grounding event(s)) - splitter bottoming stalls underbody aero`
+      );
+    } else if (minFront != null) {
+      observed.push(
+        `Dynamic Aero Map: Min front ride height ${minFront.toFixed(1)}mm (clearance preserved), dynamic rake ${staticRake != null ? `${staticRake.toFixed(1)}mm` : "stable"}`
+      );
+    }
+  }
+
+  // 10. Check Endurance Strategy & Tyre Degradation
+  if (telemetryContext.enduranceStrategy?.tyreDegradation) {
+    const td = telemetryContext.enduranceStrategy.tyreDegradation;
+    const degRate = td.degradationRatePerLapSeconds != null ? Number(td.degradationRatePerLapSeconds) : null;
+    const limiting = td.limitingTyreCorner || "FL";
+    if (degRate != null && degRate > 0.07) {
+      observed.push(
+        `Endurance Tyre Deg: Elevated degradation rate of +${degRate.toFixed(3)}s/lap (limiting corner: ${limiting})`
+      );
+    }
+  }
+
+  // 11. Check Stint Consistency & Braking Migration
+  if (telemetryContext.stintConsistency) {
+    const sc = telemetryContext.stintConsistency;
+    const rating = sc.overallConsistencyRatingPct != null ? Math.round(sc.overallConsistencyRatingPct) : null;
+    const plateauLap = sc.thermalEquilibrium?.plateauLap != null ? sc.thermalEquilibrium.plateauLap : null;
+    if (rating != null) {
+      observed.push(
+        `Stint Consistency: ${rating}% pace stability rating (thermal equilibrium reached at Lap ${plateauLap ?? 4})`
+      );
+    }
+    if (Array.isArray(sc.brakingMigration)) {
+      const migrating = sc.brakingMigration.filter((b: any) => b.verdict === "creeping_early" || b.verdict === "drifting_deep");
+      if (migrating.length > 0) {
+        observed.push(
+          `Braking Point Drift: Detected on ${migrating.map((m: any) => `${m.cornerName} (${m.verdict === "creeping_early" ? "creeping early" : "drifting deep"} Δ${m.migrationDeltaMeters > 0 ? "+" : ""}${m.migrationDeltaMeters?.toFixed(1)}m)`).join(", ")}`
+        );
+      }
+    }
+  }
+
   return {
     hasTelemetry: observed.length > 0,
     driverTechniqueIssue,
@@ -380,6 +464,59 @@ export function formulateDiagnosticPlan(
       tyreParams.forEach((tp) => {
         if (!primaryTargetParams.includes(tp) && !secondaryTargetParams.includes(tp)) {
           secondaryTargetParams.push(tp);
+        }
+      });
+    }
+  }
+
+  // If empirical telemetry shows damper histogram asymmetry or packing down
+  if (telemetryContext?.damperHistograms?.corners) {
+    const dh = telemetryContext.damperHistograms.corners;
+    const flBump = dh.FL?.bumpPct ?? 50;
+    const frBump = dh.FR?.bumpPct ?? 50;
+    const rlBump = dh.RL?.bumpPct ?? 50;
+    const rrBump = dh.RR?.bumpPct ?? 50;
+    const hasFrontAsymmetry = Math.abs(flBump - 50) > 6 || Math.abs(frBump - 50) > 6 || dh.FL?.isPackingDown || dh.FR?.isPackingDown;
+    const hasRearAsymmetry = Math.abs(rlBump - 50) > 6 || Math.abs(rrBump - 50) > 6 || dh.RL?.isPackingDown || dh.RR?.isPackingDown;
+
+    if (hasFrontAsymmetry) {
+      ["BUMP_SLOW_F", "REBOUND_SLOW_F"].forEach((dp) => {
+        if (!primaryTargetParams.includes(dp) && !secondaryTargetParams.includes(dp)) {
+          secondaryTargetParams.push(dp);
+        }
+      });
+    }
+    if (hasRearAsymmetry) {
+      ["BUMP_SLOW_R", "REBOUND_SLOW_R"].forEach((dp) => {
+        if (!primaryTargetParams.includes(dp) && !secondaryTargetParams.includes(dp)) {
+          secondaryTargetParams.push(dp);
+        }
+      });
+    }
+  }
+
+  // If dynamic telemetry shows aerodynamic platform collapse or splitter bottoming
+  if (telemetryContext?.aeroMap) {
+    const am = telemetryContext.aeroMap;
+    const minFront = am.minFrontRideHeightMm != null ? Number(am.minFrontRideHeightMm) : null;
+    const hasGrounding = (minFront != null && minFront < 5.5) || (Array.isArray(am.groundingEvents) && am.groundingEvents.length > 0);
+
+    if (hasGrounding) {
+      ["RIDE_HEIGHT_F", "FRONT_RIDE_HEIGHT", "FRONT_PACKER", "BUMPSTOP_RANGE_F"].forEach((ap) => {
+        if (!primaryTargetParams.includes(ap) && !secondaryTargetParams.includes(ap)) {
+          secondaryTargetParams.push(ap);
+        }
+      });
+    }
+  }
+
+  // If endurance stint telemetry shows severe tyre degradation from front scrub
+  if (telemetryContext?.enduranceStrategy?.tyreDegradation) {
+    const td = telemetryContext.enduranceStrategy.tyreDegradation;
+    if (td.degradationRatePerLapSeconds > 0.07 && (td.limitingTyreCorner === "FL" || td.limitingTyreCorner === "FR")) {
+      ["CAMBER_FRONT", "ARB_FRONT"].forEach((cp) => {
+        if (!primaryTargetParams.includes(cp) && !secondaryTargetParams.includes(cp)) {
+          secondaryTargetParams.push(cp);
         }
       });
     }
